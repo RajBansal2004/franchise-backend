@@ -19,14 +19,14 @@ app.use(cors());
 app.use(morgan('dev'));
 
 // routes
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/franchises', franchiseRoutes);
-app.use('/api/grievances', grievanceRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/location', locationRoute);
-app.use('/api/admin', adminRoute);
+app.use('/auth', authRoutes);
+app.use('/products', productRoutes);
+app.use('/orders', orderRoutes);
+app.use('/franchises', franchiseRoutes);
+app.use('/grievances', grievanceRoutes);
+app.use('/reports', reportRoutes);
+app.use('/location', locationRoute);
+app.use('/admin', adminRoute);
 
 
 // health

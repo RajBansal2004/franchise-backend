@@ -137,7 +137,6 @@ exports.registerFranchise = async (req, res) => {
       }
     });
 
-    // ✅ SAVE KYC
     await Kyc.create({
       user: user._id,
       aadhaar,
@@ -167,16 +166,14 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // 🔒 KYC CHECK
-    if (user.kycStatus !== 'approved') {
+    // 🔐 KYC CHECK ONLY FOR USER & FRANCHISE
+    if (
+      ['USER', 'FRANCHISE'].includes(user.role) &&
+      user.kycStatus !== 'approved'
+    ) {
       return res.status(403).json({
         message: `KYC ${user.kycStatus}. Login not allowed`
       });
-    }
-
-    // 🔒 ONLY FRANCHISE / DS
-    if (!['FRANCHISE', 'USER', 'ADMIN', 'SUBADMIN'].includes(user.role)) {
-      return res.status(403).json({ message: 'Access denied' });
     }
 
     const token = jwt.sign(
@@ -188,6 +185,7 @@ exports.login = async (req, res) => {
     res.json({
       token,
       user: {
+        id: user._id,
         name: user.fullName,
         role: user.role,
         uniqueId: user.uniqueId
@@ -198,3 +196,4 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
