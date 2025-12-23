@@ -1,6 +1,5 @@
 const User = require('../models/User');
 const Kyc = require('../models/Kyc');
-const bcrypt = require('bcryptjs'); // ✅ REQUIRED
 
 exports.createAdmin = async (req, res) => {
   try {
@@ -15,8 +14,6 @@ exports.createAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // 🔐 HASH PASSWORD
-
     const uniqueId =
       role === 'ADMIN'
         ? `ADM-${Date.now()}`
@@ -28,11 +25,9 @@ exports.createAdmin = async (req, res) => {
       password,
       role,
       uniqueId,
-
       mobile: `${role}-${Date.now()}`,
       gender: 'other',
       dob: new Date('2000-01-01'),
-
       kycStatus: 'approved'
     });
 

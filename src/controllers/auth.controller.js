@@ -162,10 +162,14 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    console.log("LIVE USER FOUND:", user ? user.email : null);
 
+    // if (!user || !(await user.comparePassword(password))) {
+    //   return res.status(400).json({ message: 'Invalid credentials' });
+    // }
+
+const isMatch = await user.comparePassword(password);
+console.log("PASSWORD MATCH:", isMatch);
     // 🔐 KYC CHECK ONLY FOR USER & FRANCHISE
     if (
       ['USER', 'FRANCHISE'].includes(user.role) &&
