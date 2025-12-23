@@ -159,18 +159,27 @@ exports.registerFranchise = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
+    console.log("REQ BODY:", req.body);
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    console.log("LIVE USER FOUND:", user ? user.email : null);
+    console.log("LIVE USER FOUND:", user);
 
     // if (!user || !(await user.comparePassword(password))) {
     //   return res.status(400).json({ message: 'Invalid credentials' });
     // }
+    
+if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
 
-const isMatch = await user.comparePassword(password);
-console.log("PASSWORD MATCH:", isMatch);
-    // 🔐 KYC CHECK ONLY FOR USER & FRANCHISE
+    const isMatch = await user.comparePassword(password);
+    console.log("PASSWORD MATCH:", isMatch);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
     if (
       ['USER', 'FRANCHISE'].includes(user.role) &&
       user.kycStatus !== 'approved'

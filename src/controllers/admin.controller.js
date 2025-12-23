@@ -4,7 +4,6 @@ const Kyc = require('../models/Kyc');
 exports.createAdmin = async (req, res) => {
   try {
     const { fullName, email, password, role } = req.body;
-
     if (!['ADMIN', 'SUBADMIN'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
