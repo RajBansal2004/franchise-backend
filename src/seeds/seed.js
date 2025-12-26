@@ -1,5 +1,4 @@
 require('dotenv').config();
-const bcrypt = require('bcryptjs');
 const connectDB = require('../config/db');
 const User = require('../models/User');
 const Franchise = require('../models/Franchise');
@@ -17,12 +16,11 @@ const run = async () => {
   let admin = await User.findOne({ email: adminEmail });
 
   if (!admin) {
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     admin = await User.create({
       fullName: 'Super Admin',
       email: adminEmail,
-      password: hashedPassword,
+      password: adminPassword,
       role: 'ADMIN',
       uniqueId: `ADM-${Date.now()}`,
       mobile: '9999999999',
