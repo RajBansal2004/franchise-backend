@@ -6,62 +6,108 @@ const { sendOTPEmail } = require('../utils/email');
 const { generateDSId, generatePassword } = require('../utils/credentials');
 const { sendCredentials } = require('../utils/notify');
 const { sendSMS } = require('../utils/sms');
-exports.registerDS = async (req, res) => {
+const bcrypt = require('bcryptjs');
+
+exports.registerDS = async (req, res) => {  
   try {
     const {
       fullName,
+      fatherName,
       dob,
       gender,
       mobile,
       email,
       referralId,
+      position, // LEFT / RIGHT
       location,
       kycDocs
     } = req.body;
 
-    if (!fullName || !dob || !gender || !mobile || !email) {
+    console.log('RAW BODY:', req.body);
+    console.log('fatherName:', req.body.fatherName);
+
+    if (!fullName || !fatherName || !dob || !gender || !mobile) {
       return res.status(400).json({ message: 'All fields required' });
     }
 
-    if (
-      !kycDocs ||
-      (!kycDocs.aadhaar &&
-       !kycDocs.voterId &&
-       !kycDocs.drivingLicence)
-    ) {
-      return res.status(400).json({
-        message: 'At least one KYC document is required'
-      });
+    if (!position || !['LEFT','RIGHT'].includes(position)) {
+      return res.status(400).json({ message: 'Position must be LEFT or RIGHT' });
     }
 
+    /* ================= FIND REFERRAL ================= */
+    let parentUser = null;
+
+  /* ================= FIND REFERRAL ================= */
+
+if (!referralId) {
+  return res.status(400).json({
+    message: 'Referral ID is required'
+  });
+}
+
+parentUser = await User.findOne({ uniqueId: referralId });
+
+if (!parentUser) {
+  return res.status(400).json({
+    message: 'Invalid referral ID'
+  });
+}
+
+if (position === 'LEFT' && parentUser.leftChild) {
+  return res.status(400).json({
+    message: 'Left side already occupied'
+  });
+}
+
+if (position === 'RIGHT' && parentUser.rightChild) {
+  return res.status(400).json({
+    message: 'Right side already occupied'
+  });
+}
+
+    /* ================= CREATE USER ================= */
     const uniqueId = generateDSId(fullName, mobile);
     const password = generatePassword();
 
     const user = await User.create({
       fullName,
+      fatherName,
       dob,
       gender,
       mobile,
       email,
       password,
-      referralId,
       role: 'USER',
       uniqueId,
+      referralId,
+      parentId: parentUser ? parentUser._id : null,
+      position: parentUser ? position : null,
+      level: parentUser ? parentUser.level + 1 : 0,
       location,
       kycDocs,
       kycStatus: 'pending'
     });
 
-    await sendSMS({
-      mobile,
-      purpose: 'CREDENTIALS',
-      message: `Welcome DS
-ID: ${uniqueId}
-Password: ${password}`
-    });
+    /* ================= ATTACH TO TREE ================= */
+    if (parentUser) {
+      if (position === 'LEFT') parentUser.leftChild = user._id;
+      if (position === 'RIGHT') parentUser.rightChild = user._id;
+      await parentUser.save();
+    }
 
+    /* ================= SEND CREDENTIALS ================= */
+//     await sendSMS({
+//       mobile,
+//       purpose: 'CREDENTIALS',
+//       message: `Welcome to Sushen Sanjeevani
+// ID: ${uniqueId}
+// Password: ${password}`
+//     });
+
+console.log(uniqueId)
+console.log(password)
     res.status(201).json({
-      message: 'DS registered successfully',
+      message: 'Direct Seller registered successfully',
       loginId: uniqueId
     });
 
@@ -106,6 +152,33 @@ exports.login = async (req, res) => {
 };
 
 
+exports.getReferralUser = async (req, res) => {
+  const { referralId } = req.params;
+
+  const user = await User.findOne({ uniqueId: referralId })
+    .select('fullName uniqueId');
+
+  if (!user) {
+    return res.status(404).json({
+      message: 'Invalid referral ID'
+    });
+  }
+
+  res.json({
+    fullName: user.fullName,
+    uniqueId: user.uniqueId
+  });
+};
+
+exports.getMyTree = async (req, res) => {
+  const userId = req.user.id;
+
+  const user = await User.findById(userId)
+    .populate('leftChild')
+    .populate('rightChild');
+
+  res.json(user);
+};
 
 
 exports.sendForgotPasswordOTP = async (req, res) => {

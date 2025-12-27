@@ -162,77 +162,11 @@ exports.getUsers = async (req, res) => {
 };
 
 
-// exports.createFranchiseByAdmin = async (req, res) => {
-//   try {
-//     const {
-//       fullName,
-//       dob,
-//       gender,
-//       mobile,
-//       email,
-//       location,
-//       referralId
-//     } = req.body;
-
-//     if (!fullName || !mobile || !location?.state) {
-//       return res.status(400).json({ message: 'Required fields missing' });
-//     }
-
-//     // allow same mobile/email for other roles
-//     const exists = await User.findOne({
-//       mobile,
-//       role: 'FRANCHISE'
-//     });
-
-//     if (exists) {
-//       return res.status(400).json({ message: 'Franchise already exists' });
-//     }
-
-//     const franchiseId = generateFranchiseId();
-//     const password = generatePassword();
-
-//     await User.create({
-//       fullName,
-//       dob,
-//       gender,
-//       mobile,
-//       email,
-//       role: 'FRANCHISE',
-//       uniqueId: franchiseId,
-//       password,
-//       referralId,
-//       location,
-//       kycStatus: 'pending'
-//     });
-
-//     // 🔔 SMS integration later
-//     console.log(`SMS → ${mobile}`);
-//     console.log(`ID: ${franchiseId}, Password: ${password}`);
-
-// await sendSMS({
-//   mobile,
-//   purpose: 'CREDENTIALS',
-//   message: `Welcome Franchise!
-// login ID: ${franchiseId}
-// Password: ${password}`
-// });
-
-//     res.status(201).json({
-//       message: 'Franchise created by admin',
-//       franchiseId
-//     });
-
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-
 exports.createFranchiseByAdmin = async (req, res) => {
   try {
-    const { fullName, mobile, email, kycDocs, location } = req.body;
+    const { fullName,organizationName, mobile, email, kycDocs, location } = req.body;
 
-    if (!fullName || !mobile || !kycDocs) {
+    if (!fullName || !organizationName || !mobile || !kycDocs) {
       return res.status(400).json({ message: 'Required fields missing' });
     }
 
@@ -251,6 +185,7 @@ exports.createFranchiseByAdmin = async (req, res) => {
 
     const franchise = await User.create({
       fullName,
+      organizationName,
       mobile,
       email,
       password,
