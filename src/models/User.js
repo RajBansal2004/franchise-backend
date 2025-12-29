@@ -5,8 +5,11 @@ const userSchema = new mongoose.Schema({
 
   /* ================= BASIC PROFILE ================= */
   fullName: { type: String, required: true },
-  fatherName: { type: String, required: true },
-
+  fatherName: {
+  type: String,
+  trim: true,
+  default: null
+},
   organizationName: {
     type: String,
     required: function () {

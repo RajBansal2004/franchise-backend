@@ -196,13 +196,13 @@ exports.createFranchiseByAdmin = async (req, res) => {
     });
 
     // 📲 SEND SMS
-    await sendSMS({
-      mobile,
-      message: `Welcome Franchise!
-ID: ${franchiseId}
-Password: ${password}
-Login: Your registered ID`
-    });
+//     await sendSMS({
+//       mobile,
+//       message: `Welcome Franchise!
+// ID: ${franchiseId}
+// Password: ${password}
+// Login: Your registered ID`
+//     });
 
     res.status(201).json({
       message: 'Franchise created & SMS sent',

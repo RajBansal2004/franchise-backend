@@ -27,6 +27,7 @@ app.use('/grievances', grievanceRoutes);
 app.use('/reports', reportRoutes);
 app.use('/location', locationRoute);
 app.use('/admin', adminRoute);
+app.use('/tree', require('./routes/tree.routes'));
 
 
 // health

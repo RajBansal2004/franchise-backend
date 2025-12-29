@@ -8,7 +8,7 @@ router.get('/dashboard', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getDashboardSta
 router.get('/users', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getUsers);
 router.get('/kyc/pending', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getPendingKyc);
 router.put('/kyc/:kycId', auth, permit('ADMIN', 'SUBADMIN'), ctrl.updateKycStatus);
-router.post('/create-admin', ctrl.createAdmin);
+router.post('/create-admin', auth, permit('ADMIN'), ctrl.createAdmin);
 router.post('/franchise/create', auth, permit('ADMIN', 'SUBADMIN'), ctrl.createFranchiseByAdmin);
 router.get('/sms-logs', auth, permit('ADMIN'), ctrl.getSmsLogs);
 
