@@ -1,25 +1,55 @@
-const Order = require('../models/Order');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const User = require('../models/User');
+const { success, error } = require('../utils/response');
 
-exports.ordersReport = async (req,res) => {
+/**
+ * 📊 REGISTRATION REPORT
+ */
+exports.registrationReport = async (req, res) => {
   try {
-    const { from, to, franchise } = req.query;
-    const q = {};
-    if(franchise) q.franchise = franchise;
-    if(from || to) q.createdAt = {};
-    if(from) q.createdAt.$gte = new Date(from);
-    if(to) q.createdAt.$lte = new Date(to);
-    const orders = await Order.find(q).populate('franchise').limit(1000);
-    const csvWriter = createCsvWriter({
-      path: 'orders_report.csv',
-      header: [
-        {id:'orderId', title:'Order ID'},
-        {id:'franchise', title:'Franchise'},
-        {id:'totalAmount', title:'Total'}
-      ]
-    });
-    const records = orders.map(o => ({ orderId: o.orderId, franchise: o.franchise?.name || '', totalAmount: o.totalAmount }));
-    await csvWriter.writeRecords(records);
-    res.download('orders_report.csv');
-  } catch(err){ res.status(400).json({ error: err.message }); }
+    const { from, to } = req.query;
+
+    const filter = {};
+    if (from && to) {
+      filter.createdAt = {
+        $gte: new Date(from),
+        $lte: new Date(to)
+      };
+    }
+
+    const data = await User.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: '$role',
+          total: { $sum: 1 }
+        }
+      }
+    ]);
+
+    return success(res, 'Registration report generated', data);
+
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+/**
+ * 📊 KYC REPORT
+ */
+exports.kycReport = async (req, res) => {
+  try {
+    const data = await User.aggregate([
+      {
+        $group: {
+          _id: '$kycStatus',
+          total: { $sum: 1 }
+        }
+      }
+    ]);
+
+    return success(res, 'KYC report generated', data);
+
+  } catch (err) {
+    return error(res, err.message);
+  }
 };

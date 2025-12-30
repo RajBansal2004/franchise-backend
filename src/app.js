@@ -12,7 +12,7 @@ const reportRoutes = require('./routes/report.routes');
 const errorHandler = require('./middlewares/error.middleware');
 const locationRoute =require('./routes/location.routes');
 const adminRoute=require('./routes/admin.routes');
-
+const userRoutes = require('./routes/user.routes');
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -28,7 +28,8 @@ app.use('/reports', reportRoutes);
 app.use('/location', locationRoute);
 app.use('/admin', adminRoute);
 app.use('/tree', require('./routes/tree.routes'));
-
+app.use('/report', reportRoutes);
+app.use('/user', userRoutes);
 
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));

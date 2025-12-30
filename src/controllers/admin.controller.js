@@ -95,41 +95,56 @@ exports.updateKycStatus = async (req, res) => {
 exports.getDashboardStats = async (req, res) => {
   try {
     const [
+      // USERS
       totalUsers,
-      totalFranchises,
-
       activeUsers,
       inactiveUsers,
+      blockedUsers,
 
+      // FRANCHISE
+      totalFranchises,
+      activeFranchises,
+      inactiveFranchises,
+      blockedFranchises,
+
+      // KYC
       kycApproved,
       kycPending,
       kycRejected
     ] = await Promise.all([
 
+      // USERS
       User.countDocuments({ role: 'USER' }),
+      User.countDocuments({ role: 'USER', isActive: true, isBlocked: false }),
+      User.countDocuments({ role: 'USER', isActive: false, isBlocked: false }),
+      User.countDocuments({ role: 'USER', isBlocked: true }),
+
+      // FRANCHISE
       User.countDocuments({ role: 'FRANCHISE' }),
+      User.countDocuments({ role: 'FRANCHISE', isActive: true, isBlocked: false }),
+      User.countDocuments({ role: 'FRANCHISE', isActive: false, isBlocked: false }),
+      User.countDocuments({ role: 'FRANCHISE', isBlocked: true }),
 
-      User.countDocuments({
-        role: { $in: ['USER', 'FRANCHISE'] },
-        kycStatus: 'approved'
-      }),
-
-      User.countDocuments({
-        role: { $in: ['USER', 'FRANCHISE'] },
-        kycStatus: { $ne: 'approved' }
-      }),
-
+      // KYC
       User.countDocuments({ kycStatus: 'approved' }),
       User.countDocuments({ kycStatus: 'pending' }),
       User.countDocuments({ kycStatus: 'rejected' })
-
     ]);
 
     res.json({
-      totalUsers,
-      totalFranchises,
-      activeUsers,
-      inactiveUsers,
+      success: true,
+      users: {
+        total: totalUsers,
+        active: activeUsers,
+        inactive: inactiveUsers,
+        blocked: blockedUsers
+      },
+      franchises: {
+        total: totalFranchises,
+        active: activeFranchises,
+        inactive: inactiveFranchises,
+        blocked: blockedFranchises
+      },
       kyc: {
         approved: kycApproved,
         pending: kycPending,
@@ -141,6 +156,55 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.toggleBlockStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isBlocked } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.isBlocked = isBlocked;
+
+    if (isBlocked) {
+      user.isActive = false; // auto deactivate
+    }
+
+    await user.save();
+
+    res.json({
+      message: `User ${isBlocked ? 'Blocked' : 'Unblocked'} successfully`
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+exports.toggleActiveStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isActive } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.isActive = isActive;
+    await user.save();
+
+    res.json({
+      message: `User ${isActive ? 'Activated' : 'Deactivated'} successfully`
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 
 exports.getUsers = async (req, res) => {
   try {

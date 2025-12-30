@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema({
   uniqueId: { type: String, required: true },
   password: { type: String, required: true },
 
+  isActive: { type: Boolean, default: true }, 
+isBlocked: { type: Boolean, default: false },
   role: {
     type: String,
     enum:['USER','FRANCHISE','ADMIN','SUBADMIN'],

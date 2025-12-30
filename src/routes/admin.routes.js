@@ -3,8 +3,9 @@ const ctrl = require('../controllers/admin.controller');
 const auth = require('../middlewares/auth.middleware');
 const permit = require('../middlewares/role.middleware');
 
-// 🔐 ADMIN ROUTES
 router.get('/dashboard', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getDashboardStats);
+router.put('/user/:userId/activate', auth, permit('ADMIN', 'SUBADMIN'),  ctrl.toggleActiveStatus);
+router.put('/user/:userId/block', auth, permit('ADMIN'), ctrl.toggleBlockStatus);
 router.get('/users', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getUsers);
 router.get('/kyc/pending', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getPendingKyc);
 router.put('/kyc/:kycId', auth, permit('ADMIN', 'SUBADMIN'), ctrl.updateKycStatus);
