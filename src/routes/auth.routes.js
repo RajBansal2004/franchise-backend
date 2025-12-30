@@ -8,6 +8,4 @@ router.post('/verify-otp', ctrl.verifyOTP);
 router.post('/reset-password', ctrl.resetPassword);
 router.get('/referral/:referralId', ctrl.getReferralUser);
 
-
-
 module.exports = router;
