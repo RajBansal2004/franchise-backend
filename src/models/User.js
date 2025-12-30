@@ -26,8 +26,9 @@ const userSchema = new mongoose.Schema({
   uniqueId: { type: String, required: true },
   password: { type: String, required: true },
 
+  role: 'USER' | 'FRANCHISE',
   isActive: { type: Boolean, default: true }, 
-isBlocked: { type: Boolean, default: false },
+  isBlocked: { type: Boolean, default: false },
   role: {
     type: String,
     enum:['USER','FRANCHISE','ADMIN','SUBADMIN'],
@@ -72,7 +73,6 @@ isBlocked: { type: Boolean, default: false },
   bpWallet: { type: Number, default: 0 },
 
   currentRank: { type: String, default: 'DIRECT_SELLER' },
-
   isActive: { type: Boolean, default: false }, // KYC approve ke baad
 
   /* ================= LOCATION ================= */

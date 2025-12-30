@@ -157,6 +157,7 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
+
 exports.toggleBlockStatus = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -183,6 +184,7 @@ exports.toggleBlockStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.toggleActiveStatus = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -208,22 +210,67 @@ exports.toggleActiveStatus = async (req, res) => {
 
 exports.getUsers = async (req, res) => {
   try {
-    const { role, kycStatus } = req.query;
+    const {
+      role,        // USER | FRANCHISE
+      isActive,    // true | false
+      isBlocked,   // true | false
+      kycStatus,   // pending | approved | rejected
+      page = 1,
+      limit = 10,
+      search
+    } = req.query;
 
     const filter = {};
+
+    // role wise
     if (role) filter.role = role;
+
+    // active / inactive
+    if (isActive !== undefined) {
+      filter.isActive = isActive === 'true';
+    }
+
+    // blocked
+    if (isBlocked !== undefined) {
+      filter.isBlocked = isBlocked === 'true';
+    }
+
+    // kyc
     if (kycStatus) filter.kycStatus = kycStatus;
 
-    const users = await User.find(filter)
-      .select('fullName email mobile role kycStatus uniqueId createdAt')
-      .sort({ createdAt: -1 });
+    // search
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { uniqueId: { $regex: search, $options: 'i' } },
+        { mobile: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    res.json(users);
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('fullName uniqueId mobile role isActive isBlocked kycStatus createdAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+
+      User.countDocuments(filter)
+    ]);
+
+    res.json({
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      data: users
+    });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 
 exports.createFranchiseByAdmin = async (req, res) => {
