@@ -5,11 +5,7 @@ const userSchema = new mongoose.Schema({
 
   /* ================= BASIC PROFILE ================= */
   fullName: { type: String, required: true },
-  fatherName: {
-  type: String,
-  trim: true,
-  default: null
-},
+  fatherName: {type: String, trim: true, default: null},
   organizationName: {
     type: String,
     required: function () {
@@ -26,7 +22,6 @@ const userSchema = new mongoose.Schema({
   uniqueId: { type: String, required: true },
   password: { type: String, required: true },
 
-  role: 'USER' | 'FRANCHISE',
   isActive: { type: Boolean, default: true }, 
   isBlocked: { type: Boolean, default: false },
   role: {
@@ -73,7 +68,6 @@ const userSchema = new mongoose.Schema({
   bpWallet: { type: Number, default: 0 },
 
   currentRank: { type: String, default: 'DIRECT_SELLER' },
-  isActive: { type: Boolean, default: false }, // KYC approve ke baad
 
   /* ================= LOCATION ================= */
   location: {

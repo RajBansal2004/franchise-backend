@@ -18,7 +18,7 @@ exports.registerDS = async (req, res) => {
       mobile,
       email,
       referralId,
-      position, // LEFT / RIGHT
+      position, 
       location,
       kycDocs
     } = req.body;
@@ -37,6 +37,20 @@ exports.registerDS = async (req, res) => {
     /* ================= FIND REFERRAL ================= */
     let parentUser = null;
 
+      /* ================= KYC VALIDATION ================= */
+    const hasAnyKyc =
+      kycDocs &&
+      (
+        kycDocs.aadhaar ||
+        kycDocs.voterId ||
+        kycDocs.drivingLicence
+      );
+
+    if (!hasAnyKyc) {
+      return res.status(400).json({
+        message: 'Any one KYC document is required (Aadhaar / Voter ID / Driving Licence)'
+      });
+    }
   /* ================= FIND REFERRAL ================= */
 
 if (!referralId) {

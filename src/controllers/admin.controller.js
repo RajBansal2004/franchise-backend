@@ -207,7 +207,6 @@ exports.toggleActiveStatus = async (req, res) => {
   }
 };
 
-
 exports.getUsers = async (req, res) => {
   try {
     const {
@@ -270,8 +269,6 @@ exports.getUsers = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-
 
 exports.createFranchiseByAdmin = async (req, res) => {
   try {
