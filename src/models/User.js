@@ -79,11 +79,21 @@ const userSchema = new mongoose.Schema({
   },
 
   /* ================= KYC ================= */
+
   kycDocs: {
-    aadhaar: String,
-    voterId: String,
-    drivingLicence: String
+  aadhaar: {
+    number: String,
+    image: String
   },
+  pan: {
+    number: String,
+    image: String
+  },
+  voterId: {
+    number: String,
+    image: String
+  }
+},
 
   kycStatus: {
     type: String,

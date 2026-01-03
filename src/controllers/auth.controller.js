@@ -19,8 +19,7 @@ exports.registerDS = async (req, res) => {
       email,
       referralId,
       position, 
-      location,
-      kycDocs
+      location
     } = req.body;
 
     console.log('RAW BODY:', req.body);
@@ -37,18 +36,52 @@ exports.registerDS = async (req, res) => {
     /* ================= FIND REFERRAL ================= */
     let parentUser = null;
 
-      /* ================= KYC VALIDATION ================= */
-    const hasAnyKyc =
-      kycDocs &&
-      (
-        kycDocs.aadhaar ||
-        kycDocs.voterId ||
-        kycDocs.drivingLicence
-      );
+    /* ================= LOCATION ================= */
+    let parsedLocation = {};
+if (location) {
+  try {
+    parsedLocation = JSON.parse(location);
+  } catch (e) {
+    return res.status(400).json({
+      message: 'Invalid location JSON format'
+    });
+  }
+}
 
-    if (!hasAnyKyc) {
+    /* ================= KYC FILES ================= */
+    const aadhaarImage = req.files?.aadhaarImage?.[0]?.filename || null;
+    const panImage = req.files?.panImage?.[0]?.filename || null;
+    const voterImage = req.files?.voterImage?.[0]?.filename || null;
+
+    const { aadhaarNumber, panNumber, voterNumber } = req.body;
+
+    /* ================= KYC VALIDATION ================= */
+    let kycDocs = {};
+
+    if (aadhaarNumber && aadhaarImage) {
+      kycDocs.aadhaar = {
+        number: aadhaarNumber,
+        image: `/uploads/kyc/${aadhaarImage}`
+      };
+    }
+
+    if (panNumber && panImage) {
+      kycDocs.pan = {
+        number: panNumber,
+        image: `/uploads/kyc/${panImage}`
+      };
+    }
+
+    if (voterNumber && voterImage) {
+      kycDocs.voterId = {
+        number: voterNumber,
+        image: `/uploads/kyc/${voterImage}`
+      };
+    }
+
+    if (Object.keys(kycDocs).length === 0) {
       return res.status(400).json({
-        message: 'Any one KYC document is required (Aadhaar / Voter ID / Driving Licence)'
+        message: 'At least one complete KYC document (number + image) is required'
       });
     }
   /* ================= FIND REFERRAL ================= */
@@ -97,7 +130,7 @@ if (position === 'RIGHT' && parentUser.rightChild) {
       parentId: parentUser ? parentUser._id : null,
       position: parentUser ? position : null,
       level: parentUser ? parentUser.level + 1 : 0,
-      location,
+      location:parsedLocation,
       kycDocs,
       kycStatus: 'pending'
     });

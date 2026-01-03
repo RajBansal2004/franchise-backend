@@ -314,7 +314,8 @@ exports.createFranchiseByAdmin = async (req, res) => {
 
     res.status(201).json({
       message: 'Franchise created & SMS sent',
-      franchiseId
+      franchiseId,
+      password
     });
 
   } catch (err) {
