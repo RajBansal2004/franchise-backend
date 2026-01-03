@@ -118,11 +118,13 @@ if (position === 'RIGHT' && parentUser.rightChild) {
 // Password: ${password}`
 //     });
 
-console.log(uniqueId)
-console.log(password)
+console.log(uniqueId);
+console.log(password);
+
     res.status(201).json({
       message: 'Direct Seller registered successfully',
-      loginId: uniqueId
+      loginId: uniqueId,
+      password:password
     });
 
   } catch (err) {
