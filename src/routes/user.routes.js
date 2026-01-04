@@ -3,6 +3,6 @@ const ctrl = require('../controllers/user.controller');
 const auth = require('../middlewares/auth.middleware');
 const permit = require('../middlewares/role.middleware');
 
-router.get('/dashboard', auth, permit('USER', 'FRANCHISE'), ctrl.getUserDashboard);
+router.get('/profile', auth, permit('USER'), ctrl.getUserDashboard);
 
 module.exports = router;
