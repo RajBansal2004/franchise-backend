@@ -64,10 +64,41 @@ const userSchema = new mongoose.Schema({
   leftBP: { type: Number, default: 0 },
   rightBP: { type: Number, default: 0 },
 
-  incomeWallet: { type: Number, default: 0 },
-  bpWallet: { type: Number, default: 0 },
+ /* ================= WALLET & INCOME ================= */
+incomeWallet: { type: Number, default: 0 },
+bpWallet: { type: Number, default: 0 },
 
-  currentRank: { type: String, default: 'DIRECT_SELLER' },
+totalIncome: { type: Number, default: 0 },
+totalWithdrawn: { type: Number, default: 0 },
+weeklyIncome: { type: Number, default: 0 },
+monthlyIncome: { type: Number, default: 0 },
+
+/* ================= RANK & LEVEL ================= */
+currentRank: { type: String, default: 'DIRECT_SELLER' },
+rankAchievedAt: Date,
+levelAchievedAt: Date,
+
+/* ================= REWARDS ================= */
+rewards: [{
+  level: Number,
+  name: String,
+  achievedAt: Date,
+  status: {
+    type: String,
+    enum: ['pending','approved','delivered'],
+    default: 'pending'
+  }
+}],
+
+/* ================= ROYALTY ================= */
+royaltyEligible: {
+  regional: { type: Boolean, default: false },
+  state: { type: Boolean, default: false },
+  national: { type: Boolean, default: false },
+  international: { type: Boolean, default: false }
+},
+
+  
 
   /* ================= LOCATION ================= */
   location: {

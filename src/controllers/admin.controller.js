@@ -171,7 +171,7 @@ exports.toggleBlockStatus = async (req, res) => {
     user.isBlocked = isBlocked;
 
     if (isBlocked) {
-      user.isActive = false; // auto deactivate
+      user.isActive = false; 
     }
 
     await user.save();

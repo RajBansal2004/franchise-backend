@@ -1,7 +1,9 @@
-// controllers/tree.controller.js
-const buildTree = require('../utils/treeBuilder');
+const User = require('../models/User');
+
 
 exports.getMyTree = async (req, res) => {
-  const tree = await buildTree(req.user.id, 3);
-  res.json(tree);
+const user = await User.findById(req.user.id)
+.populate('leftChild')
+.populate('rightChild');
+res.json(user);
 };
