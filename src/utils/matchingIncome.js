@@ -1,17 +1,23 @@
-module.exports = function (user) {
-const pair = Math.min(user.leftBP, user.rightBP);
-const available = pair - user.matchedBP;
-if (available <= 0) return 0;
+module.exports = function matchingIncome(user) {
+  const pairBP = Math.min(user.leftBP, user.rightBP);
+  const usedBP = user.bpWallet || 0;
+  const availableBP = pairBP - usedBP;
 
+  if (availableBP < 100) return 0;
 
-const pairs = Math.floor(available / 100);
-let income = pairs * 1000;
+  const pairs = Math.floor(availableBP / 100);
+  let income = pairs * 1000;
 
+  // CAPPING
+  let cap = 100000;
+  if (user.level >= 5) cap = 150000;
 
-if (income > user.maxCapping) income = user.maxCapping;
+  if (income > cap) income = cap;
 
+  user.bpWallet += pairs * 100;
+  user.incomeWallet += income;
+  user.totalIncome += income;
+  user.weeklyIncome += income;
 
-user.matchedBP += pairs * 100;
-user.incomeWallet += income;
-return income;
+  return income;
 };

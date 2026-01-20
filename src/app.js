@@ -13,12 +13,12 @@ const errorHandler = require('./middlewares/error.middleware');
 const locationRoute =require('./routes/location.routes');
 const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
+require('./cron')
+
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(morgan('dev'));
-
-// routes
 app.use('/auth', authRoutes);
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);

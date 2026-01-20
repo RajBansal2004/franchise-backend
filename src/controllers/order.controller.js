@@ -1,67 +1,99 @@
 const Order = require('../models/Order');
-const Commission = require('../models/Commission');
-const Franchise = require('../models/Franchise');
-const Product = require('../models/Product');
-const { calculateCommission } = require('../utils/commission.util');
+const User = require('../models/User');
 
-exports.createOrder = async (req,res) => {
+const addBP = require('../utils/addBP');
+const checkLevels = require('../utils/levelChecker');
+const rewardEngine = require('../utils/rewardEngine');
+
+/**
+ * CREATE ORDER (User / Franchise)
+ */
+exports.createOrder = async (req, res) => {
   try {
-    const { items, franchiseId } = req.body;
-    if(!items || !items.length) return res.status(400).json({ message: 'No items' });
-    let total = 0;
-    const populatedItems = [];
-    for(const it of items){
-      const product = await Product.findById(it.product);
-      if(!product) return res.status(400).json({message:'Product not found'});
-      populatedItems.push({ product: product._id, qty: it.qty, price: product.price });
-      total += product.price * it.qty;
-      // optional stock reduce
-      product.stock = Math.max(0, (product.stock||0) - it.qty);
-      await product.save();
+    const userId = req.user.id;
+    const { products, totalAmount, totalBP } = req.body;
+
+    if (!products || !totalAmount || !totalBP) {
+      return res.status(400).json({ message: 'Invalid order data' });
     }
-    const orderId = 'ORD-' + Date.now();
-    const order = new Order({
-      orderId,
-      user: req.user._id,
-      franchise: franchiseId || null,
-      items: populatedItems,
-      totalAmount: total,
-      paymentStatus: 'pending',
+
+    const order = await Order.create({
+      user: userId,
+      products,
+      totalAmount,
+      totalBP,
       status: 'pending'
     });
-    await order.save();
 
-    if(franchiseId){
-      const franchise = await Franchise.findById(franchiseId);
-      if(franchise){
-        const { amount, percent } = calculateCommission(total, franchise.commissionPercent || 0);
-        const com = new Commission({ franchise: franchise._id, order: order._id, amount, percent });
-        await com.save();
-      }
+    res.status(201).json({
+      message: 'Order placed successfully',
+      order
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * GET ALL ORDERS (Admin / Franchise)
+ */
+exports.getOrders = async (req, res) => {
+  try {
+    const filter = {};
+
+    if (req.user.role === 'FRANCHISE') {
+      filter.user = req.user.id;
     }
-    res.json({ message: 'order created', order });
-  } catch(err){ res.status(400).json({ error: err.message }); }
+
+    const orders = await Order.find(filter)
+      .populate('user', 'fullName mobile uniqueId')
+      .sort({ createdAt: -1 });
+
+    res.json({ orders });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
-exports.approveOrder = async (req,res) => {
+/**
+ * APPROVE ORDER (Admin / SubAdmin)
+ * 👉 YAHI SE BP + LEVEL + REWARD TRIGGER HOGA
+ */
+exports.approveOrder = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('items.product');
-    if(!order) return res.status(404).json({ message: 'Order not found' });
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.status === 'approved') {
+      return res.status(400).json({ message: 'Order already approved' });
+    }
+
     order.status = 'approved';
-    order.paymentStatus = 'paid';
+    order.approvedAt = new Date();
     await order.save();
-    res.json({ message: 'Order approved', order });
-  } catch(err){ res.status(400).json({ error: err.message }); }
-};
 
-exports.getOrders = async (req,res) => {
-  try {
-    const q = {};
-    if(req.query.status) q.status = req.query.status;
-    if(req.query.franchise) q.franchise = req.query.franchise;
-    // franchise role: only own orders
-    if(req.user.role === 'franchise') q.franchise = req.user._id;
-    const orders = await Order.find(q).populate('user').populate('franchise').limit(200);
-    res.json(orders);
-  } catch(err){ res.status(400).json({ error: err.message }); }
+    // 🔥 BP DISTRIBUTION
+    await addBP(order.user, order.totalBP);
+
+    const user = await User.findById(order.user);
+
+    // 🔥 LEVEL & REWARD CHECK
+    await checkLevels(user);
+    rewardEngine(user);
+
+    await user.save();
+
+    res.json({
+      message: 'Order approved & BP credited'
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
