@@ -9,7 +9,7 @@ const ROYALTY_MAP = {
 };
 
 exports.getRoyaltySummary = async (req, res) => {
-  const user = await User.findById(req.user.id);
+  const user = req.user; // 🔥 FIX HERE
 
   let levels = [];
 
@@ -25,12 +25,13 @@ exports.getRoyaltySummary = async (req, res) => {
   }
 
   res.json({
-    totalIncome: user.totalIncome,
-    monthlyIncome: user.monthlyIncome,
-    wallet: user.incomeWallet,
+    totalIncome: user.totalIncome || 0,
+    monthlyIncome: user.monthlyIncome || 0,
+    wallet: user.incomeWallet || 0,
     levels
   });
 };
+
 
 exports.getUserDashboard = async (req, res) => {
   try {
