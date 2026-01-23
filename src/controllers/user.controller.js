@@ -9,7 +9,7 @@ const ROYALTY_MAP = {
 };
 
 exports.getRoyaltySummary = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user.id);
 
   let levels = [];
 
