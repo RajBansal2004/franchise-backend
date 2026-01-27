@@ -1,13 +1,36 @@
 const User = require('../models/User');
 const Wallet = require('../models/Wallet');
 const { countLevelMembers } = require('../utils/levelCounter');
-
-
+const calculateStepPending = require('../utils/stepPendingCalculator');
 const ROYALTY_MAP = {
   5: 1, 6: 2, 7: 3, 8: 4, 9: 5,
   10: 6, 11: 7, 12: 8, 13: 10,
   14: 12, 15: 15
 };
+exports.getStepPending = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const steps = calculateStepPending(user);
+
+    res.json({
+      user: {
+        name: user.fullName,
+        level: user.level
+      },
+      steps
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
 
 exports.getRoyaltySummary = async (req, res) => {
   try {
