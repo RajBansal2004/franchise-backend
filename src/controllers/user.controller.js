@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Wallet = require('../models/Wallet');
-const { countLevelMembers } = require('../utils/levelChecker');
+const { countLevelMembers } = require('../utils/levelCounter');
+
 
 const ROYALTY_MAP = {
   5: 1, 6: 2, 7: 3, 8: 4, 9: 5,
@@ -9,28 +10,41 @@ const ROYALTY_MAP = {
 };
 
 exports.getRoyaltySummary = async (req, res) => {
-  const user = req.user; // 🔥 FIX HERE
+  try {
+    const user = req.user;
 
-  let levels = [];
+    let levels = [];
 
-  for (let level = 5; level <= 15; level++) {
-    const members = await countLevelMembers(user._id, level);
+    for (let level = 5; level <= 15; level++) {
+      let members = 0;
 
-    levels.push({
-      level,
-      members,
-      percentage: ROYALTY_MAP[level],
-      eligible: members > 0
+      try {
+        members = await countLevelMembers(user._id, level);
+      } catch (e) {
+        console.error(`Level ${level} error:`, e.message);
+      }
+
+      levels.push({
+        level,
+        members,
+        percentage: ROYALTY_MAP[level],
+        eligible: members > 0
+      });
+    }
+
+    res.json({
+      totalIncome: user.totalIncome || 0,
+      monthlyIncome: user.monthlyIncome || 0,
+      wallet: user.incomeWallet || 0,
+      levels
     });
-  }
 
-  res.json({
-    totalIncome: user.totalIncome || 0,
-    monthlyIncome: user.monthlyIncome || 0,
-    wallet: user.incomeWallet || 0,
-    levels
-  });
+  } catch (err) {
+    console.error("ROYALTY API CRASH:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
+
 
 
 exports.getUserDashboard = async (req, res) => {
