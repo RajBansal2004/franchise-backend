@@ -6,5 +6,6 @@ const permit = require('../middlewares/role.middleware');
 router.get('/profile', auth, permit('USER'), ctrl.getUserDashboard);
 router.get('/royalty/summary', auth, permit('USER'), ctrl.getRoyaltySummary);
 router.get('/royalty/step-pending', auth, permit('USER'), ctrl.getStepPending);
+router.post('/purchase', auth, permit('USER'), ctrl.purchaseProduct);
 
 module.exports = router;

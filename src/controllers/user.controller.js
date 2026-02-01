@@ -2,11 +2,62 @@ const User = require('../models/User');
 const Wallet = require('../models/Wallet');
 const { countLevelMembers } = require('../utils/levelCounter');
 const calculateStepPending = require('../utils/stepPendingCalculator');
+const Product = require('../models/Product');
+const checkLevels = require('../utils/levelChecker');
+
+
 const ROYALTY_MAP = {
   5: 1, 6: 2, 7: 3, 8: 4, 9: 5,
   10: 6, 11: 7, 12: 8, 13: 10,
   14: 12, 15: 15
 };
+
+exports.purchaseProduct = async (req, res) => {
+  try {
+    const user = req.user;
+    const { productId, quantity } = req.body;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const totalBP = product.bp * quantity;
+
+    // 🔹 SELF BP
+    user.selfBP += totalBP;
+
+    // 🔹 BINARY BP (DIRECT PARENT)
+    if (user.parentId) {
+      const parent = await User.findById(user.parentId);
+
+      if (user.position === 'LEFT') {
+        parent.leftBP += totalBP;
+      } else {
+        parent.rightBP += totalBP;
+      }
+
+      await parent.save();
+    }
+
+    // 🔹 LEVEL CHECK
+    await checkLevels(user);
+
+    await user.save();
+
+    res.json({
+      message: 'Purchase successful',
+      bpAdded: totalBP,
+      level: user.level,
+      rank: user.currentRank
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 exports.getStepPending = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
