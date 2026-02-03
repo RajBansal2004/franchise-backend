@@ -1,11 +1,21 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
+
 const addBP = require('../utils/addBP');
 const checkLevels = require('../utils/levelChecker');
 const rewardEngine = require('../utils/rewardEngine');
 
 
+// ⭐ Order ID Generator
+const generateOrderId = () => {
+  return "ORD" + Date.now();
+};
+
+
+/**
+ * CREATE ORDER
+ */
 exports.createOrder = async (req,res)=>{
  try{
 
@@ -33,25 +43,31 @@ exports.createOrder = async (req,res)=>{
    }
 
    const price = product.price;
+   const gst = product.gst || 0;
    const bp = product.bp;
 
-   totalAmount += price * item.qty;
+   // ⭐ GST Calculation
+   const priceWithGST = price + (price * gst / 100);
+
+   totalAmount += priceWithGST * item.qty;
    totalBP += bp * item.qty;
 
    orderItems.push({
      product:product._id,
      qty:item.qty,
-     price,
+     price:priceWithGST,
      bp
    });
 
   }
 
   const order = await Order.create({
+    orderId: generateOrderId(),   // ⭐ FIX
     user:userId,
     items:orderItems,
     totalAmount,
-    totalBP
+    totalBP,
+    status:"pending"
   });
 
   res.json(order);
@@ -60,12 +76,17 @@ exports.createOrder = async (req,res)=>{
   res.status(500).json({error:err.message});
  }
 };
+
+
+/**
+ * GET ORDERS
+ */
 exports.getOrders = async (req,res)=>{
  try{
 
   const orders = await Order.find()
    .populate('user','name email')
-   .populate('items.product','name price');
+   .populate('items.product','title price');
 
   res.json(orders);
 
@@ -73,6 +94,11 @@ exports.getOrders = async (req,res)=>{
   res.status(500).json({error:err.message});
  }
 };
+
+
+/**
+ * APPROVE ORDER
+ */
 exports.approveOrder = async (req,res)=>{
 
  try{
@@ -87,10 +113,14 @@ exports.approveOrder = async (req,res)=>{
    return res.status(400).json({message:"Already approved"});
   }
 
-  // STOCK DEDUCT
+  // ⭐ STOCK DEDUCT
   for(let item of order.items){
 
    const product = await Product.findById(item.product);
+
+   if(!product){
+    return res.status(400).json({message:"Product missing"});
+   }
 
    if(product.stock < item.qty){
     return res.status(400).json({message:"Stock insufficient"});
@@ -100,7 +130,7 @@ exports.approveOrder = async (req,res)=>{
    await product.save();
   }
 
-  // BP DISTRIBUTE
+  // ⭐ BP DISTRIBUTION
   await addBP(order.user, order.totalBP);
 
   const user = await User.findById(order.user);
@@ -120,5 +150,4 @@ exports.approveOrder = async (req,res)=>{
  }catch(err){
   res.status(500).json({error:err.message});
  }
-
 };
