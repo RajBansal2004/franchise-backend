@@ -5,7 +5,7 @@ const auth = require('../middlewares/auth.middleware');
 const permit = require('../middlewares/role.middleware');
 
 router.post('/', auth, orderCtrl.createOrder);
-router.get('/', auth, permit('admin','subadmin','franchise'), orderCtrl.getOrders);
-router.post('/:id/approve', auth, permit('admin','subadmin'), orderCtrl.approveOrder);
+router.get('/', auth, permit('ADMIN','SUBADMIN'), orderCtrl.getOrders);
+router.post('/:id/approve', auth, permit('ADMIN','SUBADMIN'), orderCtrl.approveOrder);
 
 module.exports = router;
