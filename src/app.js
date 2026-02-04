@@ -30,7 +30,7 @@ app.use('/admin', adminRoute);
 app.use('/tree', require('./routes/tree.routes'));
 app.use('/report', reportRoutes);
 app.use('/user', userRoutes);
-
+app.use("/uploads", express.static("uploads"));
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
 

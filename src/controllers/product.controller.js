@@ -6,31 +6,27 @@ exports.createProduct = async (req,res)=>{
 
   let data = req.body;
 
-  // ⭐ MULTIPLE PRODUCTS SUPPORT
+  // ⭐ MULTIPLE PRODUCTS JSON (NO IMAGE)
   if(Array.isArray(data)){
-
-    for(let p of data){
-
-      if(!p.title || !p.sku || !p.price){
-        return res.status(400).json({message:"Missing fields"});
-      }
-
-      const exist = await Product.findOne({sku:p.sku});
-      if(exist){
-        return res.status(400).json({message:`SKU ${p.sku} exists`});
-      }
-
-    }
-
     const products = await Product.insertMany(data);
-
     return res.json(products);
   }
 
-  // ⭐ SINGLE PRODUCT SUPPORT
-  const {title, sku, price} = data;
+  // ⭐ Extract images
+  let thumbnail = null;
+  let gallery = [];
 
-  if(!title || !sku || !price){
+  if(req.files?.image){
+    thumbnail = req.files.image[0].filename;
+  }
+
+  if(req.files?.images){
+    gallery = req.files.images.map(img => img.filename);
+  }
+
+  const {title, sku, price, bp} = req.body;
+
+  if(!title || !sku || !price || !bp){
     return res.status(400).json({message:"Missing fields"});
   }
 
@@ -39,7 +35,11 @@ exports.createProduct = async (req,res)=>{
     return res.status(400).json({message:"SKU exists"});
   }
 
-  const product = await Product.create(data);
+  const product = await Product.create({
+    ...req.body,
+    image: thumbnail,
+    images: gallery
+  });
 
   res.json(product);
 
