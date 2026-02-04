@@ -12,4 +12,5 @@ router.post('/', auth, permit('ADMIN','SUBADMIN'), upload.fields([
   ]), productCtrl.createProduct);
 router.put('/:id', auth, permit('ADMIN','SUBADMIN'), productCtrl.updateProduct);
 router.delete('/:id', auth, permit('ADMIN','SUBADMIN'), productCtrl.deleteProduct);
+router.get('/admin', auth, permit('ADMIN'), productCtrl.getProductsAdmin);
 module.exports = router;

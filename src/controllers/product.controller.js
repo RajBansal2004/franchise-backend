@@ -67,6 +67,10 @@ exports.deleteProduct = async (req,res)=>{
  res.json({message:"Product deactivated"});
 };
 
+exports.getProductsAdmin = async (req,res)=>{
+ const data = await Product.find();
+ res.json(data);
+};
 
 exports.getProducts = async (req,res)=>{
  const data = await Product.find({isActive:true});
