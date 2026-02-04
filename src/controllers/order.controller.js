@@ -1,7 +1,7 @@
+const mongoose = require("mongoose");
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
-
 const addBP = require('../utils/addBP');
 const checkLevels = require('../utils/levelChecker');
 const rewardEngine = require('../utils/rewardEngine');
@@ -20,9 +20,14 @@ exports.createOrder = async (req,res)=>{
  try{
 
   const userId = req.user.id;
-  const { items } = req.body;
+  let { items } = req.body;
 
-  if(!items || items.length === 0){
+  // ⭐ SINGLE PRODUCT SUPPORT
+  if(!Array.isArray(items)){
+    items = [items];
+  }
+
+  if(items.length === 0){
    return res.status(400).json({message:"No items"});
   }
 
@@ -46,7 +51,6 @@ exports.createOrder = async (req,res)=>{
    const gst = product.gst || 0;
    const bp = product.bp;
 
-   // ⭐ GST Calculation
    const priceWithGST = price + (price * gst / 100);
 
    totalAmount += priceWithGST * item.qty;
@@ -62,12 +66,11 @@ exports.createOrder = async (req,res)=>{
   }
 
   const order = await Order.create({
-    orderId: generateOrderId(),   // ⭐ FIX
+    orderId: generateOrderId(),
     user:userId,
     items:orderItems,
     totalAmount,
-    totalBP,
-    status:"pending"
+    totalBP
   });
 
   res.json(order);
@@ -96,6 +99,64 @@ exports.getOrders = async (req,res)=>{
 };
 
 
+exports.getUserOrderStats = async (req,res)=>{
+ try{
+
+  const userId = req.user.id;
+
+  const totalOrders = await Order.countDocuments({ user:userId });
+
+  const approvedOrders = await Order.countDocuments({
+    user:userId,
+    status:"approved"
+  });
+
+  const pendingOrders = await Order.countDocuments({
+    user:userId,
+    status:"pending"
+  });
+
+  const cancelledOrders = await Order.countDocuments({
+    user:userId,
+    status:"cancelled"
+  });
+
+  res.json({
+    totalOrders,
+    approvedOrders,
+    pendingOrders,
+    cancelledOrders
+  });
+
+ }catch(err){
+  res.status(500).json({error:err.message});
+ }
+};
+
+exports.getUserOrderDashboard = async (req,res)=>{
+ try{
+
+  const userId = req.user.id;
+
+  const stats = await Order.aggregate([
+    { $match:{ user: new mongoose.Types.ObjectId(userId) } },
+
+    {
+      $group:{
+        _id:"$status",
+        totalOrders:{ $sum:1 },
+        totalBP:{ $sum:"$totalBP" },
+        totalAmount:{ $sum:"$totalAmount" }
+      }
+    }
+  ]);
+
+  res.json(stats);
+
+ }catch(err){
+  res.status(500).json({error:err.message});
+ }
+};
 /**
  * APPROVE ORDER
  */
@@ -112,7 +173,9 @@ exports.approveOrder = async (req,res)=>{
   if(order.status === "approved"){
    return res.status(400).json({message:"Already approved"});
   }
-
+if(order.paymentStatus !== "paid"){
+ return res.status(400).json({message:"Payment not completed"});
+}
   // ⭐ STOCK DEDUCT
   for(let item of order.items){
 

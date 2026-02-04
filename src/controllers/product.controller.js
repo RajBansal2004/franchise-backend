@@ -4,18 +4,42 @@ exports.createProduct = async (req,res)=>{
 
  try{
 
-  const {title, sku, price, bp} = req.body;
+  let data = req.body;
+
+  // ⭐ MULTIPLE PRODUCTS SUPPORT
+  if(Array.isArray(data)){
+
+    for(let p of data){
+
+      if(!p.title || !p.sku || !p.price){
+        return res.status(400).json({message:"Missing fields"});
+      }
+
+      const exist = await Product.findOne({sku:p.sku});
+      if(exist){
+        return res.status(400).json({message:`SKU ${p.sku} exists`});
+      }
+
+    }
+
+    const products = await Product.insertMany(data);
+
+    return res.json(products);
+  }
+
+  // ⭐ SINGLE PRODUCT SUPPORT
+  const {title, sku, price} = data;
 
   if(!title || !sku || !price){
-   return res.status(400).json({message:"Missing fields"});
+    return res.status(400).json({message:"Missing fields"});
   }
 
   const exist = await Product.findOne({sku});
   if(exist){
-   return res.status(400).json({message:"SKU exists"});
+    return res.status(400).json({message:"SKU exists"});
   }
 
-  const product = await Product.create(req.body);
+  const product = await Product.create(data);
 
   res.json(product);
 
