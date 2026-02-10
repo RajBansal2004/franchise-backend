@@ -11,7 +11,22 @@ const kycSchema = new mongoose.Schema({
     type:String,
     enum:['pending','approved','rejected'],
     default:'pending'
-  }
+  },
+  idNumber:String,
+fatherName:String,
+dob:Date,
+gender:String,
+
+address:{
+ state:String,
+ city:String,
+ pincode:String,
+ fullAddress:String
+},
+
+userSignature:String,
+companySignature:String
+
 },{ timestamps:true });
 
 module.exports = mongoose.model('Kyc', kycSchema);

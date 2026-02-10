@@ -153,10 +153,51 @@ exports.getUserDashboard = async (req, res) => {
       wallet: {
         balance: wallet?.balance || 0,
         totalIncome: wallet?.totalIncome || 0
-      }
+      },
+      weekly:{
+    left:user.weeklyLeftBP,
+    right:user.weeklyRightBP
+   },
+   monthly:{
+    left:user.monthlyLeftBP,
+    right:user.monthlyRightBP
+   }
     });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+
+
+exports.updateProfile = async(req,res)=>{
+ try{
+
+  const { shippingAddress, photo } = req.body;
+
+  const user = await User.findByIdAndUpdate(
+   req.user.id,
+   { shippingAddress, photo },
+   { new:true }
+  );
+
+  res.json(user);
+
+ }catch(err){
+  res.status(500).json({msg:"Profile update error"});
+ }
+};
+
+
+exports.getIdCard = async(req,res)=>{
+ try{
+
+  const kyc = await Kyc.findOne({user:req.user.id});
+
+  res.json(kyc);
+
+ }catch(err){
+  res.status(500).json({msg:"ID card fetch error"});
+ }
 };

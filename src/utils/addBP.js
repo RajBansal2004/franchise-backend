@@ -1,25 +1,39 @@
 const User = require('../models/User');
 
 module.exports = async function addBP(userId, bp) {
-  let user = await User.findById(userId);
-  if (!user) return;
 
-  user.selfBP += bp;
-  await user.save();
+ let user = await User.findById(userId);
+ if (!user) return;
 
-  let parentId = user.parentId;
-  let position = user.position;
+ // ⭐ Self BP
+ user.selfBP += bp;
+ await user.save();
 
-  while (parentId) {
-    const parent = await User.findById(parentId);
-    if (!parent) break;
+ let parentId = user.parentId;
+ let position = user.position;
 
-    if (position === 'LEFT') parent.leftBP += bp;
-    else parent.rightBP += bp;
+ while (parentId) {
 
-    await parent.save();
+  const parent = await User.findById(parentId);
+  if (!parent) break;
 
-    position = parent.position;
-    parentId = parent.parentId;
+  if (position === 'LEFT') {
+
+    parent.leftBP += bp;
+    parent.weeklyLeftBP += bp;
+    parent.monthlyLeftBP += bp;
+
+  } else {
+
+    parent.rightBP += bp;
+    parent.weeklyRightBP += bp;
+    parent.monthlyRightBP += bp;
+
   }
+
+  await parent.save();
+
+  position = parent.position;
+  parentId = parent.parentId;
+ }
 };

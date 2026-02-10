@@ -13,7 +13,9 @@ const errorHandler = require('./middlewares/error.middleware');
 const locationRoute =require('./routes/location.routes');
 const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
-require('./cron')
+require('./cron');
+require('./cron/bpReset');
+
 
 const app = express();
 app.use(express.json());

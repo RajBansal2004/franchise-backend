@@ -110,7 +110,24 @@ royaltyEligible: {
     village: String,
     pincode: String
   },
+// ===== Dashboard BP =====
 
+weeklyLeftBP:{ type:Number, default:0 },
+weeklyRightBP:{ type:Number, default:0 },
+
+monthlyLeftBP:{ type:Number, default:0 },
+monthlyRightBP:{ type:Number, default:0 },
+
+// ===== Profile =====
+
+photo:String,
+
+shippingAddress:{
+ state:String,
+ city:String,
+ pincode:String,
+ addressLine:String
+},
   /* ================= KYC ================= */
 
   kycDocs: {

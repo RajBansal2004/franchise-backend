@@ -7,5 +7,12 @@ router.get('/profile', auth, permit('USER'), ctrl.getUserDashboard);
 router.get('/royalty/summary', auth, permit('USER'), ctrl.getRoyaltySummary);
 router.get('/royalty/step-pending', auth, permit('USER'), ctrl.getStepPending);
 router.post('/purchase', auth, permit('USER'), ctrl.purchaseProduct);
+router.get('/dashboard', auth, ctrl.getUserDashboard);
+
+// Profile
+router.put('/profile', auth, ctrl.updateProfile);
+
+// ID Card
+router.get('/id-card', auth, ctrl.getIdCard);
 
 module.exports = router;
