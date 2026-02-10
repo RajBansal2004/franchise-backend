@@ -1,23 +1,49 @@
-module.exports = function matchingIncome(user) {
-  const pairBP = Math.min(user.leftBP, user.rightBP);
-  const usedBP = user.bpWallet || 0;
-  const availableBP = pairBP - usedBP;
+const User = require('../models/User');
 
-  if (availableBP < 100) return 0;
+module.exports = async function matchingIncome(userId){
 
-  const pairs = Math.floor(availableBP / 100);
-  let income = pairs * 1000;
+  const user = await User.findById(userId);
 
-  // CAPPING
-  let cap = 100000;
-  if (user.level >= 5) cap = 150000;
+  if(!user) return;
 
-  if (income > cap) income = cap;
+  // ⭐ Pair BP
+  const pairBP = Math.min(user.leftBP , user.rightBP);
 
-  user.bpWallet += pairs * 100;
+  // ⭐ 100 BP = 1 Pair
+  const pairCount = Math.floor(pairBP / 100);
+
+  if(pairCount <= 0) return;
+
+  let income = pairCount * 1000;
+
+  // ⭐ Weekly Capping
+  let cap = 0;
+
+  if(user.selfBP >= 51 && user.selfBP <= 100){
+    cap = 100000;
+  }
+  else if(user.selfBP >= 101){
+    cap = 150000;
+  }
+
+  if(cap > 0){
+    if(user.weeklyIncome + income > cap){
+      income = cap - user.weeklyIncome;
+
+      if(income <= 0) return;
+    }
+  }
+
+  // ⭐ Wallet Update
   user.incomeWallet += income;
   user.totalIncome += income;
   user.weeklyIncome += income;
 
-  return income;
+  // ⭐ BP Deduct only used BP
+  const usedBP = pairCount * 100;
+
+  user.leftBP -= usedBP;
+  user.rightBP -= usedBP;
+
+  await user.save();
 };

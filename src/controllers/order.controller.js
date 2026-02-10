@@ -5,6 +5,7 @@ const User = require('../models/User');
 const addBP = require('../utils/addBP');
 const checkLevels = require('../utils/levelChecker');
 const rewardEngine = require('../utils/rewardEngine');
+const matchingIncome = require('../utils/matchingIncome');
 
 
 // ⭐ Order ID Generator
@@ -173,6 +174,7 @@ exports.approveOrder = async (req,res)=>{
   if(order.status === "approved"){
    return res.status(400).json({message:"Already approved"});
   }
+
 if(order.paymentStatus !== "paid"){
  return res.status(400).json({message:"Payment not completed"});
 }
@@ -195,6 +197,7 @@ if(order.paymentStatus !== "paid"){
 
   // ⭐ BP DISTRIBUTION
   await addBP(order.user, order.totalBP);
+  await matchingIncome(order.user);
 
   const user = await User.findById(order.user);
 

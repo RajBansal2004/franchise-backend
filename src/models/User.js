@@ -43,15 +43,14 @@ const userSchema = new mongoose.Schema({
     enum: ['LEFT', 'RIGHT']
   },
 
-  leftChild: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
+ leftChildren: [
+  { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+],
 
-  rightChild: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
+rightChildren: [
+  { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+],
+
 
   level: {
     type: Number,

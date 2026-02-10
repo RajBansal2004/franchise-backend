@@ -100,17 +100,22 @@ if (!parentUser) {
   });
 }
 
-if (position === 'LEFT' && parentUser.leftChild) {
+const leftCount = parentUser.leftChildren?.length || 0;
+const rightCount = parentUser.rightChildren?.length || 0;
+
+
+if (position === 'LEFT' && leftCount > rightCount) {
   return res.status(400).json({
-    message: 'Left side already occupied'
+    message: 'First complete RIGHT to make pair'
   });
 }
 
-if (position === 'RIGHT' && parentUser.rightChild) {
+if (position === 'RIGHT' && rightCount > leftCount) {
   return res.status(400).json({
-    message: 'Right side already occupied'
+    message: 'First complete LEFT to make pair'
   });
 }
+
 
     /* ================= CREATE USER ================= */
     const uniqueId = generateDSId(fullName, mobile);
@@ -136,11 +141,19 @@ if (position === 'RIGHT' && parentUser.rightChild) {
     });
 
     /* ================= ATTACH TO TREE ================= */
-    if (parentUser) {
-      if (position === 'LEFT') parentUser.leftChild = user._id;
-      if (position === 'RIGHT') parentUser.rightChild = user._id;
-      await parentUser.save();
-    }
+   if (parentUser) {
+
+  if (position === 'LEFT') {
+    parentUser.leftChildren.push(user._id);
+  }
+
+  if (position === 'RIGHT') {
+    parentUser.rightChildren.push(user._id);
+  }
+
+  await parentUser.save();
+}
+
 
     /* ================= SEND CREDENTIALS ================= */
 //     await sendSMS({
