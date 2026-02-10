@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema({
 
   uniqueId: { type: String, required: true },
   password: { type: String, required: true },
+  plainPassword: {
+  type: String,
+  default: null
+},
 
   isActive: { type: Boolean, default: true }, 
   isBlocked: { type: Boolean, default: false },

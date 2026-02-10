@@ -121,6 +121,7 @@ if (position === 'RIGHT' && rightCount > leftCount) {
     const uniqueId = generateDSId(fullName, mobile);
     const password = generatePassword();
 
+
     const user = await User.create({
       fullName,
       fatherName,
@@ -129,6 +130,7 @@ if (position === 'RIGHT' && rightCount > leftCount) {
       mobile,
       email,
       password,
+      plainPassword: password,
       role: 'USER',
       uniqueId,
       referralId,
