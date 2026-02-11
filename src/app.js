@@ -14,7 +14,7 @@ const locationRoute =require('./routes/location.routes');
 const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
 const kycRoutes = require('./routes/kycRoutes');
-require('./cron');
+require('./cron');  
 require('./cron/bpReset');
 require('./cron/incomeReset');
 

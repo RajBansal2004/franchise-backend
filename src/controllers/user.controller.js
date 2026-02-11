@@ -147,13 +147,28 @@ exports.getUserDashboard = async (req, res) => {
 
       /* ===== PROFILE ===== */
 
-      profile:{
-        name:user.fullName,
-        dsId:user.uniqueId,
-        status:user.isActive ? 'Active' : 'Inactive',
-        photo:user.photo,
-        shippingAddress:user.shippingAddress
-      },
+     profile:{
+  name: user.fullName,
+  dsId: user.uniqueId,
+  referralId: user.uniqueId, // अगर अलग referral field है तो change करो
+
+  fatherName: user.fatherName || "",
+  gender: user.gender || "",
+
+  mobile: user.mobile,
+  email: user.email,
+
+  pincode: user.pincode || "",
+  district: user.district || "",
+  state: user.state || "",
+
+  address: user.address || "",
+  shippingAddress: user.shippingAddress || "",
+
+  status: user.isActive ? 'Active' : 'Inactive',
+  photo: user.photo
+},
+
 
       /* ===== BUSINESS SUMMARY ===== */
 
@@ -227,14 +242,42 @@ exports.updateProfile = async(req,res)=>{
 };
 
 
-exports.getIdCard = async(req,res)=>{
- try{
+exports.getIdCard = async (req, res) => {
+ try {
 
-  const kyc = await Kyc.findOne({user:req.user.id});
+  const user = await User.findById(req.user._id)
+  .select("fullName uniqueId mobile photo kycDocs kycStatus shippingAddress");
 
-  res.json(kyc);
+  if(!user){
+    return res.status(404).json({msg:"User not found"});
+  }
 
- }catch(err){
-  res.status(500).json({msg:"ID card fetch error"});
+  res.json({
+    name: user.fullName,
+  dsId: user.uniqueId,
+  referralId: user.uniqueId, 
+
+  fatherName: user.fatherName || "",
+  gender: user.gender || "",
+
+  mobile: user.mobile,
+  email: user.email,
+
+  pincode: user.pincode || "",
+  district: user.district || "",
+  state: user.state || "",
+
+  address: user.address || "",
+  shippingAddress: user.shippingAddress || "",
+  kyc:user.kycDocs,
+    kycStatus:user.kycStatus,
+  status: user.isActive ? 'Active' : 'Inactive',
+  photo: user.photo
+  });
+
+ } catch (err) {
+  console.log(err);
+  res.status(500).json({ msg: "ID card fetch error" });
  }
 };
+
