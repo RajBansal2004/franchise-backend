@@ -158,13 +158,13 @@ exports.getUserDashboard = async (req, res) => {
   mobile: user.mobile,
   email: user.email,
 
-  pincode: user.pincode || "",
-  district: user.district || "",
-  state: user.state || "",
+  // ⭐ LOCATION ADDRESS (Permanent Address)
+  pincode: user.location?.pincode || "",
+  district: user.location?.district || "",
+  state: user.location?.state || "",
+  address: `${user.location?.village || ""} ${user.location?.block || ""}`.trim(),
 
-  address: user.address || "",
-  shippingAddress: user.shippingAddress || "",
-
+shippingAddress: user.shippingAddress || {},
   status: user.isActive ? 'Active' : 'Inactive',
   photo: user.photo
 },

@@ -70,7 +70,6 @@ rightChildren: [
 incomeWallet: { type: Number, default: 0 },
 bpWallet: { type: Number, default: 0 },
 
-totalIncome: { type: Number, default: 0 },
 totalWithdrawn: { type: Number, default: 0 },
 weeklyIncome: { type: Number, default: 0 },
 monthlyIncome: { type: Number, default: 0 },
