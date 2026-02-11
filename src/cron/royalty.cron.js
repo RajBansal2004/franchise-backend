@@ -1,21 +1,17 @@
+const cron = require('node-cron');
 const User = require('../models/User');
 const calculateRoyalty = require('../utils/royaltyEngine');
 
-module.exports = async function runRoyaltyCron() {
-//   console.log('🔁 Royalty Cron Started');
+cron.schedule('0 0 1 * *', async () => {
 
-  // 🔥 example turnover (real me order collection se niklega)
-  const companyTurnover = 10000000; // 1 Cr
+  console.log("Royalty Distribution Running...");
 
-  const users = await User.find({
-    isActive: true,
-    level: { $gte: 5 }
-  });
+  const users = await User.find();
 
-  for (const user of users) {
-    const income = calculateRoyalty(user, companyTurnover);
-    if (income > 0) await user.save();
+  const companyTurnover = await getCompanyTurnover(); // tum banayoge
+
+  for(const user of users){
+     await calculateRoyalty(user._id, companyTurnover);
   }
 
-//   console.log('✅ Royalty Cron Completed');
-};
+});

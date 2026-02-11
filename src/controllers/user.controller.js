@@ -292,19 +292,12 @@ exports.updateShippingAddress = async (req,res)=>{
     return res.status(404).json({msg:"User not found"});
   }
 
-  const { state, city, pincode, addressLine } = req.body;
-  if(!state || !city || !pincode || !addressLine){
- return res.status(400).json({msg:"All fields required"});
-}
-
+  const { addressLine } = req.body;
 
   user.shippingAddress = {
-    state,
-    city,
-    pincode,
     addressLine
   };
-
+    
   await user.save();
 
   res.json({
