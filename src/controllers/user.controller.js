@@ -281,3 +281,40 @@ exports.getIdCard = async (req, res) => {
  }
 };
 
+/* ===== Update Shipping Address ===== */
+
+exports.updateShippingAddress = async (req,res)=>{
+ try{
+
+  const user = await User.findById(req.user.id);
+
+  if(!user){
+    return res.status(404).json({msg:"User not found"});
+  }
+
+  const { state, city, pincode, addressLine } = req.body;
+  if(!state || !city || !pincode || !addressLine){
+ return res.status(400).json({msg:"All fields required"});
+}
+
+
+  user.shippingAddress = {
+    state,
+    city,
+    pincode,
+    addressLine
+  };
+
+  await user.save();
+
+  res.json({
+    msg:"Shipping address updated successfully",
+    shippingAddress:user.shippingAddress
+  });
+
+ }catch(err){
+  res.status(500).json({msg:err.message});
+ }
+};
+
+

@@ -22,9 +22,6 @@ exports.registerDS = async (req, res) => {
       location
     } = req.body;
 
-    console.log('RAW BODY:', req.body);
-    console.log('fatherName:', req.body.fatherName);
-
     if (!fullName || !fatherName || !dob || !gender || !mobile) {
       return res.status(400).json({ message: 'All fields required' });
     }
