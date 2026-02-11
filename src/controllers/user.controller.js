@@ -123,51 +123,88 @@ exports.getRoyaltySummary = async (req, res) => {
 
 exports.getUserDashboard = async (req, res) => {
   try {
+
     const userId = req.user._id;
 
-    const user = await User.findById(userId).select(
-      'fullName uniqueId role kycStatus referralId createdAt'
-    );
-
-    const leftCount = await User.countDocuments({
-      parentId: userId,
-      position: 'LEFT'
-    });
-
-    const rightCount = await User.countDocuments({
-      parentId: userId,
-      position: 'RIGHT'
-    });
-
-    const totalReferrals = leftCount + rightCount;
-
+    const user = await User.findById(userId);
     const wallet = await Wallet.findOne({ user: userId });
 
+    /* ================= TEAM SUMMARY ================= */
+
+    const directTeam = await User.countDocuments({ parentId: userId });
+
+    const teamMembers = await User.find({ parentId: userId });
+
+    const activeTeam = teamMembers.filter(u => u.isActive).length;
+    const inactiveTeam = teamMembers.length - activeTeam;
+
+    const incentiveActive = teamMembers.filter(u => u.selfBP > 0).length;
+    const incentiveInactive = teamMembers.length - incentiveActive;
+
+    /* ================= RESPONSE ================= */
+
     res.json({
-      profile: user,
-      team: {
-        left: leftCount,
-        right: rightCount,
-        total: totalReferrals
+
+      /* ===== PROFILE ===== */
+
+      profile:{
+        name:user.fullName,
+        dsId:user.uniqueId,
+        status:user.isActive ? 'Active' : 'Inactive',
+        photo:user.photo,
+        shippingAddress:user.shippingAddress
       },
-      wallet: {
-        balance: wallet?.balance || 0,
-        totalIncome: wallet?.totalIncome || 0
+
+      /* ===== BUSINESS SUMMARY ===== */
+
+      business:{
+        selfBP:user.selfBP || 0,
+
+        totalBonusBP:user.leftBP || 0,
+        totalIncentiveBP:user.rightBP || 0,
+
+        weeklyBonusBP:user.weeklyLeftBP || 0,
+        weeklyIncentiveBP:user.weeklyRightBP || 0,
+
+        monthlyBonusBP:user.monthlyLeftBP || 0,
+        monthlyIncentiveBP:user.monthlyRightBP || 0
       },
-      weekly:{
-    left:user.weeklyLeftBP,
-    right:user.weeklyRightBP
-   },
-   monthly:{
-    left:user.monthlyLeftBP,
-    right:user.monthlyRightBP
-   }
+
+      /* ===== INCOME SUMMARY ===== */
+
+      income:{
+        weeklyIncome:user.weeklyIncome || 0,
+        monthlyIncome:user.monthlyIncome || 0,
+
+        thirdLegIncome:user.thirdLegIncome || 0,
+        royaltyIncome:user.royaltyIncome || 0,
+        levelRewardIncome:user.levelRewardIncome || 0,
+
+        totalIncome:user.totalIncome || 0,
+
+        walletBalance: wallet?.balance || user.incomeWallet || 0
+      },
+
+      /* ===== TEAM SUMMARY ===== */
+
+      team:{
+        directTeam,
+        totalTeam: teamMembers.length,
+        activeTeam,
+        inactiveTeam,
+        incentiveTeam:{
+          active: incentiveActive,
+          inactive: incentiveInactive
+        }
+      }
+
     });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 
 

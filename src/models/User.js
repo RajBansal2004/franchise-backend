@@ -74,7 +74,10 @@ totalIncome: { type: Number, default: 0 },
 totalWithdrawn: { type: Number, default: 0 },
 weeklyIncome: { type: Number, default: 0 },
 monthlyIncome: { type: Number, default: 0 },
-
+thirdLegIncome: { type: Number, default: 0 },
+royaltyIncome: { type: Number, default: 0 },
+levelRewardIncome: { type: Number, default: 0 },
+totalIncome: { type: Number, default: 0 },
 /* ================= RANK & LEVEL ================= */
 currentRank: { type: String, default: 'DIRECT_SELLER' },
 rankAchievedAt: Date,
@@ -100,7 +103,7 @@ royaltyEligible: {
   international: { type: Boolean, default: false }
 },
 
-  
+
 
   /* ================= LOCATION ================= */
   location: {
@@ -150,6 +153,7 @@ shippingAddress:{
     enum:['pending','approved','rejected'],
     default:'pending'
   },
+ 
 
   /* ================= OTP ================= */
   otp: {

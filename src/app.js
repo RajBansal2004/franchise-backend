@@ -15,7 +15,7 @@ const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
 require('./cron');
 require('./cron/bpReset');
-
+// require('./cron/incomeReset');
 
 const app = express();
 app.use(express.json());
