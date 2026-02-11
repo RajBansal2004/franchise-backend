@@ -23,8 +23,10 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-module.exports = multer({
+const uploadKyc = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 2 * 1024 * 1024 } 
+  limits: { fileSize: 2 * 1024 * 1024 }
 });
+
+module.exports = uploadKyc;

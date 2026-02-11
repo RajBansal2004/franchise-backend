@@ -133,20 +133,28 @@ shippingAddress:{
 },
   /* ================= KYC ================= */
 
-  kycDocs: {
+kycDocs: {
+
   aadhaar: {
     number: String,
-    image: String
+    frontImage: String,
+    backImage: String
   },
+
   pan: {
     number: String,
-    image: String
+    frontImage: String,
+    backImage: String
   },
+
   voterId: {
     number: String,
-    image: String
+    frontImage: String,
+    backImage: String
   }
+
 },
+
 
   kycStatus: {
     type: String,

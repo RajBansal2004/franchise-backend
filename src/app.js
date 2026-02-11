@@ -13,6 +13,7 @@ const errorHandler = require('./middlewares/error.middleware');
 const locationRoute =require('./routes/location.routes');
 const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
+const kycRoutes = require('./routes/kycRoutes');
 require('./cron');
 require('./cron/bpReset');
 require('./cron/incomeReset');
@@ -33,6 +34,8 @@ app.use('/tree', require('./routes/tree.routes'));
 app.use('/report', reportRoutes);
 app.use('/user', userRoutes);
 app.use("/uploads", express.static("uploads"));
+app.use('/kyc', kycRoutes);
+
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
 

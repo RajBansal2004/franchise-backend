@@ -2,38 +2,46 @@ const User = require('../models/User');
 
 module.exports = async function addBP(userId, bp) {
 
- let user = await User.findById(userId);
- if (!user) return;
+  let user = await User.findById(userId);
+  if (!user) return;
 
- // ⭐ Self BP
- user.selfBP += bp;
- await user.save();
+  // ✅ SELF BP
+  user.selfBP += bp;
+  await user.save();
 
- let parentId = user.parentId;
- let position = user.position;
+  let parentId = user.parentId;
+  let position = user.position;
 
- while (parentId) {
+  while (parentId) {
 
-  const parent = await User.findById(parentId);
-  if (!parent) break;
+    const parent = await User.findById(parentId);
+    if (!parent) break;
 
-  if (position === 'LEFT') {
+    if (position === 'LEFT') {
 
-    parent.leftBP += bp;
-    parent.weeklyLeftBP += bp;
-    parent.monthlyLeftBP += bp;
+      parent.leftBP += bp;
 
-  } else {
+      // ⭐ Weekly
+      parent.weeklyLeftBP += bp;
 
-    parent.rightBP += bp;
-    parent.weeklyRightBP += bp;
-    parent.monthlyRightBP += bp;
+      // ⭐ Monthly
+      parent.monthlyLeftBP += bp;
 
+    } else {
+
+      parent.rightBP += bp;
+
+      // ⭐ Weekly
+      parent.weeklyRightBP += bp;
+
+      // ⭐ Monthly
+      parent.monthlyRightBP += bp;
+    }
+
+    await parent.save();
+
+    position = parent.position;
+    parentId = parent.parentId;
   }
-
-  await parent.save();
-
-  position = parent.position;
-  parentId = parent.parentId;
- }
 };
+
