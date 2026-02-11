@@ -15,12 +15,12 @@ const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
 require('./cron');
 require('./cron/bpReset');
-// require('./cron/incomeReset');
+require('./cron/incomeReset');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use(morgan('dev'));
+app.use(morgan('dev')); 
 app.use('/auth', authRoutes);
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
