@@ -122,7 +122,10 @@ monthlyRightBP:{ type:Number, default:0 },
 
 // ===== Profile =====
 
-photo:String,
+photo: {
+  type: String,
+},
+
 
 shippingAddress:{
   addressLine: { type: String }

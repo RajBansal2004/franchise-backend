@@ -157,6 +157,7 @@ exports.getUserDashboard = async (req, res) => {
 
   mobile: user.mobile,
   email: user.email,
+  photo:user.photo,
 
   // ⭐ LOCATION ADDRESS (Permanent Address)
   pincode: user.location?.pincode || "",
@@ -296,7 +297,12 @@ exports.updatePhoto = async (req, res) => {
       return res.status(404).json({ msg: "User not found" });
     }
 
-    user.photo = req.body.photo;
+    if (!req.file) {
+      return res.status(400).json({ msg: "No photo uploaded" });
+    }
+
+    // Save file path in database
+    user.photo = `/uploads/${req.file.filename}`;
 
     await user.save();
 
@@ -309,5 +315,6 @@ exports.updatePhoto = async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 };
+
 
 
