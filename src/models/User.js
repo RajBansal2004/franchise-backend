@@ -125,10 +125,7 @@ monthlyRightBP:{ type:Number, default:0 },
 photo:String,
 
 shippingAddress:{
- state:String,
- city:String,
- pincode:String,
- addressLine:String
+  addressLine: { type: String }
 },
   /* ================= KYC ================= */
 

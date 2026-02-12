@@ -11,7 +11,7 @@ router.get('/dashboard', auth, ctrl.getUserDashboard);
 router.put('/shipping-address', auth, ctrl.updateShippingAddress);
 
 // Profile
-router.put('/profile', auth, ctrl.updateProfile);
+router.put('/profile', auth, ctrl.updatePhoto);
 
 // ID Card
 router.get('/id-card', auth, ctrl.getIdCard);

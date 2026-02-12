@@ -221,27 +221,6 @@ shippingAddress: user.shippingAddress || {},
 };
 
 
-
-
-exports.updateProfile = async(req,res)=>{
- try{
-
-  const { shippingAddress, photo } = req.body;
-
-  const user = await User.findByIdAndUpdate(
-   req.user.id,
-   { shippingAddress, photo },
-   { new:true }
-  );
-
-  res.json(user);
-
- }catch(err){
-  res.status(500).json({msg:"Profile update error"});
- }
-};
-
-
 exports.getIdCard = async (req, res) => {
  try {
 
@@ -283,31 +262,52 @@ exports.getIdCard = async (req, res) => {
 
 /* ===== Update Shipping Address ===== */
 
-exports.updateShippingAddress = async (req,res)=>{
- try{
+exports.updateShippingAddress = async (req, res) => {
+  try {
 
-  const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
 
-  if(!user){
-    return res.status(404).json({msg:"User not found"});
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    const { addressLine } = req.body;
+
+    user.shippingAddress = { addressLine };
+
+    await user.save();
+
+    res.json({
+      msg: "Shipping address updated successfully",
+      shippingAddress: user.shippingAddress
+    });
+
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
   }
+};
 
-  const { addressLine } = req.body;
+exports.updatePhoto = async (req, res) => {
+  try {
 
-  user.shippingAddress = {
-    addressLine
-  };
-    
-  await user.save();
+    const user = await User.findById(req.user._id);
 
-  res.json({
-    msg:"Shipping address updated successfully",
-    shippingAddress:user.shippingAddress
-  });
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
 
- }catch(err){
-  res.status(500).json({msg:err.message});
- }
+    user.photo = req.body.photo;
+
+    await user.save();
+
+    res.json({
+      msg: "Photo updated successfully",
+      photo: user.photo
+    });
+
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
 };
 
 
