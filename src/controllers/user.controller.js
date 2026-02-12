@@ -158,6 +158,7 @@ exports.getUserDashboard = async (req, res) => {
   mobile: user.mobile,
   email: user.email,
   photo:user.photo,
+  dob:user.dob,
 
   // ⭐ LOCATION ADDRESS (Permanent Address)
   pincode: user.location?.pincode || "",
