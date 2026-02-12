@@ -85,39 +85,46 @@ exports.getStepPending = async (req, res) => {
 
 exports.getRoyaltySummary = async (req, res) => {
   try {
-    const user = req.user;
 
-    let levels = [];
+    const user = await User.findById(req.user._id);
 
-    for (let level = 5; level <= 15; level++) {
-      let members = 0;
+    const minBP = Math.min(user.monthlyLeftBP || 0, user.monthlyRightBP || 0);
 
-      try {
-        members = await countLevelMembers(user._id, level);
-      } catch (e) {
-        console.error(`Level ${level} error:`, e.message);
-      }
+    const ROYALTY_CONFIG = [
+      { level: 5, percentage: "1-4%", target: 5000 },
+      { level: 6, percentage: "1-3%", target: 9000 },
+      { level: 7, percentage: "1-2%", target: 12000 },
+      { level: 8, percentage: "1%", target: 15000 },
+      { level: 9, percentage: "0.25-1%", target: 25000 },
+      { level: 10, percentage: "0.25-0.75%", target: 50000 },
+      { level: 11, percentage: "0.25-0.50%", target: 100000 },
+      { level: 12, percentage: "0.25%", target: 200000 },
+      { level: 13, percentage: "0.20%", target: 300000 },
+      { level: 14, percentage: "0.15%", target: 400000 },
+      { level: 15, percentage: "0.10%", target: 600000 }
+    ];
 
-      levels.push({
-        level,
-        members,
-        percentage: ROYALTY_MAP[level],
-        eligible: members > 0
-      });
-    }
+    const levels = ROYALTY_CONFIG.map(item => ({
+      level: item.level,
+      percentage: item.percentage,
+      target: item.target,
+      achieved: minBP >= item.target
+    }));
 
     res.json({
-      totalIncome: user.totalIncome || 0,
-      monthlyIncome: user.monthlyIncome || 0,
-      wallet: user.incomeWallet || 0,
+      currentLevel: user.level,
+      leftBP: user.monthlyLeftBP || 0,
+      rightBP: user.monthlyRightBP || 0,
+      consideredBP: minBP,
+      royaltyIncome: user.royaltyIncome || 0,
       levels
     });
 
   } catch (err) {
-    console.error("ROYALTY API CRASH:", err);
     res.status(500).json({ message: err.message });
   }
 };
+
 
 
 
@@ -316,6 +323,3 @@ exports.updatePhoto = async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 };
-
-
-

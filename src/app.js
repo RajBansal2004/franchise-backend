@@ -17,6 +17,9 @@ const kycRoutes = require('./routes/kycRoutes');
 require('./cron');  
 require('./cron/bpReset');
 require('./cron/incomeReset');
+const startMonthlyReset = require('./cron/monthlyReset');
+
+startMonthlyReset();
 
 const app = express();
 app.use(express.json());
@@ -38,6 +41,7 @@ app.use('/kyc', kycRoutes);
 
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
+app.use('/api', require('./routes/test'));
 
 app.use(errorHandler);
 

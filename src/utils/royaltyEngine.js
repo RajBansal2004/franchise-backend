@@ -1,34 +1,29 @@
 const royaltyConfig = require('../config/royalty.config');
 const User = require('../models/User');
 
-async function calculateRoyalty(userId, companyTurnover){
+async function calculateRoyalty(user){
 
  try{
 
-   const user = await User.findById(userId);
+   if(user.level < 5) return;
 
-   if(!user) return;
-
-   const userLevel = user.level;
-
-   // find slab
-   const royaltySlab = royaltyConfig.find(r => r.level === userLevel);
-
+   const royaltySlab = royaltyConfig.find(r => r.level === user.level);
    if(!royaltySlab) return;
 
-   // check target eligibility
-   if(companyTurnover < royaltySlab.target) return;
+   // ⭐ Pair BP (client logic)
+   const pairBP = Math.min(user.monthlyLeftBP , user.monthlyRightBP);
 
-   // percentage choose (max percent apply kar rahe)
    const percent = royaltySlab.maxPercent;
 
-   const royaltyIncome = (companyTurnover * percent) / 100;
+   const royaltyIncome = (pairBP * percent) / 100;
 
-   user.royaltyIncome += royaltyIncome;
-   user.incomeWallet += royaltyIncome;
-   user.totalIncome += royaltyIncome;
+   user.royaltyIncome = royaltyIncome;
 
-   await user.save();
+   if(royaltyIncome >= royaltySlab.target){
+      user.royaltyEligible.regional = true;
+   } else {
+      user.royaltyEligible.regional = false;
+   }
 
  }catch(err){
    console.log("Royalty Error", err.message);
