@@ -4,13 +4,8 @@ const { countLevelMembers } = require('../utils/levelCounter');
 const calculateStepPending = require('../utils/stepPendingCalculator');
 const Product = require('../models/Product');
 const checkLevels = require('../utils/levelChecker');
+const ROYALTY_CONFIG = require('../config/royalty.config');
 
-
-const ROYALTY_MAP = {
-  5: 1, 6: 2, 7: 3, 8: 4, 9: 5,
-  10: 6, 11: 7, 12: 8, 13: 10,
-  14: 12, 15: 15
-};
 
 exports.purchaseProduct = async (req, res) => {
   try {
@@ -88,34 +83,31 @@ exports.getRoyaltySummary = async (req, res) => {
 
     const user = await User.findById(req.user._id);
 
-    const minBP = Math.min(user.monthlyLeftBP || 0, user.monthlyRightBP || 0);
+    const leftBP = user.monthlyLeftBP || 0;
+    const rightBP = user.monthlyRightBP || 0;
 
-    const ROYALTY_CONFIG = [
-      { level: 5, percentage: "1-4%", target: 5000 },
-      { level: 6, percentage: "1-3%", target: 9000 },
-      { level: 7, percentage: "1-2%", target: 12000 },
-      { level: 8, percentage: "1%", target: 15000 },
-      { level: 9, percentage: "0.25-1%", target: 25000 },
-      { level: 10, percentage: "0.25-0.75%", target: 50000 },
-      { level: 11, percentage: "0.25-0.50%", target: 100000 },
-      { level: 12, percentage: "0.25%", target: 200000 },
-      { level: 13, percentage: "0.20%", target: 300000 },
-      { level: 14, percentage: "0.15%", target: 400000 },
-      { level: 15, percentage: "0.10%", target: 600000 }
-    ];
+    const consideredBP = Math.min(leftBP, rightBP);
 
-    const levels = ROYALTY_CONFIG.map(item => ({
-      level: item.level,
-      percentage: item.percentage,
-      target: item.target,
-      achieved: minBP >= item.target
-    }));
+    const levels = ROYALTY_CONFIG.map(item => {
+
+      const percentage =
+        item.minPercent === item.maxPercent
+          ? `${item.minPercent}%`
+          : `${item.minPercent}-${item.maxPercent}%`;
+
+      return {
+        level: item.level,
+        targetAmount: item.target,   // 👈 important rename
+        percentage,
+        status: consideredBP >= item.target ? "Eligible" : "Not Eligible"
+      };
+    });
 
     res.json({
       currentLevel: user.level,
-      leftBP: user.monthlyLeftBP || 0,
-      rightBP: user.monthlyRightBP || 0,
-      consideredBP: minBP,
+      leftBP,
+      rightBP,
+      consideredBP,
       royaltyIncome: user.royaltyIncome || 0,
       levels
     });
