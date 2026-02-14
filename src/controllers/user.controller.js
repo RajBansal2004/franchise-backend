@@ -33,6 +33,7 @@ exports.purchaseProduct = async (req, res) => {
       }
 
       await parent.save();
+      await checkLevels(parent);
     }
 
     // 🔹 LEVEL CHECK
