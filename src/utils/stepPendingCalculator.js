@@ -6,23 +6,18 @@ function calculateStepPending(user) {
   const leftBP = user.leftBP || 0;
   const rightBP = user.rightBP || 0;
 
-  // ✅ binary weak leg
-  let availableBP = Math.min(leftBP, rightBP);
-
   for (const step of steps) {
-    // 🔹 calculate remaining from available pool
-    const remainBonusBP = Math.max(step.leftReq - availableBP, 0);
-    const remainIncentiveBP = Math.max(step.rightReq - availableBP, 0);
+
+    // ✅ Direct check (independent level)
+    const remainBonusBP =
+      leftBP >= step.leftReq ? 0 : step.leftReq;
+
+    const remainIncentiveBP =
+      rightBP >= step.rightReq ? 0 : step.rightReq;
 
     const completed =
       remainBonusBP === 0 &&
       remainIncentiveBP === 0;
-
-    // ✅ if completed → consume BP
-    if (completed) {
-      availableBP -= Math.max(step.leftReq, step.rightReq);
-      if (availableBP < 0) availableBP = 0;
-    }
 
     result.push({
       step: step.step,
@@ -41,16 +36,15 @@ function calculateStepPending(user) {
     });
   }
 
- const completedSteps = result.filter(r => r.status === 'Completed').length;
+  const completedSteps = result.filter(r => r.status === 'Completed').length;
 
-return {
-  totalLevel: steps.length,
-  completed: completedSteps,
-  pending: steps.length - completedSteps,
-  currentLevel: completedSteps, 
-  steps: result
-};
-
+  return {
+    totalLevel: steps.length,
+    completed: completedSteps,
+    pending: steps.length - completedSteps,
+    currentLevel: completedSteps, // 🔵 BLUE LEVEL
+    steps: result
+  };
 }
 
 module.exports = calculateStepPending;
