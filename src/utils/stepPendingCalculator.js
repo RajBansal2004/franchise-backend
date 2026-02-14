@@ -41,7 +41,16 @@ function calculateStepPending(user) {
     });
   }
 
-  return result;
+ const completedSteps = result.filter(r => r.status === 'Completed').length;
+
+return {
+  totalLevel: steps.length,
+  completed: completedSteps,
+  pending: steps.length - completedSteps,
+  currentLevel: completedSteps, 
+  steps: result
+};
+
 }
 
 module.exports = calculateStepPending;
