@@ -6,11 +6,18 @@ function calculateStepPending(user) {
   const leftBP = user.leftBP || 0;
   const rightBP = user.rightBP || 0;
 
-  for (const step of steps) {
-    const remainLeft = Math.max(step.leftReq - leftBP, 0);
-    const remainRight = Math.max(step.rightReq - rightBP, 0);
+  // ✅ binary logic
+  const weak = Math.min(leftBP, rightBP);
+  const strong = Math.max(leftBP, rightBP);
 
-    const completed = remainLeft === 0 && remainRight === 0;
+  for (const step of steps) {
+
+    const remainBonusBP = Math.max(step.leftReq - weak, 0);
+    const remainIncentiveBP = Math.max(step.rightReq - strong, 0);
+
+    const completed =
+      remainBonusBP === 0 &&
+      remainIncentiveBP === 0;
 
     result.push({
       step: step.step,
@@ -22,8 +29,8 @@ function calculateStepPending(user) {
       userLeftBP: leftBP,
       userRightBP: rightBP,
 
-      remainBonusBP: remainLeft,
-      remainIncentiveBP: remainRight,
+      remainBonusBP,
+      remainIncentiveBP,
 
       status: completed ? 'Completed' : 'Pending'
     });
