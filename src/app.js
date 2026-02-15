@@ -38,6 +38,7 @@ app.use('/report', reportRoutes);
 app.use('/user', userRoutes);
 app.use("/uploads", express.static("uploads"));
 app.use('/kyc', kycRoutes);
+app.use('/franchise', require('./routes/franchiseRoutes'));
 
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
