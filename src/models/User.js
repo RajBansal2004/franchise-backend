@@ -60,6 +60,15 @@ rightChildren: [
     type: Number,
     default: 0
   },
+   franchiseName: {
+  type: String,
+  default: ''
+},
+
+franchiseOwnerName: {
+  type: String,
+  default: ''
+},
 
   /* ================= BP & WALLET ================= */
   selfBP: { type: Number, default: 0 },

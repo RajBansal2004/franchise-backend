@@ -316,3 +316,23 @@ exports.updatePhoto = async (req, res) => {
     res.status(500).json({ msg: err.message });
   }
 };
+
+
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      'name franchiseName franchiseOwnerName email mobile'
+    );
+
+    res.json({
+      name: user.name,
+      franchiseName: user.franchiseName,
+      franchiseOwnerName: user.franchiseOwnerName,
+      email: user.email,
+      mobile: user.mobile
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
