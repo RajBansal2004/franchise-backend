@@ -290,23 +290,17 @@ exports.createFranchiseByAdmin = async (req, res) => {
       ownerName
     } = req.body;
 
-    if (!fullName || !organizationName || !mobile || !kycDocs) {
-      return res.status(400).json({ message: 'Required fields missing' });
-    }
-
-    if (
-      !kycDocs.aadhaar &&
-      !kycDocs.voterId &&
-      !kycDocs.drivingLicence
-    ) {
+    // ✅ basic validation
+    if (!fullName || !mobile) {
       return res.status(400).json({
-        message: 'Any one KYC document required'
+        message: 'Full name and mobile required'
       });
     }
 
     const password = generatePassword();
     const franchiseId = generateFranchiseId();
 
+    // ✅ create user
     const franchise = await User.create({
       fullName,
       fatherName,
@@ -316,6 +310,9 @@ exports.createFranchiseByAdmin = async (req, res) => {
       email,
       franchiseName,
       franchiseOwnerName: ownerName,
+      uniqueId: franchiseId,
+      password,
+      role: 'FRANCHISE',
 
       location: {
         state,
@@ -327,31 +324,25 @@ exports.createFranchiseByAdmin = async (req, res) => {
         addressLine: address
       }
     });
-if (kycType && kycNumber) {
-      user.kycDocs[kycType] = {
+
+    // ✅ set KYC dynamically
+    if (kycType && kycNumber) {
+      franchise.kycDocs[kycType] = {
         number: kycNumber
       };
+      await franchise.save();
     }
 
-    await user.save();
-
-    res.json({ success: true, user });
-    // 📲 SEND SMS
-//     await sendSMS({
-//       mobile,
-//       message: `Welcome Franchise!
-// ID: ${franchiseId}
-// Password: ${password}
-// Login: Your registered ID`
-//     });
-
     res.status(201).json({
-      message: 'Franchise created & SMS sent',
+      message: 'Franchise created successfully',
       franchiseId,
-      password
+      password,
+      franchise
     });
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
+

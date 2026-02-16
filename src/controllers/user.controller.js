@@ -321,7 +321,7 @@ exports.updatePhoto = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select(
-      'name franchiseName franchiseOwnerName email mobile'
+      'fullName franchiseName franchiseOwnerName email mobile fatherName gender dob location shippingAddress'
     );
 
     res.json(user);
