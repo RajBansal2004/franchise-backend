@@ -89,7 +89,7 @@ exports.getOrders = async (req,res)=>{
  try{
 
   const orders = await Order.find()
-   .populate('user','name email')
+.populate('user','fullName email mobile role')
    .populate('items.product','title price');
 
   res.json(orders);
@@ -197,6 +197,18 @@ if(order.paymentStatus !== "paid"){
 
   // ⭐ BP DISTRIBUTION
   await addBP(order.user, order.totalBP);
+  // ⭐ FRANCHISE RETAIL INCOME
+if(order.orderFrom === "FRANCHISE" && order.retailProfit > 0){
+
+  const franchise = await User.findById(order.franchiseId);
+
+  if(franchise){
+    franchise.incomeWallet += order.retailProfit;
+    franchise.totalIncome += order.retailProfit;
+    await franchise.save();
+  }
+}
+
   await matchingIncome(order.user);
 
   const user = await User.findById(order.user);

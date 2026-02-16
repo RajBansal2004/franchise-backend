@@ -1,4 +1,31 @@
 const Franchise = require('../models/Franchise');
+const Product = require('../models/Product');
+
+exports.getFranchiseStock = async (req, res) => {
+  try {
+    const products = await Product.find({ isActive: true })
+      .select('title price bp stock gst');
+
+    const formatted = products.map(p => ({
+      productId: p._id,
+      productName: p.title,
+      price: p.price,
+      availableQty: p.stock,
+      bpPoint: p.bp,
+      totalValue: p.price * p.stock,
+      totalBP: p.bp * p.stock
+    }));
+
+    res.json({
+      success: true,
+      count: formatted.length,
+      data: formatted
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 exports.createFranchise = async (req,res) => {
   try {

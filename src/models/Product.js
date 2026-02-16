@@ -11,6 +11,10 @@ const productSchema = new mongoose.Schema({
   category: String,
 
   price: { type:Number, required:true },
+franchisePrice: {
+  type: Number,
+  default: 0
+},
 
   gst: { type:Number, default:0 },
 
