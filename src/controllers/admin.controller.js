@@ -301,37 +301,39 @@ exports.createFranchiseByAdmin = async (req, res) => {
     const franchiseId = generateFranchiseId();
 
     // ✅ create user
-    const franchise = await User.create({
-      fullName,
-      fatherName,
-      gender,
-      dob,
-      mobile,
-      email,
-      franchiseName,
-      franchiseOwnerName: ownerName,
-      uniqueId: franchiseId,
-      password,
-      role: 'FRANCHISE',
+   const franchise = await User.create({
+  fullName,
+  fatherName,
+  gender,
+  dob,
+  mobile,
+  email,
 
-      location: {
-        state,
-        district,
-        pincode
-      },
+  role: 'FRANCHISE',          // ⭐ VERY IMPORTANT
+  organizationName: franchiseName, // ⭐ FIX
 
-      shippingAddress: {
-        addressLine: address
-      }
-    });
+  franchiseName,
+  franchiseOwnerName: ownerName,
 
-    // ✅ set KYC dynamically
-    if (kycType && kycNumber) {
-      franchise.kycDocs[kycType] = {
-        number: kycNumber
-      };
-      await franchise.save();
-    }
+  location: {
+    state,
+    district,
+    pincode
+  },
+
+  shippingAddress: {
+    addressLine: address
+  }
+});
+
+
+   if (kycType && kycNumber) {
+  franchise.kycDocs[kycType] = {
+    number: kycNumber
+  };
+  await franchise.save();
+}
+
 
     res.status(201).json({
       message: 'Franchise created successfully',
