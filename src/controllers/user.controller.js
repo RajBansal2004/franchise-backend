@@ -324,13 +324,7 @@ exports.getProfile = async (req, res) => {
       'name franchiseName franchiseOwnerName email mobile'
     );
 
-    res.json({
-      name: user.name,
-      franchiseName: user.franchiseName,
-      franchiseOwnerName: user.franchiseOwnerName,
-      email: user.email,
-      mobile: user.mobile
-    });
+    res.json(user);
 
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

@@ -273,7 +273,22 @@ exports.getUsers = async (req, res) => {
 
 exports.createFranchiseByAdmin = async (req, res) => {
   try {
-    const { fullName,organizationName, mobile, email, kycDocs, location } = req.body;
+    const {
+      fullName,
+      fatherName,
+      gender,
+      dob,
+      mobile,
+      email,
+      pincode,
+      district,
+      state,
+      address,
+      kycType,
+      kycNumber,
+      franchiseName,
+      ownerName
+    } = req.body;
 
     if (!fullName || !organizationName || !mobile || !kycDocs) {
       return res.status(400).json({ message: 'Required fields missing' });
@@ -294,17 +309,33 @@ exports.createFranchiseByAdmin = async (req, res) => {
 
     const franchise = await User.create({
       fullName,
-      organizationName,
+      fatherName,
+      gender,
+      dob,
       mobile,
       email,
-      password,
-      plainPassword: password,
-      uniqueId: franchiseId,
-      role: 'FRANCHISE',
-      location,
-      kycDocs
-    });
+      franchiseName,
+      franchiseOwnerName: ownerName,
 
+      location: {
+        state,
+        district,
+        pincode
+      },
+
+      shippingAddress: {
+        addressLine: address
+      }
+    });
+if (kycType && kycNumber) {
+      user.kycDocs[kycType] = {
+        number: kycNumber
+      };
+    }
+
+    await user.save();
+
+    res.json({ success: true, user });
     // 📲 SEND SMS
 //     await sendSMS({
 //       mobile,
