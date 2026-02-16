@@ -311,7 +311,9 @@ exports.createFranchiseByAdmin = async (req, res) => {
 
   role: 'FRANCHISE',          // ⭐ VERY IMPORTANT
   organizationName: franchiseName, // ⭐ FIX
-
+ uniqueId: franchiseId,        // ⭐ REQUIRED
+      password: password,           // ⭐ REQUIRED
+      plainPassword: password,
   franchiseName,
   franchiseOwnerName: ownerName,
 
