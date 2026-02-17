@@ -229,3 +229,69 @@ if(order.orderFrom === "FRANCHISE" && order.retailProfit > 0){
   res.status(500).json({error:err.message});
  }
 };
+
+
+
+exports.createFranchiseActivationOrder = async (req, res) => {
+  try {
+    const franchiseId = req.user.id;
+    const { userUniqueId, items } = req.body;
+
+    // 🔍 find user
+    const user = await User.findOne({ uniqueId: userUniqueId });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isActive) {
+      return res.status(400).json({ message: "User already active" });
+    }
+
+    // 🛒 calculate items
+    let totalAmount = 0;
+    let totalBP = 0;
+    let orderItems = [];
+
+    for (let item of items) {
+      const product = await Product.findById(item.product);
+
+      if (!product) {
+        return res.status(400).json({ message: "Product invalid" });
+      }
+
+      if (product.stock < item.qty) {
+        return res.status(400).json({ message: "Stock insufficient" });
+      }
+
+      totalAmount += product.price * item.qty;
+      totalBP += product.bp * item.qty;
+
+      orderItems.push({
+        product: product._id,
+        qty: item.qty,
+        price: product.price,
+        bp: product.bp
+      });
+    }
+
+    const order = await Order.create({
+      orderId: generateOrderId(),
+      user: user._id,
+      orderFrom: 'FRANCHISE',
+      franchiseId,
+      items: orderItems,
+      totalAmount,
+      totalBP,
+      paymentStatus: 'paid'
+    });
+
+    res.json({
+      success: true,
+      order
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

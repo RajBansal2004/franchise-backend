@@ -43,4 +43,7 @@ router.put('/:id/approve',
   orderCtrl.approveOrder
 );
 
+router.post('/franchise-activation', auth, permit('FRANCHISE'), orderCtrl.createFranchiseActivationOrder);
+
+
 module.exports = router;

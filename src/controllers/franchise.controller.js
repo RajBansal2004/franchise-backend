@@ -1,5 +1,28 @@
 const Franchise = require('../models/Franchise');
 const Product = require('../models/Product');
+const User = require('../models/User');
+
+exports.searchUserByUniqueId = async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+
+    const user = await User.findOne({ uniqueId }).select(
+      'uniqueId fullName mobile email isActive'
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      user
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 exports.getFranchiseStock = async (req, res) => {
   try {

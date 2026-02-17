@@ -8,6 +8,8 @@ const ctrl = require('../controllers/franchise.controller');
 router.get('/stock', auth, ctrl.getFranchiseStock);
 router.get('/dashboard', auth, getFranchiseDashboard);
 router.get('/profile', auth, getProfile);
+router.get('/search-user/:uniqueId', auth, ctrl.searchUserByUniqueId);
+
 
 
 module.exports = router;
