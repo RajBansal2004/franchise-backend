@@ -26,6 +26,7 @@ exports.activateUserId = async (req, res) => {
 
     // ✅ activate user
     user.isActive = true;
+    user.activatedBy = franchiseId;
     await user.save();
 
     // ✅ deduct stock
