@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema({
 },
 
   isActive: { type: Boolean, default: true }, 
+  activatedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'User',
+  default: null
+},
+
   isBlocked: { type: Boolean, default: false },
   role: {
     type: String,
