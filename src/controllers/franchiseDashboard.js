@@ -12,10 +12,11 @@ exports.getFranchiseDashboard = async (req, res) => {
       franchiseId,
     });
 
-    const activeIds = await User.countDocuments({
-      isActive: true,
-      activatedBy: franchiseId,
-    });
+   const activeIds = await User.countDocuments({
+  isActive: true,
+  activatedBy: new mongoose.Types.ObjectId(franchiseId),
+});
+
 
     const franchise = await User.findById(franchiseId);
 
