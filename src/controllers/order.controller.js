@@ -230,6 +230,20 @@ if(order.orderFrom === "FRANCHISE" && order.retailProfit > 0){
  }
 };
 
+exports.getMyOrders = async (req, res) => {
+  try {
+    const franchiseId = req.user.id;
+
+    const orders = await Order.find({
+      franchiseId: franchiseId
+    }).sort({ createdAt: -1 });
+
+    res.json(orders);
+
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+};
 
 
 exports.createFranchiseActivationOrder = async (req, res) => {

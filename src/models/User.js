@@ -41,7 +41,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-
+stock: {
+  type: Number,
+  default: 0
+},
   position: {
     type: String,
     enum: ['LEFT', 'RIGHT']

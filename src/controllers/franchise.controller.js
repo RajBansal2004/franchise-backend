@@ -2,75 +2,64 @@ const Franchise = require('../models/Franchise');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const Order = require('../models/Order');
+const addBP = require("../utils/addBP");
 
 exports.activateUserId = async (req, res) => {
   try {
-    const { userId, quantity } = req.body;
     const franchiseId = req.user.id;
+    const { userId, quantity } = req.body;
 
     const franchise = await User.findById(franchiseId);
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!franchise) {
+      return res.status(404).json({ message: "Franchise not found" });
     }
 
+    // ✅ stock check
     if (franchise.stock < quantity) {
-      return res.status(400).json({ message: 'Not enough stock' });
+      return res.status(400).json({ message: "Insufficient stock" });
     }
 
-    // ✅ Get activation product (first active product)
-    const product = await Product.findOne({ isActive: true });
-
-    if (!product) {
-      return res.status(400).json({ message: 'Product not found' });
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ calculate
-    const priceWithGST =
-      product.price + (product.price * (product.gst || 0)) / 100;
+    // ✅ activate user
+    user.isActive = true;
+    await user.save();
 
-    const totalAmount = priceWithGST * quantity;
-    const totalBP = product.bp * quantity;
-
-    // ✅ create order
-    const order = await Order.create({
-      orderId: 'ORD' + Date.now(),
-      user: user._id,
-      orderFrom: 'FRANCHISE',
-      franchiseId,
-      items: [
-        {
-          product: product._id,
-          qty: quantity,
-          price: priceWithGST,
-          bp: product.bp
-        }
-      ],
-      totalAmount,
-      totalBP,
-      paymentStatus: 'paid'
-    });
-
-    // ✅ deduct franchise stock
+    // ✅ deduct stock
     franchise.stock -= quantity;
     await franchise.save();
 
-    // ✅ activate user
-    if (!user.isActive) {
-      user.isActive = true;
-      await user.save();
-    }
+    // ✅ create order
+    const order = await Order.create({
+      orderId: "ORD" + Date.now(),
+      user: user._id,
+      orderFrom: "FRANCHISE",
+      franchiseId: franchiseId,
+      items: [],
+      totalAmount: 0,
+      totalBP: 0,
+      paymentStatus: "paid",
+      status: "approved",
+      approvedAt: new Date()
+    });
+
+    // ✅ give BP
+    await addBP(user._id, 100); // adjust BP
 
     res.json({
-      success: true,
-      message: 'ID activated & product sold',
-      order
+      message: "ID activated successfully",
+      orderId: order.orderId
     });
+
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Activation failed" });
   }
 };
+
 
 exports.searchUserByUniqueId = async (req, res) => {
   try {

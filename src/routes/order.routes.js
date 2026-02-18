@@ -36,6 +36,7 @@ router.get('/stats', auth, orderCtrl.getUserOrderStats);
 
 // ⭐ ORDER DASHBOARD
 router.get('/dashboard', auth, orderCtrl.getUserOrderDashboard);
+router.get('/my-orders', auth, orderCtrl.getMyOrders);
 
 
 // ⭐ APPROVE ORDER (ADMIN)
