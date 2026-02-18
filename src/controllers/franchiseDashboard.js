@@ -17,7 +17,7 @@ exports.getFranchiseDashboard = async (req, res) => {
       activatedBy: franchiseId,
     });
 
-    const franchise = await Franchise.findById(franchiseId);
+    const franchise = await User.findById(franchiseId);
 
     res.json({
       totalOrders,
