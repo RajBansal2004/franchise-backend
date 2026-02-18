@@ -13,6 +13,8 @@ router.post('/', auth, orderCtrl.createOrder);
 // ⭐ GET ALL ORDERS (ADMIN)
 router.get('/', auth, permit('ADMIN','SUBADMIN'), orderCtrl.getOrders);
 
+router.get( '/my-orders', auth, permit('FRANCHISE'), orderCtrl.getFranchiseOrders
+);
 
 // ⭐ USER ORDERS LIST
 router.get('/my', auth, async (req,res)=>{
@@ -37,11 +39,7 @@ router.get('/dashboard', auth, orderCtrl.getUserOrderDashboard);
 
 
 // ⭐ APPROVE ORDER (ADMIN)
-router.put('/:id/approve',
-  auth,
-  permit('ADMIN','SUBADMIN'),
-  orderCtrl.approveOrder
-);
+router.put('/:id/approve', auth, permit('ADMIN','SUBADMIN'), orderCtrl.approveOrder);
 
 router.post('/franchise-activation', auth, permit('FRANCHISE'), orderCtrl.createFranchiseActivationOrder);
 

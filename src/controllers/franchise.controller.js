@@ -1,6 +1,76 @@
 const Franchise = require('../models/Franchise');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const Order = require('../models/Order');
+
+exports.activateUserId = async (req, res) => {
+  try {
+    const { userId, quantity } = req.body;
+    const franchiseId = req.user.id;
+
+    const franchise = await User.findById(franchiseId);
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (franchise.stock < quantity) {
+      return res.status(400).json({ message: 'Not enough stock' });
+    }
+
+    // ✅ Get activation product (first active product)
+    const product = await Product.findOne({ isActive: true });
+
+    if (!product) {
+      return res.status(400).json({ message: 'Product not found' });
+    }
+
+    // ✅ calculate
+    const priceWithGST =
+      product.price + (product.price * (product.gst || 0)) / 100;
+
+    const totalAmount = priceWithGST * quantity;
+    const totalBP = product.bp * quantity;
+
+    // ✅ create order
+    const order = await Order.create({
+      orderId: 'ORD' + Date.now(),
+      user: user._id,
+      orderFrom: 'FRANCHISE',
+      franchiseId,
+      items: [
+        {
+          product: product._id,
+          qty: quantity,
+          price: priceWithGST,
+          bp: product.bp
+        }
+      ],
+      totalAmount,
+      totalBP,
+      paymentStatus: 'paid'
+    });
+
+    // ✅ deduct franchise stock
+    franchise.stock -= quantity;
+    await franchise.save();
+
+    // ✅ activate user
+    if (!user.isActive) {
+      user.isActive = true;
+      await user.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'ID activated & product sold',
+      order
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 exports.searchUserByUniqueId = async (req, res) => {
   try {
@@ -73,3 +143,18 @@ exports.updateFranchise = async (req,res) => {
     res.json(f);
   } catch(err){ res.status(400).json({ error: err.message }); }
 };
+
+exports.getMyStock = async (req, res) => {
+  try {
+    const franchise = await User.findById(req.user.id);
+
+    res.json({
+      stock: franchise.stock || 0
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+
