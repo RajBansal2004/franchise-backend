@@ -200,7 +200,11 @@ exports.completePaymentAndActivate = async (req, res) => {
     await order.save();
 
     // ✅ add BP
-    await addBP(user._id, order.totalBP);
+// ✅ safe BP update
+user.selfBP = Number(user.selfBP || 0) + Number(order.totalBP || 0);
+
+// ⭐ IMPORTANT
+await user.save({ validateBeforeSave: false });
 
     // ✅ activate user (only once)
     if (!user.activatedBy) {
