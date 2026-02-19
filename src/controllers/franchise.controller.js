@@ -5,69 +5,6 @@ const Order = require('../models/Order');
 const addBP = require("../utils/addBP");
 const mongoose = require('mongoose');
 
-exports.activateId = async (req, res) => {
-  try {
-    const franchiseId = req.user.id;
-    const { orderId } = req.body;
-
-    if (!orderId) {
-      return res.status(400).json({ message: "OrderId required" });
-    }
-
-    // 🔍 order find
-    const order = await Order.findOne({ orderId });
-
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    if (order.paymentStatus === "paid") {
-      return res.status(400).json({ message: "Already activated" });
-    }
-
-    // 🔍 user find
-    const user = await User.findById(order.user);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // ✅ BP CALCULATION
-    const newBP = Number(user.selfBP || 0) + Number(order.totalBP || 0);
-
-    // ❗ CONDITION: minimum 51 BP
-    if (newBP < 51) {
-      return res.status(400).json({
-        message: `Minimum 51 BP required. Current after purchase: ${newBP}`
-      });
-    }
-
-    // ================= USER UPDATE =================
-    user.selfBP = newBP;
-    user.isActive = true;
-
-    await user.save(); // ✅ safest
-
-    // ================= ORDER UPDATE =================
-    order.paymentStatus = "paid";
-    order.status = "approved";
-
-    await order.save();
-
-    res.json({
-      success: true,
-      message: "ID Activated Successfully",
-      totalBP: newBP
-    });
-
-  } catch (err) {
-    console.error("Activate Error:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-
-
 exports.searchUserByUniqueId = async (req, res) => {
   try {
     const { uniqueId } = req.params;
@@ -91,7 +28,6 @@ exports.searchUserByUniqueId = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 exports.createBill = async (req, res) => {
   try {
@@ -161,8 +97,6 @@ exports.createBill = async (req, res) => {
   }
 };
 
-
-
 exports.completePaymentAndActivate = async (req, res) => {
   try {
     const franchiseId = req.user.id;
@@ -208,8 +142,8 @@ exports.completePaymentAndActivate = async (req, res) => {
 
     // ================= ACTIVATE USER =================
     user.isActive = true;
-    user.activatedBy = franchiseId;
-    await user.save({ validateBeforeSave: false });
+    user.activatedBy = new mongoose.Types.ObjectId(franchiseId);
+    await user.save();
 
     // ================= STOCK DEDUCT (FIXED) =================
     const franchise = await User.findById(franchiseId);
@@ -238,51 +172,6 @@ exports.completePaymentAndActivate = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-
-exports.activateUserAfterPayment = async (req, res) => {
-  try {
-    const franchiseId = req.user.id;
-    const { orderId } = req.body;
-
-    const order = await Order.findOne({ orderId });
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    const user = await User.findById(order.user);
-
-    const finalBP = (user.selfBP || 0) + order.totalBP;
-
-    if (finalBP < 51) {
-      return res.status(400).json({
-        message: `Minimum 51 BP required. Current: ${finalBP}`,
-      });
-    }
-
-    // ✅ mark paid
-    order.paymentStatus = "paid";
-    order.status = "approved";
-    await order.save();
-
-    // ✅ add BP
-    await addBP(user._id, order.totalBP);
-
-    // ✅ activate
-    user.isActive = true;
-    user.activatedBy = franchiseId;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: "User activated successfully",
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
 
 exports.getFranchiseStock = async (req, res) => {
   try {
@@ -345,7 +234,6 @@ exports.getMyStock = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 exports.getFranchiseDashboard = async (req, res) => {
   try {
