@@ -118,60 +118,65 @@ exports.createBill = async (req, res) => {
       return res.status(400).json({ message: "No products selected" });
     }
 
+    // ✅ MUST declare here
     let totalAmount = 0;
     let totalBP = 0;
+    const formattedItems = []; // ⭐⭐⭐ IMPORTANT
 
-    const orderItems = [];
+    // ================= LOOP =================
+    for (const it of items) {
+      const product = await Product.findById(it.productId);
 
- for (const it of items) {
-  const product = await Product.findById(it.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
 
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
-  }
+      const qty = Number(it.qty) || 1;
+      const price = Number(product.price) || 0;
+      const bp = Number(product.bp) || 0; // ⭐ FIXED (bp not bpPoint)
 
-  const qty = Number(it.qty) || 1;
-  const price = Number(product.price) || 0;
-  const bp = Number(product.bp) || 0; // ✅ FIXED
+      const lineTotal = price * qty;
+      const lineBP = bp * qty;
 
-  const lineTotal = price * qty;
-  const lineBP = bp * qty;
+      totalAmount += lineTotal;
+      totalBP += lineBP;
 
-  totalAmount += lineTotal;
-  totalBP += lineBP;
+      formattedItems.push({
+        product: product._id,
+        qty,
+        price,
+        bp,
+      });
+    }
 
-  formattedItems.push({
-    product: product._id,
-    qty,
-    price,
-    bp, // optional
-  });
-}
+    // ================= SAFETY =================
+    if (isNaN(totalBP)) totalBP = 0;
+    if (isNaN(totalAmount)) totalAmount = 0;
 
-
-
-    const orderId = "ORD" + Date.now();
-
+    // ================= CREATE ORDER =================
     const order = await Order.create({
-      orderId,
+      orderId: "ORD" + Date.now(),
       user: userId,
       franchiseId,
-      items: orderItems,
+      orderFrom: "FRANCHISE",
+      items: formattedItems,
       totalAmount,
       totalBP,
-      status: "pending",
       paymentStatus: "pending",
+      status: "pending",
     });
 
     res.json({
       success: true,
       order,
     });
+
   } catch (err) {
-    console.error("createBill error:", err);
+    console.error("Create Bill Error:", err);
     res.status(500).json({ message: err.message });
   }
 };
+
 
 
 exports.completePaymentAndActivate = async (req, res) => {
