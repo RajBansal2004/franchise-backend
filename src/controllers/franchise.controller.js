@@ -10,37 +10,25 @@ exports.activateUserId = async (req, res) => {
     const franchiseId = req.user.id;
     const { userId, quantity = 1 } = req.body;
 
-    // 🔍 find franchise
     const franchise = await User.findById(franchiseId);
-    if (!franchise) {
+    if (!franchise || franchise.role !== "FRANCHISE") {
       return res.status(404).json({ message: "Franchise not found" });
     }
 
-    // 📦 stock check
+    // ✅ stock check
     if (franchise.stock < quantity) {
       return res.status(400).json({ message: "Insufficient stock" });
     }
 
-    // 🔍 USER FIND (supports _id OR uniqueId)
-    let user;
-
-    if (mongoose.Types.ObjectId.isValid(userId)) {
-      user = await User.findById(userId);
-    }
-
-    // agar _id se nahi mila → uniqueId se dhundo
-    if (!user) {
-      user = await User.findOne({ uniqueId: userId });
-    }
-
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ❌ already active check
-    if (user.isActive && user.activatedBy) {
+    // ✅ already active check (VERY IMPORTANT)
+    if (user.activatedBy) {
       return res.status(400).json({
-        message: "User already activated"
+        message: "User already activated",
       });
     }
 
@@ -70,31 +58,29 @@ exports.activateUserId = async (req, res) => {
     // ✅ give BP
     await addBP(user._id, 100);
 
-    return res.json({
+    res.json({
       success: true,
       message: "ID activated successfully",
       orderId: order.orderId
     });
 
   } catch (err) {
-    console.error("ACTIVATION ERROR:", err);
-    res.status(500).json({
-      message: "Activation failed",
-      error: err.message
-    });
+    console.error(err);
+    res.status(500).json({ message: "Activation failed" });
   }
 };
+
 
 exports.searchUserByUniqueId = async (req, res) => {
   try {
     const { uniqueId } = req.params;
 
-    const user = await User.findOne({ uniqueId }).select(
-      'uniqueId fullName mobile email isActive'
-    );
+    const user = await User.findOne({ uniqueId })
+      .populate("parentId", "fullName uniqueId")
+      .select("-password -plainPassword -otp");
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
@@ -106,6 +92,7 @@ exports.searchUserByUniqueId = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 exports.getFranchiseStock = async (req, res) => {
   try {
