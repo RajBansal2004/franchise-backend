@@ -5,12 +5,19 @@ const userSchema = new mongoose.Schema({
   /* ================= BASIC PROFILE ================= */
   fullName: { type: String, required: true },
   fatherName: {type: String, trim: true, default: null},
-  organizationName: {
-    type: String,
-    required: function () {
-      return this.role === 'FRANCHISE';
-    }
-  },
+ organizationName: {
+  type: String,
+  default: '',
+  validate: {
+    validator: function (v) {
+      if (this.role === 'FRANCHISE') {
+        return !!v;
+      }
+      return true;
+    },
+    message: 'Organization name required for franchise'
+  }
+},
 
   dob: Date,
   gender: { type: String, enum:['male','female','other'] },
@@ -189,10 +196,16 @@ kycDocs: {
 },{ timestamps:true });
 
 /* 🔐 PASSWORD HASH */
-userSchema.pre('save', async function () {
-  if(!this.isModified('password')) return;
-  this.password = await bcrypt.hash(this.password,10);
+userSchema.pre('save', async function (next) {
+  try {
+    if (!this.isModified('password')) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
+
 
 userSchema.methods.comparePassword = function(pw){
   return bcrypt.compare(pw,this.password);
