@@ -151,26 +151,31 @@ exports.getMyStock = async (req, res) => {
 exports.getFranchiseDashboard = async (req, res) => {
   try {
     const franchiseId = req.user.id;
+    const objectFranchiseId = new mongoose.Types.ObjectId(franchiseId);
 
+    // ✅ total orders
     const totalOrders = await Order.countDocuments({
-      franchiseId,
+      franchiseId: objectFranchiseId,
     });
 
-   const activeIds = await User.countDocuments({
-  isActive: true,
-  activatedBy: new mongoose.Types.ObjectId(franchiseId),
-});
+    // ✅ active ids
+    const activeIds = await User.countDocuments({
+      isActive: true,
+      activatedBy: objectFranchiseId,
+    });
 
-
-    const franchise = await User.findById(franchiseId);
+    // ✅ franchise data
+    const franchise = await User.findById(objectFranchiseId);
 
     res.json({
       totalOrders,
       activeIds,
-      stockItems: franchise.stock,
+      stockItems: franchise?.stock || 0,
       monthlyIncome: 0,
     });
   } catch (err) {
+    console.error("Dashboard error:", err);
     res.status(500).json({ message: err.message });
   }
 };
+
