@@ -143,7 +143,7 @@ exports.completePaymentAndActivate = async (req, res) => {
     // ================= ACTIVATE USER =================
     user.isActive = true;
     user.activatedBy = new mongoose.Types.ObjectId(franchiseId);
-    await user.save();
+    await user.save({ validateBeforeSave: false });
 
     // ================= STOCK DEDUCT (FIXED) =================
     const franchise = await User.findById(franchiseId);
