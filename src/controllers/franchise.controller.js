@@ -6,6 +6,19 @@ const addBP = require("../utils/addBP");
 const mongoose = require('mongoose');
 
 exports.activateUserId = async (req, res) => {
+  // 🔥 BEFORE activating user
+
+const user = await User.findById(order.user);
+
+// total BP after purchase
+const totalBP = (user.selfBP || 0) + order.totalBP;
+
+if (totalBP < 51) {
+  return res.status(400).json({
+    message: "Minimum 51 BP required to activate ID"
+  });
+}
+
   try {
     const franchiseId = req.user.id;
     const { userId, quantity = 1 } = req.body;
@@ -77,7 +90,9 @@ exports.searchUserByUniqueId = async (req, res) => {
 
     const user = await User.findOne({ uniqueId })
       .populate("parentId", "fullName uniqueId")
-      .select("-password -plainPassword -otp");
+      .select(
+        "fullName uniqueId mobile email fatherName isActive selfBP parentId"
+      );
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -87,8 +102,173 @@ exports.searchUserByUniqueId = async (req, res) => {
       success: true,
       user
     });
+  } catch (err) {
+    console.error("search error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+exports.createBill = async (req, res) => {
+  try {
+    const franchiseId = req.user.id;
+    const { userId, items } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: "No products selected" });
+    }
+
+    let totalAmount = 0;
+    let totalBP = 0;
+
+    const orderItems = [];
+
+    for (const it of items) {
+      const product = await Product.findById(it.productId);
+
+      if (!product) continue;
+
+      const qty = it.qty || 1;
+
+      totalAmount += product.price * qty;
+      totalBP += product.bpPoint * qty;
+
+      orderItems.push({
+        product: product._id,
+        productName: product.productName,
+        price: product.price,
+        bpPoint: product.bpPoint,
+        qty,
+      });
+    }
+
+    const orderId = "ORD" + Date.now();
+
+    const order = await Order.create({
+      orderId,
+      user: userId,
+      franchiseId,
+      items: orderItems,
+      totalAmount,
+      totalBP,
+      status: "pending",
+      paymentStatus: "pending",
+    });
+
+    res.json({
+      success: true,
+      order,
+    });
+  } catch (err) {
+    console.error("createBill error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+exports.completePaymentAndActivate = async (req, res) => {
+  try {
+    const franchiseId = req.user.id;
+    const { orderId } = req.body;
+
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.paymentStatus === "paid") {
+      return res.status(400).json({
+        message: "Payment already completed"
+      });
+    }
+
+    const user = await User.findById(order.user);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ✅ FINAL BP CALCULATION
+    const finalBP = (user.selfBP || 0) + order.totalBP;
+
+    if (finalBP < 51) {
+      return res.status(400).json({
+        message: `Minimum 51 BP required. Current total: ${finalBP}`
+      });
+    }
+
+    // ✅ mark order paid
+    order.paymentStatus = "paid";
+    order.status = "approved";
+    order.approvedAt = new Date();
+    await order.save();
+
+    // ✅ add BP
+    await addBP(user._id, order.totalBP);
+
+    // ✅ activate user (only once)
+    if (!user.activatedBy) {
+      user.isActive = true;
+      user.activatedBy = franchiseId;
+      await user.save();
+    }
+
+    // ✅ deduct franchise stock
+    const franchise = await User.findById(franchiseId);
+    if (franchise) {
+      franchise.stock = Math.max(0, (franchise.stock || 0) - order.items.length);
+      await franchise.save();
+    }
+
+    res.json({
+      success: true,
+      message: "Payment done & ID activated"
+    });
 
   } catch (err) {
+    console.error("completePayment error:", err);
+    res.status(500).json({ message: "Process failed" });
+  }
+};
+
+exports.activateUserAfterPayment = async (req, res) => {
+  try {
+    const franchiseId = req.user.id;
+    const { orderId } = req.body;
+
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const user = await User.findById(order.user);
+
+    const finalBP = (user.selfBP || 0) + order.totalBP;
+
+    if (finalBP < 51) {
+      return res.status(400).json({
+        message: `Minimum 51 BP required. Current: ${finalBP}`,
+      });
+    }
+
+    // ✅ mark paid
+    order.paymentStatus = "paid";
+    order.status = "approved";
+    await order.save();
+
+    // ✅ add BP
+    await addBP(user._id, order.totalBP);
+
+    // ✅ activate
+    user.isActive = true;
+    user.activatedBy = franchiseId;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "User activated successfully",
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
