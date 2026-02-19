@@ -8,26 +8,45 @@ const mongoose = require('mongoose');
 exports.activateUserId = async (req, res) => {
   try {
     const franchiseId = req.user.id;
-    const { userId, quantity } = req.body;
+    const { userId, quantity = 1 } = req.body;
 
+    // 🔍 find franchise
     const franchise = await User.findById(franchiseId);
     if (!franchise) {
       return res.status(404).json({ message: "Franchise not found" });
     }
 
-    // ✅ stock check
+    // 📦 stock check
     if (franchise.stock < quantity) {
       return res.status(400).json({ message: "Insufficient stock" });
     }
 
-    const user = await User.findById(userId);
+    // 🔍 USER FIND (supports _id OR uniqueId)
+    let user;
+
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      user = await User.findById(userId);
+    }
+
+    // agar _id se nahi mila → uniqueId se dhundo
+    if (!user) {
+      user = await User.findOne({ uniqueId: userId });
+    }
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // ❌ already active check
+    if (user.isActive && user.activatedBy) {
+      return res.status(400).json({
+        message: "User already activated"
+      });
+    }
+
     // ✅ activate user
     user.isActive = true;
-    user.activatedBy = franchiseId;
+    user.activatedBy = franchise._id;
     await user.save();
 
     // ✅ deduct stock
@@ -39,7 +58,7 @@ exports.activateUserId = async (req, res) => {
       orderId: "ORD" + Date.now(),
       user: user._id,
       orderFrom: "FRANCHISE",
-      franchiseId: franchiseId,
+      franchiseId: franchise._id,
       items: [],
       totalAmount: 0,
       totalBP: 0,
@@ -49,19 +68,22 @@ exports.activateUserId = async (req, res) => {
     });
 
     // ✅ give BP
-    await addBP(user._id, 100); // adjust BP
+    await addBP(user._id, 100);
 
-    res.json({
+    return res.json({
+      success: true,
       message: "ID activated successfully",
       orderId: order.orderId
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Activation failed" });
+    console.error("ACTIVATION ERROR:", err);
+    res.status(500).json({
+      message: "Activation failed",
+      error: err.message
+    });
   }
 };
-
 
 exports.searchUserByUniqueId = async (req, res) => {
   try {
