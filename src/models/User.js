@@ -5,19 +5,12 @@ const userSchema = new mongoose.Schema({
   /* ================= BASIC PROFILE ================= */
   fullName: { type: String, required: true },
   fatherName: {type: String, trim: true, default: null},
- organizationName: {
+organizationName: {
   type: String,
   default: '',
-  validate: {
-    validator: function (v) {
-      if (this.role === 'FRANCHISE') {
-        return !!v;
-      }
-      return true;
-    },
-    message: 'Organization name required for franchise'
-  }
+  required: false
 },
+
 
   dob: Date,
   gender: { type: String, enum:['male','female','other'] },
@@ -205,6 +198,7 @@ userSchema.pre('save', async function (next) {
     next(err);
   }
 });
+
 
 
 userSchema.methods.comparePassword = function(pw){
