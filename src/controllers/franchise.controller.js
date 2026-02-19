@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const addBP = require("../utils/addBP");
+const mongoose = require('mongoose');
 
 exports.activateUserId = async (req, res) => {
   try {
