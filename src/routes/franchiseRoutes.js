@@ -12,7 +12,6 @@ router.get('/search-user/:uniqueId', auth, ctrl.searchUserByUniqueId);
 // router.post('/activate-id', auth, permit('FRANCHISE'), ctrl.activateUserId);
 router.get('/my-stock', auth, permit('FRANCHISE'), ctrl.getMyStock);
 router.post('/create-bill', auth, permit('FRANCHISE'), ctrl.createBill);
-router.post('/complete-payment', auth, permit('FRANCHISE'), ctrl.completePaymentAndActivate);
 router.post("/activate-id", auth, permit('FRANCHISE'), ctrl.completePaymentAndActivate);
 
 

@@ -168,6 +168,10 @@ exports.completePaymentAndActivate = async (req, res) => {
     const franchiseId = req.user.id;
     const { orderId } = req.body;
 
+    if (!orderId) {
+      return res.status(400).json({ message: "OrderId required" });
+    }
+
     const order = await Order.findOne({ orderId });
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -184,8 +188,8 @@ exports.completePaymentAndActivate = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ FINAL BP CALCULATION
-    const finalBP = (user.selfBP || 0) + order.totalBP;
+    // ✅ CHECK BP CONDITION
+    const finalBP = Number(user.selfBP || 0) + Number(order.totalBP || 0);
 
     if (finalBP < 51) {
       return res.status(400).json({
@@ -193,30 +197,34 @@ exports.completePaymentAndActivate = async (req, res) => {
       });
     }
 
-    // ✅ mark order paid
+    // ================= ORDER UPDATE =================
     order.paymentStatus = "paid";
     order.status = "approved";
     order.approvedAt = new Date();
     await order.save();
 
+    // ================= ADD BP (ONLY ONCE) =================
+    await addBP(user._id, Number(order.totalBP || 0));
 
-await addBP(user._id, Number(order.totalBP || 0));
+    // ================= ACTIVATE USER =================
+    user.isActive = true;
+    user.activatedBy = franchiseId;
+    await user.save({ validateBeforeSave: false });
 
-
-    // ✅ activate user (only once)
- // ✅ activate user
-if (!user.activatedBy) {
-  user.isActive = true;
-  user.activatedBy = franchiseId;
-}
-
-// ⭐ single save only
-await user.save({ validateBeforeSave: false });
-
-    // ✅ deduct franchise stock
+    // ================= STOCK DEDUCT (FIXED) =================
     const franchise = await User.findById(franchiseId);
+
     if (franchise) {
-      franchise.stock = Math.max(0, (franchise.stock || 0) - order.items.length);
+      const totalQty = order.items.reduce(
+        (sum, item) => sum + Number(item.qty || 0),
+        0
+      );
+
+      franchise.stock = Math.max(
+        0,
+        Number(franchise.stock || 0) - totalQty
+      );
+
       await franchise.save();
     }
 
@@ -227,9 +235,10 @@ await user.save({ validateBeforeSave: false });
 
   } catch (err) {
     console.error("completePayment error:", err);
-    res.status(500).json({ message: "Process failed" });
+    res.status(500).json({ message: err.message });
   }
 };
+
 
 exports.activateUserAfterPayment = async (req, res) => {
   try {
