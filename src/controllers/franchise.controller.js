@@ -123,24 +123,27 @@ exports.createBill = async (req, res) => {
 
     const orderItems = [];
 
-    for (const it of items) {
-      const product = await Product.findById(it.productId);
+   for (const it of items) {
+  const product = await Product.findById(it.productId);
 
-      if (!product) continue;
+  if (!product) continue;
 
-      const qty = it.qty || 1;
+  const qty = Number(it.qty) || 1;
+  const price = Number(product.price) || 0;
+  const bp = Number(product.bpPoint) || 0;
 
-      totalAmount += product.price * qty;
-      totalBP += product.bpPoint * qty;
+  totalAmount += price * qty;
+  totalBP += bp * qty;
 
-      orderItems.push({
-        product: product._id,
-        productName: product.productName,
-        price: product.price,
-        bpPoint: product.bpPoint,
-        qty,
-      });
-    }
+  orderItems.push({
+    product: product._id,
+    productName: product.productName,
+    price,
+    bpPoint: bp,
+    qty,
+  });
+}
+
 
     const orderId = "ORD" + Date.now();
 
