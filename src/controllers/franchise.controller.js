@@ -50,7 +50,7 @@ exports.activateId = async (req, res) => {
 
     // ================= ORDER UPDATE =================
     order.paymentStatus = "paid";
-    order.status = "completed";
+    order.status = "approved";
 
     await order.save();
 
@@ -199,19 +199,19 @@ exports.completePaymentAndActivate = async (req, res) => {
     order.approvedAt = new Date();
     await order.save();
 
-    // ✅ add BP
-// ✅ safe BP update
-user.selfBP = Number(user.selfBP || 0) + Number(order.totalBP || 0);
 
-// ⭐ IMPORTANT
-await user.save({ validateBeforeSave: false });
+await addBP(user._id, Number(order.totalBP || 0));
+
 
     // ✅ activate user (only once)
-    if (!user.activatedBy) {
-      user.isActive = true;
-      user.activatedBy = franchiseId;
-      await user.save();
-    }
+ // ✅ activate user
+if (!user.activatedBy) {
+  user.isActive = true;
+  user.activatedBy = franchiseId;
+}
+
+// ⭐ single save only
+await user.save({ validateBeforeSave: false });
 
     // ✅ deduct franchise stock
     const franchise = await User.findById(franchiseId);
