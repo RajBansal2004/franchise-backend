@@ -104,105 +104,124 @@ if (product.stock < qty) {
 exports.completePaymentAndActivate = async (req, res) => {
   const session = await mongoose.startSession();
 
-  try {
-    session.startTransaction();
+  const MAX_RETRIES = 3;
+  let attempt = 0;
 
-    const franchiseId = req.user.id;
-    const { orderId } = req.body;
+  while (attempt < MAX_RETRIES) {
+    try {
+      attempt++;
+      session.startTransaction();
 
-    if (!orderId) {
-      return res.status(400).json({ message: "OrderId required" });
-    }
+      const franchiseId = req.user.id;
+      const { orderId } = req.body;
 
-    const order = await Order.findOne({ orderId }).session(session);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+      if (!orderId) {
+        await session.abortTransaction();
+        return res.status(400).json({ message: "OrderId required" });
+      }
 
-    if (order.paymentStatus === "paid") {
-      return res.status(400).json({
-        message: "Payment already completed"
-      });
-    }
+      const order = await Order.findOne({ orderId }).session(session);
+      if (!order) {
+        await session.abortTransaction();
+        return res.status(404).json({ message: "Order not found" });
+      }
 
-    const user = await User.findById(order.user).session(session);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+      if (order.paymentStatus === "paid") {
+        await session.abortTransaction();
+        return res.status(400).json({
+          message: "Payment already completed"
+        });
+      }
 
-    // ✅ BP CHECK
-    const finalBP =
-      Number(user.selfBP || 0) + Number(order.totalBP || 0);
+      const user = await User.findById(order.user).session(session);
+      if (!user) {
+        await session.abortTransaction();
+        return res.status(404).json({ message: "User not found" });
+      }
 
-    if (finalBP < 51) {
-      return res.status(400).json({
-        message: `Minimum 51 BP required. Current total: ${finalBP}`
-      });
-    }
+      const finalBP =
+        Number(user.selfBP || 0) + Number(order.totalBP || 0);
 
-    // ================= ORDER UPDATE =================
-    await Order.updateOne(
-      { orderId },
-      {
-        $set: {
-          paymentStatus: "paid",
-          status: "approved",
-          approvedAt: new Date(),
+      if (finalBP < 51) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          message: `Minimum 51 BP required. Current total: ${finalBP}`
+        });
+      }
+
+      // ✅ order update
+      await Order.updateOne(
+        { orderId },
+        {
+          $set: {
+            paymentStatus: "paid",
+            status: "approved",
+            approvedAt: new Date(),
+          },
         },
-      },
-      { session }
-    );
-
-    // ================= ADD BP =================
-    await addBP(user._id, Number(order.totalBP || 0));
-
-    // ================= ACTIVATE USER =================
-    await User.updateOne(
-      { _id: user._id },
-      {
-        $set: {
-          isActive: true,
-          activatedBy: franchiseId,
-        },
-      },
-      { session }
-    );
-
-    // ================= PRODUCT STOCK DEDUCT =================
-    let totalQty = 0;
-
-    for (const item of order.items) {
-      const qty = Number(item.qty || 0);
-
-      totalQty += qty;
-
-      await Product.updateOne(
-        { _id: item.product },
-        { $inc: { stock: -qty } },
         { session }
       );
+
+      // ✅ BP add WITH session
+      await addBP(user._id, Number(order.totalBP || 0), session);
+
+      // ✅ activate user
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            isActive: true,
+            activatedBy: franchiseId,
+          },
+        },
+        { session }
+      );
+
+      // ✅ product stock deduct
+      let totalQty = 0;
+
+      for (const item of order.items) {
+        const qty = Number(item.qty || 0);
+        totalQty += qty;
+
+       await Product.updateOne(
+  { _id: item.product, stock: { $gte: qty } },
+  { $inc: { stock: -qty } },
+  { session }
+);
+      }
+
+      // ✅ franchise stock deduct
+      await User.updateOne(
+        { _id: franchiseId },
+        { $inc: { stock: -totalQty } },
+        { session }
+      );
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.json({
+        success: true,
+        message: "Payment done & ID activated",
+      });
+
+    } catch (err) {
+      await session.abortTransaction();
+
+      // 🔥 retry only on write conflict
+      if (
+        err.message.includes("Write conflict") &&
+        attempt < MAX_RETRIES
+      ) {
+        console.log("Retrying transaction...", attempt);
+        continue;
+      }
+
+      session.endSession();
+      console.error("completePayment error:", err);
+      return res.status(500).json({ message: err.message });
     }
-
-    // ================= FRANCHISE STOCK DEDUCT =================
-    await User.updateOne(
-      { _id: franchiseId },
-      { $inc: { stock: -totalQty } },
-      { session }
-    );
-
-    await session.commitTransaction();
-
-    res.json({
-      success: true,
-      message: "Payment done & ID activated",
-    });
-
-  } catch (err) {
-    await session.abortTransaction();
-    console.error("completePayment error:", err);
-    res.status(500).json({ message: err.message });
-  } finally {
-    session.endSession();
   }
 };
 
