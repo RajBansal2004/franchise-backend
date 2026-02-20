@@ -173,22 +173,7 @@ for (const item of order.items) {
   );
 }
 
-// ================= FRANCHISE TOTAL STOCK DEDUCT =================
-const franchise = await User.findById(franchiseId);
 
-if (franchise) {
-  const totalQty = order.items.reduce(
-    (sum, item) => sum + Number(item.qty || 0),
-    0
-  );
-
-  franchise.stock = Math.max(
-    0,
-    Number(franchise.stock || 0) - totalQty
-  );
-
-  await franchise.save();
-}
 
     res.json({
       success: true,
