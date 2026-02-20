@@ -137,10 +137,16 @@ if (!order.user) {
     }
 
     // ================= ORDER UPDATE =================
-    order.paymentStatus = "paid";
-    order.status = "approved";
-    order.approvedAt = new Date();
-    await order.save();
+   await Order.updateOne(
+  { orderId },
+  {
+    $set: {
+      paymentStatus: "paid",
+      status: "approved",
+      approvedAt: new Date(),
+    },
+  }
+);
 
     // ================= ADD BP (ONLY ONCE) =================
     await addBP(user._id, Number(order.totalBP || 0));
@@ -157,22 +163,15 @@ if (!order.user) {
 );
 
 
-    // ================= STOCK DEDUCT (FIXED) =================
-    const franchise = await User.findById(franchiseId);
-
-    if (franchise) {
-      const totalQty = order.items.reduce(
-        (sum, item) => sum + Number(item.qty || 0),
-        0
-      );
-
-      franchise.stock = Math.max(
-        0,
-        Number(franchise.stock || 0) - totalQty
-      );
-
-      await franchise.save();
+    // ================= PRODUCT STOCK DEDUCT =================
+for (const item of order.items) {
+  await Product.updateOne(
+    { _id: item.product },
+    {
+      $inc: { stock: -Number(item.qty || 0) },
     }
+  );
+}
 
     res.json({
       success: true,
