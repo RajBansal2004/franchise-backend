@@ -60,7 +60,11 @@ exports.createBill = async (req, res) => {
 
       totalAmount += lineTotal;
       totalBP += lineBP;
-
+if (product.stock < qty) {
+  return res.status(400).json({
+    message: `${product.title} stock insufficient`
+  });
+}
       formattedItems.push({
         product: product._id,
         qty,
@@ -98,7 +102,11 @@ exports.createBill = async (req, res) => {
 };
 
 exports.completePaymentAndActivate = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
+    session.startTransaction();
+
     const franchiseId = req.user.id;
     const { orderId } = req.body;
 
@@ -106,15 +114,10 @@ exports.completePaymentAndActivate = async (req, res) => {
       return res.status(400).json({ message: "OrderId required" });
     }
 
-   const order = await Order.findOne({ orderId });
-if (!order) {
-  return res.status(404).json({ message: "Order not found" });
-}
-
-// 🔒 safety
-if (!order.user) {
-  return res.status(400).json({ message: "Invalid order user" });
-}
+    const order = await Order.findOne({ orderId }).session(session);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
 
     if (order.paymentStatus === "paid") {
       return res.status(400).json({
@@ -122,13 +125,14 @@ if (!order.user) {
       });
     }
 
-    const user = await User.findById(order.user);
+    const user = await User.findById(order.user).session(session);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ CHECK BP CONDITION
-    const finalBP = Number(user.selfBP || 0) + Number(order.totalBP || 0);
+    // ✅ BP CHECK
+    const finalBP =
+      Number(user.selfBP || 0) + Number(order.totalBP || 0);
 
     if (finalBP < 51) {
       return res.status(400).json({
@@ -137,52 +141,68 @@ if (!order.user) {
     }
 
     // ================= ORDER UPDATE =================
-   await Order.updateOne(
-  { orderId },
-  {
-    $set: {
-      paymentStatus: "paid",
-      status: "approved",
-      approvedAt: new Date(),
-    },
-  }
-);
+    await Order.updateOne(
+      { orderId },
+      {
+        $set: {
+          paymentStatus: "paid",
+          status: "approved",
+          approvedAt: new Date(),
+        },
+      },
+      { session }
+    );
 
-    // ================= ADD BP (ONLY ONCE) =================
+    // ================= ADD BP =================
     await addBP(user._id, Number(order.totalBP || 0));
 
     // ================= ACTIVATE USER =================
-  await User.updateOne(
-  { _id: user._id },
-  {
-    $set: {
-      isActive: true,
-      activatedBy: new mongoose.Types.ObjectId(franchiseId)
-    }
-  }
-);
-
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          isActive: true,
+          activatedBy: franchiseId,
+        },
+      },
+      { session }
+    );
 
     // ================= PRODUCT STOCK DEDUCT =================
-for (const item of order.items) {
-  await Product.updateOne(
-    { _id: item.product },
-    {
-      $inc: { stock: -Number(item.qty || 0) },
+    let totalQty = 0;
+
+    for (const item of order.items) {
+      const qty = Number(item.qty || 0);
+
+      totalQty += qty;
+
+      await Product.updateOne(
+        { _id: item.product },
+        { $inc: { stock: -qty } },
+        { session }
+      );
     }
-  );
-}
 
+    // ================= FRANCHISE STOCK DEDUCT =================
+    await User.updateOne(
+      { _id: franchiseId },
+      { $inc: { stock: -totalQty } },
+      { session }
+    );
 
+    await session.commitTransaction();
 
     res.json({
       success: true,
-      message: "Payment done & ID activated"
+      message: "Payment done & ID activated",
     });
 
   } catch (err) {
+    await session.abortTransaction();
     console.error("completePayment error:", err);
     res.status(500).json({ message: err.message });
+  } finally {
+    session.endSession();
   }
 };
 

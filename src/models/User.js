@@ -40,7 +40,7 @@ organizationName: {
   default: null
 },
 
-  isActive: { type: Boolean, default: true }, 
+  isActive: { type: Boolean, default: false }, 
   activatedBy: {
   type: mongoose.Schema.Types.ObjectId,
   ref: 'User',
