@@ -75,9 +75,9 @@ exports.createBill = async (req, res) => {
 
     // ================= CREATE ORDER =================
     const order = await Order.create({
-      orderId: "ORD" + Date.now(),
-      user: userId,
-      franchiseId,
+  orderId: "ORD" + Date.now(),
+  user: new mongoose.Types.ObjectId(userId),
+  franchiseId: new mongoose.Types.ObjectId(franchiseId),
       orderFrom: "FRANCHISE",
       items: formattedItems,
       totalAmount,
@@ -106,10 +106,15 @@ exports.completePaymentAndActivate = async (req, res) => {
       return res.status(400).json({ message: "OrderId required" });
     }
 
-    const order = await Order.findOne({ orderId });
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+   const order = await Order.findOne({ orderId });
+if (!order) {
+  return res.status(404).json({ message: "Order not found" });
+}
+
+// 🔒 safety
+if (!order.user) {
+  return res.status(400).json({ message: "Invalid order user" });
+}
 
     if (order.paymentStatus === "paid") {
       return res.status(400).json({
