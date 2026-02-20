@@ -1,6 +1,21 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+/* ================= REWARD SUB SCHEMA (FIX) ================= */
+const rewardSchema = new mongoose.Schema(
+  {
+    level: { type: Number, default: 0 },
+    name: { type: String, default: '' },
+    achievedAt: { type: Date },
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'delivered'],
+      default: 'pending'
+    }
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema({
   /* ================= BASIC PROFILE ================= */
   fullName: { type: String, required: true },
@@ -101,16 +116,7 @@ rankAchievedAt: Date,
 levelAchievedAt: Date,
 
 /* ================= REWARDS ================= */
-rewards: [{
-  level: Number,
-  name: String,
-  achievedAt: Date,
-  status: {
-    type: String,
-    enum: ['pending','approved','delivered'],
-    default: 'pending'
-  }
-}],
+rewards: [rewardSchema],
 
 /* ================= ROYALTY ================= */
 royaltyEligible: {
