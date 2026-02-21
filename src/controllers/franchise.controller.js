@@ -101,100 +101,57 @@ if (product.stock < qty) {
   }
 };
 
-exports.completePaymentAndActivate = async (req, res) => {
+exports.completePaymentOnly = async (req, res) => {
   const session = await mongoose.startSession();
 
-  const MAX_RETRIES = 3;
-  let attempt = 0;
+  try {
+    session.startTransaction();
 
-  while (attempt < MAX_RETRIES) {
-    try {
-      attempt++;
-      session.startTransaction();
+    const { orderId } = req.body;
 
-      const franchiseId = req.user.id;
-      const { orderId } = req.body;
+    const order = await Order.findOne({ orderId }).session(session);
+    if (!order) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "Order not found" });
+    }
 
-      if (!orderId) {
-        await session.abortTransaction();
-        return res.status(400).json({ message: "OrderId required" });
-      }
+    if (order.paymentStatus === "paid") {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Already paid" });
+    }
 
-      const order = await Order.findOne({ orderId }).session(session);
-      if (!order) {
-        await session.abortTransaction();
-        return res.status(404).json({ message: "Order not found" });
-      }
+    const user = await User.findById(order.user).session(session);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "User not found" });
+    }
 
-      if (order.paymentStatus === "paid") {
-        await session.abortTransaction();
-        return res.status(400).json({
-          message: "Payment already completed"
-        });
-      }
+    // ✅ mark payment paid
+    await Order.updateOne(
+      { orderId },
+      {
+        $set: {
+          paymentStatus: "paid",
+          status: "paid",
+          paidAt: new Date(),
+        },
+      },
+      { session }
+    );
 
-      const user = await User.findById(order.user).session(session);
-      if (!user) {
-        await session.abortTransaction();
-        return res.status(404).json({ message: "User not found" });
-      }
+    // 🔥 AUTO DETECT USER STATUS
+    if (user.isActive) {
+      // ✅ DIRECT REPURCHASE
+      await addBP(user._id, Number(order.totalBP || 0), session);
 
-      const finalBP =
-        Number(user.selfBP || 0) + Number(order.totalBP || 0);
-
-      if (finalBP < 51) {
-        await session.abortTransaction();
-        return res.status(400).json({
-          message: `Minimum 51 BP required. Current total: ${finalBP}`
-        });
-      }
-
-      // ✅ order update
       await Order.updateOne(
         { orderId },
         {
           $set: {
-            paymentStatus: "paid",
-            status: "approved",
-            approvedAt: new Date(),
+            isRepurchase: true,
+            repurchaseAt: new Date(),
           },
         },
-        { session }
-      );
-
-      // ✅ BP add WITH session
-      await addBP(user._id, Number(order.totalBP || 0), session);
-
-      // ✅ activate user
-      await User.updateOne(
-        { _id: user._id },
-        {
-          $set: {
-            isActive: true,
-            activatedBy: franchiseId,
-          },
-        },
-        { session }
-      );
-
-      // ✅ product stock deduct
-      let totalQty = 0;
-
-      for (const item of order.items) {
-        const qty = Number(item.qty || 0);
-        totalQty += qty;
-
-       await Product.updateOne(
-  { _id: item.product, stock: { $gte: qty } },
-  { $inc: { stock: -qty } },
-  { session }
-);
-      }
-
-      // ✅ franchise stock deduct
-      await User.updateOne(
-        { _id: franchiseId },
-        { $inc: { stock: -totalQty } },
         { session }
       );
 
@@ -203,25 +160,115 @@ exports.completePaymentAndActivate = async (req, res) => {
 
       return res.json({
         success: true,
-        message: "Payment done & ID activated",
+        mode: "REPURCHASE",
+        message: "User already active — BP added as repurchase",
       });
-
-    } catch (err) {
-      await session.abortTransaction();
-
-      // 🔥 retry only on write conflict
-      if (
-        err.message.includes("Write conflict") &&
-        attempt < MAX_RETRIES
-      ) {
-        console.log("Retrying transaction...", attempt);
-        continue;
-      }
-
-      session.endSession();
-      console.error("completePayment error:", err);
-      return res.status(500).json({ message: err.message });
     }
+
+    // ❌ user inactive → need activation
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.json({
+      success: true,
+      mode: "ACTIVATION_REQUIRED",
+      activationOptions: [51, 100],
+      message: "Payment successful. Please select activation BP.",
+    });
+
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.activateUserId = async (req, res) => {
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const franchiseId = req.user.id;
+    const { orderId, activationBP } = req.body;
+
+    if (![51, 100].includes(Number(activationBP))) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        message: "Activation BP must be 51 or 100",
+      });
+    }
+
+    const order = await Order.findOne({ orderId }).session(session);
+    if (!order) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.paymentStatus !== "paid") {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Payment pending" });
+    }
+
+    if (order.isActivated) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Already activated" });
+    }
+
+    const user = await User.findById(order.user).session(session);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 🔥 DOUBLE ACTIVATION BLOCK
+    if (user.isActive) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        message: "User already active. Use repurchase.",
+      });
+    }
+
+    // ✅ add activation BP
+    await addBP(user._id, Number(activationBP), session);
+
+    // ✅ activate user
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          isActive: true,
+          activatedBy: franchiseId,
+        },
+      },
+      { session }
+    );
+
+    // ✅ mark order activated
+    await Order.updateOne(
+      { orderId },
+      {
+        $set: {
+          isActivated: true,
+          activationBP: Number(activationBP),
+          activatedAt: new Date(),
+        },
+      },
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({
+      success: true,
+      message: "ID activated successfully",
+    });
+
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ message: err.message });
   }
 };
 

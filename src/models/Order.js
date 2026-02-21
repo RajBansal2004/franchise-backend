@@ -45,6 +45,15 @@ retailProfit: {
     default: 'pending'
   },
 
+  activationBP: {
+  type: Number,
+  default: 0
+},
+isActivated: {
+  type: Boolean,
+  default: false
+},
+
   approvedAt: Date,
 
   createdAt: { type: Date, default: Date.now }
