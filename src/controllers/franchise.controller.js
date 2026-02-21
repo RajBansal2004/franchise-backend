@@ -5,6 +5,24 @@ const Order = require('../models/Order');
 const addBP = require("../utils/addBP");
 const mongoose = require('mongoose');
 
+// ================= STOCK DEDUCT HELPER =================
+const deductStockFromOrder = async (order, session) => {
+  for (const item of order.items) {
+    const product = await Product.findById(item.product).session(session);
+
+    if (!product) {
+      throw new Error("Product not found during stock deduction");
+    }
+
+    if (product.stock < item.qty) {
+      throw new Error(`${product.title} stock insufficient at payment`);
+    }
+
+    product.stock -= item.qty;
+    await product.save({ session });
+  }
+};
+
 exports.searchUserByUniqueId = async (req, res) => {
   try {
     const { uniqueId } = req.params;
@@ -139,9 +157,12 @@ exports.completePaymentOnly = async (req, res) => {
       { session }
     );
 
-  // 🔥 AUTO DETECT USER STATUS
+ // 🔥 AUTO DETECT USER STATUS
 if (user.isActive) {
-  // ✅ DIRECT REPURCHASE
+  // ✅ FIRST deduct stock
+  await deductStockFromOrder(order, session);
+
+  // ✅ THEN add BP
   await addBP(user._id, Number(order.totalBP || 0), session);
 
   await Order.updateOne(
@@ -166,15 +187,19 @@ if (user.isActive) {
 }
 
     // ❌ user inactive → need activation
-    await session.commitTransaction();
-    session.endSession();
 
-    return res.json({
-      success: true,
-      mode: "ACTIVATION_REQUIRED",
-      activationOptions: [51, 100],
-      message: "Payment successful. Please select activation BP.",
-    });
+// ✅ deduct stock before activation
+await deductStockFromOrder(order, session);
+
+await session.commitTransaction();
+session.endSession();
+
+return res.json({
+  success: true,
+  mode: "ACTIVATION_REQUIRED",
+  activationOptions: [51, 100],
+  message: "Payment successful. Please select activation BP.",
+});
 
   } catch (err) {
     await session.abortTransaction();

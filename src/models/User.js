@@ -56,7 +56,7 @@ organizationName: {
   },
 
   referralId: String,
-
+stockDeducted: { type: Boolean, default: false },
   /* ================= BINARY GENEALOGY ================= */
   parentId: {
     type: mongoose.Schema.Types.ObjectId,
