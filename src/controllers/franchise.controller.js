@@ -8,18 +8,23 @@ const mongoose = require('mongoose');
 // ================= STOCK DEDUCT HELPER =================
 const deductStockFromOrder = async (order, session) => {
   for (const item of order.items) {
-    const product = await Product.findById(item.product).session(session);
 
-    if (!product) {
-      throw new Error("Product not found during stock deduction");
+    const result = await Product.updateOne(
+      {
+        _id: item.product,
+        stock: { $gte: item.qty } // 🔥 race condition protection
+      },
+      {
+        $inc: { stock: -item.qty }
+      },
+      { session }
+    );
+
+    // ✅ if no document modified → stock issue
+    if (result.modifiedCount === 0) {
+      const product = await Product.findById(item.product);
+      throw new Error(`${product?.title || "Product"} stock insufficient`);
     }
-
-    if (product.stock < item.qty) {
-      throw new Error(`${product.title} stock insufficient at payment`);
-    }
-
-    product.stock -= item.qty;
-    await product.save({ session });
   }
 };
 
@@ -157,18 +162,23 @@ exports.completePaymentOnly = async (req, res) => {
       { session }
     );
 
- // 🔥 AUTO DETECT USER STATUS
+// 🔥 AUTO DETECT USER STATUS
 if (user.isActive) {
+
   // ✅ FIRST deduct stock
   await deductStockFromOrder(order, session);
 
   // ✅ THEN add BP
   await addBP(user._id, Number(order.totalBP || 0), session);
 
+  // ✅ LAST mark payment paid
   await Order.updateOne(
     { orderId },
     {
       $set: {
+        paymentStatus: "paid",
+        status: "paid",
+        paidAt: new Date(),
         isRepurchase: true,
         repurchaseAt: new Date(),
       },
@@ -186,10 +196,23 @@ if (user.isActive) {
   });
 }
 
-    // ❌ user inactive → need activation
+ // ❌ user inactive → need activation
 
-// ✅ deduct stock before activation
+// ✅ FIRST deduct stock
 await deductStockFromOrder(order, session);
+
+// ✅ THEN mark payment paid
+await Order.updateOne(
+  { orderId },
+  {
+    $set: {
+      paymentStatus: "paid",
+      status: "paid",
+      paidAt: new Date(),
+    },
+  },
+  { session }
+);
 
 await session.commitTransaction();
 session.endSession();
