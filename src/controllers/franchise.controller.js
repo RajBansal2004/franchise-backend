@@ -139,31 +139,31 @@ exports.completePaymentOnly = async (req, res) => {
       { session }
     );
 
-    // 🔥 AUTO DETECT USER STATUS
-    if (user.isActive) {
-      // ✅ DIRECT REPURCHASE
-      await addBP(user._id, Number(order.totalBP || 0), session);
+  // 🔥 AUTO DETECT USER STATUS
+if (user.isActive) {
+  // ✅ DIRECT REPURCHASE
+  await addBP(user._id, Number(order.totalBP || 0), session);
 
-      await Order.updateOne(
-        { orderId },
-        {
-          $set: {
-            isRepurchase: true,
-            repurchaseAt: new Date(),
-          },
-        },
-        { session }
-      );
+  await Order.updateOne(
+    { orderId },
+    {
+      $set: {
+        isRepurchase: true,
+        repurchaseAt: new Date(),
+      },
+    },
+    { session }
+  );
 
-      await session.commitTransaction();
-      session.endSession();
+  await session.commitTransaction();
+  session.endSession();
 
-      return res.json({
-        success: true,
-        mode: "REPURCHASE",
-        message: "User already active — BP added as repurchase",
-      });
-    }
+  return res.json({
+    success: true,
+    mode: "REPURCHASE",
+    message: "Repurchase payment successful",
+  });
+}
 
     // ❌ user inactive → need activation
     await session.commitTransaction();
@@ -221,7 +221,7 @@ exports.activateUserId = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔥 DOUBLE ACTIVATION BLOCK
+    // 🔥 if already active → block
     if (user.isActive) {
       await session.abortTransaction();
       return res.status(400).json({
@@ -229,16 +229,14 @@ exports.activateUserId = async (req, res) => {
       });
     }
 
-    // ✅ add activation BP
-    await addBP(user._id, Number(activationBP), session);
-
-    // ✅ activate user
+    // ✅ ONLY ACTIVATE (NO BP ADD)
     await User.updateOne(
       { _id: user._id },
       {
         $set: {
           isActive: true,
           activatedBy: franchiseId,
+          activatedAt: new Date(),
         },
       },
       { session }
@@ -262,7 +260,7 @@ exports.activateUserId = async (req, res) => {
 
     res.json({
       success: true,
-      message: "ID activated successfully",
+      message: "User ID activated successfully",
     });
 
   } catch (err) {
