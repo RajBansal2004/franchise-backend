@@ -66,39 +66,40 @@ exports.createBill = async (req, res) => {
     let totalBP = 0;
     const formattedItems = [];
 
-    for (const it of items) {
-      const product = await Product.findById(it.productId);
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
-      }
+  for (const it of items) {
 
-      const qty = Number(it.qty) || 1;
+  const product = await Product.findById(it.productId);
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
+  }
 
-      // ✅ CHECK FRANCHISE STOCK (CORRECT)
-      const franchiseStock = await FranchiseStock.findOne({
-        franchise: franchiseId,
-        product: product._id,
-      });
+  const qty = Number(it.qty) || 1; // ✅ FIRST define qty
 
-      if (!franchiseStock || franchiseStock.quantity < qty) {
-        return res.status(400).json({
-          message: `${product.title} stock not available in franchise`,
-        });
-      }
+  // ✅ check franchise stock
+  const franchiseStock = await FranchiseStock.findOne({
+    franchise: franchiseId,
+    product: product._id,
+  });
 
-      const price = Number(product.price) || 0;
-      const bp = Number(product.bp) || 0;
+  if (!franchiseStock || franchiseStock.quantity < qty) {
+    return res.status(400).json({
+      message: `${product.title} stock not available in franchise`
+    });
+  }
 
-      totalAmount += price * qty;
-      totalBP += bp * qty;
+  const price = Number(product.price) || 0;
+  const bp = Number(product.bp) || 0;
 
-      formattedItems.push({
-        product: product._id,
-        qty,
-        price,
-        bp,
-      });
-    }
+  totalAmount += price * qty;
+  totalBP += bp * qty;
+
+  formattedItems.push({
+    product: product._id,
+    qty,
+    price,
+    bp,
+  });
+}
 
     const order = await Order.create({
       orderId: "ORD" + Date.now(),
@@ -287,33 +288,28 @@ exports.activateUserId = async (req, res) => {
 
 exports.getFranchiseStock = async (req, res) => {
   try {
-    const franchiseId = new mongoose.Types.ObjectId(req.user.id);
+    const franchiseId = req.user.id;
 
-    const stocks = await FranchiseStock.find({
-      franchise: franchiseId,
-      quantity: { $gt: 0 },
-    }).populate("product");
+    const stock = await FranchiseStock.find({
+      franchise: franchiseId
+    }).populate("product", "title price bp");
 
-    console.log("FOUND STOCKS:", stocks.length);
-
-    const formatted = stocks.map((s) => ({
+    const formatted = stock.map(s => ({
       productId: s.product?._id,
       productName: s.product?.title,
       price: s.product?.price,
-      availableQty: s.quantity,
       bpPoint: s.product?.bp,
-      totalValue: (s.product?.price || 0) * s.quantity,
-      totalBP: (s.product?.bp || 0) * s.quantity,
+      availableQty: s.quantity
     }));
 
     res.json({
       success: true,
       count: formatted.length,
-      data: formatted,
+      data: formatted
     });
 
   } catch (err) {
-    console.error("Stock error:", err);
+    console.error("Franchise stock error:", err);
     res.status(500).json({ message: err.message });
   }
 };

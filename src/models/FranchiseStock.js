@@ -3,20 +3,21 @@ const mongoose = require("mongoose");
 const franchiseStockSchema = new mongoose.Schema({
   franchise: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Franchise",
-    required: true,
+    ref: "User", // ✅ IMPORTANT
+    required: true
   },
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
-    required: true,
+    required: true
   },
   quantity: {
     type: Number,
-    default: 0,
-  },
+    default: 0
+  }
 }, { timestamps: true });
 
+// ✅ UNIQUE per product per franchise
 franchiseStockSchema.index({ franchise: 1, product: 1 }, { unique: true });
 
 module.exports = mongoose.model("FranchiseStock", franchiseStockSchema);
