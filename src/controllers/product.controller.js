@@ -47,8 +47,6 @@ exports.createProduct = async (req,res)=>{
   res.status(500).json({error:err.message});
  }
 };
-
-
 exports.updateProduct = async (req,res)=>{
  const p = await Product.findByIdAndUpdate(
    req.params.id,
