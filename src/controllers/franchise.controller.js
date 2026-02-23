@@ -383,15 +383,26 @@ exports.getFranchiseDashboard = async (req, res) => {
       activatedBy: objectFranchiseId,
     });
 
-    // ✅ franchise data
-    const franchise = await User.findById(objectFranchiseId);
+    // ✅ 🔥 TOTAL STOCK (CORRECT WAY)
+    const stockAgg = await FranchiseStock.aggregate([
+      { $match: { franchise: objectFranchiseId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$quantity" },
+        },
+      },
+    ]);
+
+    const totalStock = stockAgg[0]?.total || 0;
 
     res.json({
       totalOrders,
       activeIds,
-      stockItems: franchise?.stock || 0,
+      stockItems: totalStock, // ✅ fixed
       monthlyIncome: 0,
     });
+
   } catch (err) {
     console.error("Dashboard error:", err);
     res.status(500).json({ message: err.message });
