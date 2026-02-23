@@ -8,23 +8,23 @@ const mongoose = require('mongoose');
 
 // ================= STOCK DEDUCT HELPER (FIXED) =================
 const deductFranchiseStock = async (order, franchiseId, session) => {
-
   for (const item of order.items) {
-
     const result = await FranchiseStock.updateOne(
       {
         franchise: franchiseId,
         product: item.product,
-        quantity: { $gte: Number(item.qty) }
+        quantity: { $gte: Number(item.qty) },
       },
       {
-        $inc: { quantity: -Number(item.qty) }
+        $inc: { quantity: -Number(item.qty) },
       },
       { session }
     );
 
     if (result.modifiedCount === 0) {
-      throw new Error("Franchise stock not available");
+      throw new Error(
+        `Stock not available for product ${item.product}`
+      );
     }
   }
 };
@@ -76,16 +76,22 @@ exports.createBill = async (req, res) => {
   const qty = Number(it.qty) || 1; // ✅ FIRST define qty
 
   // ✅ check franchise stock
-  const franchiseStock = await FranchiseStock.findOne({
-    franchise: franchiseId,
-    product: product._id,
-  });
+ const franchiseStock = await FranchiseStock.findOne({
+  franchise: franchiseId,
+  product: product._id,
+});
 
-  if (!franchiseStock || franchiseStock.quantity < qty) {
-    return res.status(400).json({
-      message: `${product.title} stock not available in franchise`
-    });
-  }
+if (!franchiseStock) {
+  return res.status(400).json({
+    message: `${product.title} stock not available`,
+  });
+}
+
+if (Number(franchiseStock.quantity) < qty) {
+  return res.status(400).json({
+    message: `${product.title} only ${franchiseStock.quantity} left in stock`,
+  });
+}
 
   const price = Number(product.price) || 0;
   const bp = Number(product.bp) || 0;
