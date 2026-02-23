@@ -287,20 +287,23 @@ exports.activateUserId = async (req, res) => {
 
 exports.getFranchiseStock = async (req, res) => {
   try {
-    const franchiseId = req.user.id;
+    const franchiseId = new mongoose.Types.ObjectId(req.user.id);
 
     const stocks = await FranchiseStock.find({
       franchise: franchiseId,
+      quantity: { $gt: 0 },
     }).populate("product");
 
+    console.log("FOUND STOCKS:", stocks.length);
+
     const formatted = stocks.map((s) => ({
-      productId: s.product._id,
-      productName: s.product.title,
-      price: s.product.price,
+      productId: s.product?._id,
+      productName: s.product?.title,
+      price: s.product?.price,
       availableQty: s.quantity,
-      bpPoint: s.product.bp,
-      totalValue: s.product.price * s.quantity,
-      totalBP: s.product.bp * s.quantity,
+      bpPoint: s.product?.bp,
+      totalValue: (s.product?.price || 0) * s.quantity,
+      totalBP: (s.product?.bp || 0) * s.quantity,
     }));
 
     res.json({
@@ -310,6 +313,7 @@ exports.getFranchiseStock = async (req, res) => {
     });
 
   } catch (err) {
+    console.error("Stock error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -340,14 +344,21 @@ exports.updateFranchise = async (req,res) => {
 
 exports.getMyStock = async (req, res) => {
   try {
-    const franchiseId = req.user.id;
+    const franchiseId = new mongoose.Types.ObjectId(req.user.id);
 
-    const count = await FranchiseStock.countDocuments({
-      franchise: franchiseId,
-      quantity: { $gt: 0 },
+    const totalQty = await FranchiseStock.aggregate([
+      { $match: { franchise: franchiseId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$quantity" },
+        },
+      },
+    ]);
+
+    res.json({
+      totalStock: totalQty[0]?.total || 0,
     });
-
-    res.json({ stockItems: count });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
