@@ -26,7 +26,8 @@ const run = async () => {
       mobile: '9999999999',
       gender: 'other',
       dob: new Date('1995-01-01'),
-      kycStatus: 'approved'
+      kycStatus: 'approved',
+      isActive: true
     });
 
     console.log('✅ Admin created:', adminEmail);

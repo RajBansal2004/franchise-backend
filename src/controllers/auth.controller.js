@@ -177,9 +177,6 @@ console.log(password);
   }
 };
 
-
-
-
 exports.login = async (req, res) => {
   const { loginId, password } = req.body;
 
