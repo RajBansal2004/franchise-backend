@@ -303,7 +303,7 @@ exports.updatePhoto = async (req, res) => {
     }
 
     // Save file path in database
-user.photo = `/uploads/products/${req.file.filename}`;
+user.photo = `/uploads/kyc/${req.file.filename}`;
     await user.save();
 
     res.json({
