@@ -36,7 +36,10 @@ app.use('/admin', adminRoute);
 app.use('/tree', require('./routes/tree.routes'));
 app.use('/report', reportRoutes);
 app.use('/user', userRoutes);
-app.use("/uploads", express.static("uploads"));
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '../uploads'))
+);
 app.use('/kyc', kycRoutes);
 app.use('/franchise', require('./routes/franchiseRoutes'));
 
