@@ -30,7 +30,7 @@ exports.createProduct = async (req, res) => {
     // ✅ strict validation (MLM safe)
     if (!title || !gst || !bp || !category) {
       return res.status(400).json({
-        message: "title, price, bp, category are required"
+        message: "title, bp, category are required"
       });
     }
 

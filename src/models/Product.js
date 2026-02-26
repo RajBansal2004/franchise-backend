@@ -15,7 +15,6 @@ const productSchema = new mongoose.Schema({
   required: true
 },
 
-  price: { type: Number, required: true },
   franchisePrice: {
     type: Number,
     default: 0
