@@ -25,10 +25,10 @@ exports.createProduct = async (req, res) => {
       );
     }
 
-    const { title, price, bp, gst, category } = req.body;
+    const { title, bp, gst, category } = req.body;
 
     // ✅ strict validation (MLM safe)
-    if (!title || !price || !bp || !category) {
+    if (!title || !gst || !bp || !category) {
       return res.status(400).json({
         message: "title, price, bp, category are required"
       });
@@ -50,6 +50,7 @@ exports.createProduct = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 exports.updateProduct = async (req,res)=>{
  const p = await Product.findByIdAndUpdate(
    req.params.id,
