@@ -9,7 +9,11 @@ const productSchema = new mongoose.Schema({
   description: String,
   containt: String,
   mrp: { type: Number, default: 0 },
-  category: String,
+  category: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Category",
+  required: true
+},
 
   price: { type: Number, required: true },
   franchisePrice: {

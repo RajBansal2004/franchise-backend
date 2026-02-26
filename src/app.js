@@ -43,7 +43,7 @@ app.use(
 );
 app.use('/kyc', kycRoutes);
 app.use('/franchise', require('./routes/franchiseRoutes'));
-
+app.use("/categories", require("./routes/category.routes"));
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
 app.use('/api', require('./routes/test'));

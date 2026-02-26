@@ -1,53 +1,54 @@
 const Product = require('../models/Product');
+const generateSku = require("../utils/generateSku");
 
-exports.createProduct = async (req,res)=>{
+exports.createProduct = async (req, res) => {
+  try {
+    let data = req.body;
 
- try{
+    // ⭐ multiple products
+    if (Array.isArray(data)) {
+      const products = await Product.insertMany(data);
+      return res.json(products);
+    }
 
-  let data = req.body;
+    // ⭐ images
+    let thumbnail = null;
+    let gallery = [];
 
-  // ⭐ MULTIPLE PRODUCTS JSON (NO IMAGE)
-  if(Array.isArray(data)){
-    const products = await Product.insertMany(data);
-    return res.json(products);
+    if (req.files?.image) {
+      thumbnail = `/uploads/products/${req.files.image[0].filename}`;
+    }
+
+    if (req.files?.images) {
+      gallery = req.files.images.map(
+        img => `/uploads/products/${img.filename}`
+      );
+    }
+
+    const { title, price, bp, gst, category } = req.body;
+
+    // ✅ strict validation (MLM safe)
+    if (!title || !price || !bp || !category) {
+      return res.status(400).json({
+        message: "title, price, bp, category are required"
+      });
+    }
+
+    // ✅ AUTO SKU
+    const sku = await generateSku(title);
+
+    const product = await Product.create({
+      ...req.body,
+      sku,
+      image: thumbnail,
+      images: gallery
+    });
+
+    res.json(product);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  // ⭐ Extract images
-  let thumbnail = null;
-let gallery = [];
-
-if (req.files?.image) {
-  thumbnail = `/uploads/products/${req.files.image[0].filename}`;
-}
-
-if (req.files?.images) {
-  gallery = req.files.images.map(
-    img => `/uploads/products/${img.filename}`
-  );
-}
-
-  const {title, sku, price, bp} = req.body;
-
-  if(!title || !sku || !price || !bp){
-    return res.status(400).json({message:"Missing fields"});
-  }
-
-  const exist = await Product.findOne({sku});
-  if(exist){
-    return res.status(400).json({message:"SKU exists"});
-  }
-
-  const product = await Product.create({
-    ...req.body,
-    image: thumbnail,
-    images: gallery
-  });
-
-  res.json(product);
-
- }catch(err){
-  res.status(500).json({error:err.message});
- }
 };
 exports.updateProduct = async (req,res)=>{
  const p = await Product.findByIdAndUpdate(
