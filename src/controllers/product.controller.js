@@ -14,15 +14,17 @@ exports.createProduct = async (req,res)=>{
 
   // ⭐ Extract images
   let thumbnail = null;
-  let gallery = [];
+let gallery = [];
 
-  if(req.files?.image){
-    thumbnail = req.files.image[0].filename;
-  }
+if (req.files?.image) {
+  thumbnail = `/uploads/products/${req.files.image[0].filename}`;
+}
 
-  if(req.files?.images){
-    gallery = req.files.images.map(img => img.filename);
-  }
+if (req.files?.images) {
+  gallery = req.files.images.map(
+    img => `/uploads/products/${img.filename}`
+  );
+}
 
   const {title, sku, price, bp} = req.body;
 
