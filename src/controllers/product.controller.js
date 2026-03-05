@@ -3,38 +3,26 @@ const generateSku = require("../utils/generateSku");
 
 exports.createProduct = async (req, res) => {
   try {
-    let data = req.body;
 
-    // ⭐ multiple products
-    if (Array.isArray(data)) {
-      const products = await Product.insertMany(data);
-      return res.json(products);
-    }
-
-    // ⭐ images
     let thumbnail = null;
     let gallery = [];
 
     if (req.files?.image) {
-      thumbnail = `/uploads/products/${req.files.image[0].filename}`;
+      thumbnail = req.files.image[0].path;
     }
 
     if (req.files?.images) {
-      gallery = req.files.images.map(
-        img => `/uploads/products/${img.filename}`
-      );
+      gallery = req.files.images.map(img => img.path);
     }
 
     const { title, bp, gst, category } = req.body;
 
-    // ✅ strict validation (MLM safe)
-    if (!title || !gst || !bp || !category) {
+    if (!title || !bp || !gst || !category) {
       return res.status(400).json({
         message: "title, bp, category are required"
       });
     }
 
-    // ✅ AUTO SKU
     const sku = await generateSku(title);
 
     const product = await Product.create({
