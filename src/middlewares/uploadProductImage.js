@@ -4,10 +4,12 @@ const cloudinary = require("../config/cloudinary");
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: "products",
-    allowed_formats: ["jpg", "png", "jpeg", "webp"]
-  }
+  params: async (req, file) => {
+    return {
+      folder: "products",
+      allowed_formats: ["jpg", "png", "jpeg", "webp"],
+    };
+  },
 });
 
 const upload = multer({ storage });
