@@ -318,7 +318,7 @@ exports.getFranchiseOrders = async (req, res) => {
       franchiseId: req.user.id
     })
       .populate('user', 'fullName uniqueId')
-      .populate('items.product', 'title price');
+      .populate('items.product', 'title price image');
 
     res.json(orders);
   } catch (err) {
