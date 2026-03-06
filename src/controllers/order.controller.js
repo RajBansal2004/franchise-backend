@@ -23,7 +23,10 @@ exports.createOrder = async (req, res) => {
     const userId = req.user.id;
     let { items } = req.body;
 
-    // ⭐ SINGLE PRODUCT SUPPORT
+    if (typeof items === "string") {
+      items = JSON.parse(items);
+    }
+
     if (!Array.isArray(items)) {
       items = [items];
     }
@@ -31,6 +34,8 @@ exports.createOrder = async (req, res) => {
     if (items.length === 0) {
       return res.status(400).json({ message: "No items" });
     }
+
+    const screenshot = req.file ? req.file.path : null;
 
     let totalAmount = 0;
     let totalBP = 0;
@@ -67,8 +72,8 @@ exports.createOrder = async (req, res) => {
       user: userId,
       items: orderItems,
       totalAmount,
-      paymentScreenshot: screenshot,
-      totalBP
+      totalBP,
+      paymentScreenshot: screenshot
     });
 
     res.json(order);
