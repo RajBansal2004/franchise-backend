@@ -4,11 +4,16 @@ const router = express.Router();
 const orderCtrl = require('../controllers/order.controller');
 const auth = require('../middlewares/auth.middleware');
 const permit = require('../middlewares/role.middleware');
+const upload = require("../middlewares/upload");
 
 
 // ⭐ CREATE ORDER
-router.post('/', auth, orderCtrl.createOrder);
-
+router.post(
+  '/',
+  auth,
+  upload.single("paymentScreenshot"),
+  orderCtrl.createOrder
+);
 
 // ⭐ GET ALL ORDERS (ADMIN)
 router.get('/', auth, permit('ADMIN','SUBADMIN'), orderCtrl.getOrders);

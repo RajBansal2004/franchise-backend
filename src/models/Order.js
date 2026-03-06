@@ -53,6 +53,11 @@ isActivated: {
   type: Boolean,
   default: false
 },
+paymentScreenshot: String,
+paymentStatus:{
+ type:String,
+ default:"pending"
+},
 
   approvedAt: Date,
 
