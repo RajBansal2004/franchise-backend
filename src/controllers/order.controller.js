@@ -67,14 +67,18 @@ exports.createOrder = async (req, res) => {
 
     }
 
-    const order = await Order.create({
-      orderId: generateOrderId(),
-      user: userId,
-      items: orderItems,
-      totalAmount,
-      totalBP,
-      paymentScreenshot: screenshot
-    });
+   const user = await User.findById(userId);
+
+const order = await Order.create({
+  orderId: generateOrderId(),
+  user: userId,
+  orderFrom: user.role === "FRANCHISE" ? "FRANCHISE" : "USER",
+  franchiseId: user.role === "FRANCHISE" ? userId : null,
+  items: orderItems,
+  totalAmount,
+  totalBP,
+  paymentScreenshot: screenshot
+});
 
     res.json(order);
 
