@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Kyc = require('../models/Kyc');
+const Order = require('../models/Order');
 const { generateFranchiseId, generatePassword } = require('../utils/credentials');
 const SmsLog = require('../models/SmsLog');
 const { sendSMS } = require('../utils/sms');
@@ -350,3 +351,85 @@ exports.createFranchiseByAdmin = async (req, res) => {
   }
 };
 
+exports.getUserOrders = async (req, res) => {
+  try {
+
+    const orders = await Order.find({
+      orderFrom: "USER"
+    })
+    .populate("user","fullName email uniqueId role")
+    .populate("items.product","title images price");
+
+    res.json(orders);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getFranchiseOrdersAdmin = async (req, res) => {
+  try {
+
+    const orders = await Order.find({
+      orderFrom: "FRANCHISE"
+    })
+    .populate("user","fullName email uniqueId role")
+    .populate("items.product","title images price");
+
+    res.json(orders);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.adminApproveOrder = async (req,res)=>{
+  try{
+
+    const order = await Order.findById(req.params.id);
+
+    if(!order){
+      return res.status(404).json({message:"Order not found"});
+    }
+
+    if(order.paymentStatus !== "paid"){
+      return res.status(400).json({message:"Payment not completed"});
+    }
+
+    const user = await User.findById(order.user);
+
+    if(!user){
+      return res.status(404).json({message:"User not found"});
+    }
+
+    // ================= USER ORDER =================
+    if(order.orderFrom === "USER"){
+
+      if(!user.isActive){
+
+        user.isActive = true;
+        user.activatedBy = req.user.id;
+        user.activatedAt = new Date();
+
+        await user.save();
+
+      }
+
+    }
+
+    // ================= APPROVE ORDER =================
+
+    order.status = "approved";
+    order.approvedAt = new Date();
+
+    await order.save();
+
+    res.json({
+      success:true,
+      message:"Order approved successfully"
+    });
+
+  }catch(err){
+    res.status(500).json({message:err.message});
+  }
+}

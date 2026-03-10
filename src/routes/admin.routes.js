@@ -12,6 +12,9 @@ router.put('/kyc/:kycId', auth, permit('ADMIN', 'SUBADMIN'), ctrl.updateKycStatu
 router.post('/create-admin', auth, permit('ADMIN'), ctrl.createAdmin);
 router.post('/franchise/create', auth, permit('ADMIN', 'SUBADMIN'), ctrl.createFranchiseByAdmin);
 router.get('/sms-logs', auth, permit('ADMIN'), ctrl.getSmsLogs);
+router.get("/user-orders", auth, ctrl.getUserOrders);
+router.get("/franchise-orders", auth, ctrl.getFranchiseOrdersAdmin);
+router.put("/approve/:id", auth, ctrl.adminApproveOrder);
 
 
 module.exports = router;
