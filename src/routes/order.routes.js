@@ -18,8 +18,7 @@ router.post(
 // ⭐ GET ALL ORDERS (ADMIN)
 router.get('/', auth, permit('ADMIN','SUBADMIN'), orderCtrl.getOrders);
 
-router.get( '/my-orders', auth, permit('FRANCHISE'), orderCtrl.getFranchiseOrders
-);
+router.get( '/franchise-orders', auth, permit('FRANCHISE'), orderCtrl.getFranchiseOrders);
 
 // ⭐ USER ORDERS LIST
 router.get('/my', auth, async (req,res)=>{
