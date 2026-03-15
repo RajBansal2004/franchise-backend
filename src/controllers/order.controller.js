@@ -238,7 +238,8 @@ exports.approveOrder = async (req, res) => {
 
 exports.getMyOrders = async (req, res) => {
   try {
-    const franchiseId = req.user.id;
+
+    const franchiseId = new mongoose.Types.ObjectId(req.user.id);
 
     const orders = await Order.find({
       franchiseId: franchiseId
@@ -318,13 +319,17 @@ exports.createFranchiseActivationOrder = async (req, res) => {
 
 exports.getFranchiseOrders = async (req, res) => {
   try {
+
+    const franchiseId = new mongoose.Types.ObjectId(req.user.id);
+
     const orders = await Order.find({
-      franchiseId: req.user.id
+      franchiseId: franchiseId
     })
       .populate('user', 'fullName uniqueId')
       .populate('items.product', 'title price image');
 
     res.json(orders);
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
