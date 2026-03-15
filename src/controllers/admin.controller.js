@@ -356,10 +356,13 @@ exports.getUserOrders = async (req, res) => {
 
     const orders = await Order.find({
       orderFrom: "USER",
-      franchiseId: null
+      $or:[
+        { franchiseId: null },
+        { franchiseId: { $exists:false } }
+      ]
     })
     .populate("user","fullName email uniqueId role")
-    .populate("items.product","title images price");
+    .populate("items.product","title images image price");
 
     res.json(orders);
 
@@ -376,7 +379,7 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
       franchiseId: { $ne: null }
     })
     .populate("user","fullName email uniqueId role")
-    .populate("items.product","title images price");
+    .populate("items.product","title images image price");
 
     res.json(orders);
 

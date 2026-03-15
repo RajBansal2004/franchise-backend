@@ -5,10 +5,10 @@ const orderSchema = new mongoose.Schema({
   orderId: { type: String, required: true, unique: true },
 
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-orderFrom: {
-  type: String,
-  enum: ['USER','FRANCHISE'],
-  default: 'USER'
+orderFrom:{
+ type:String,
+ enum:['USER','FRANCHISE'],
+ required:true
 },
 
 franchiseId: {
