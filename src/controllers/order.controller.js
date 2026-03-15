@@ -77,7 +77,8 @@ const order = await Order.create({
   items: orderItems,
   totalAmount,
   totalBP,
-  paymentScreenshot: screenshot
+  paymentScreenshot: screenshot,
+  paymentStatus: screenshot ? "paid" : "pending"
 });
 
     res.json(order);
