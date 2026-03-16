@@ -15,6 +15,7 @@ const locationRoute =require('./routes/location.routes');
 const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
 const kycRoutes = require('./routes/kycRoutes');
+const paymentReportRoutes = require("./routes/paymentReportRoutes");
 require('./cron');  
 require('./cron/bpReset');
 require('./cron/incomeReset');
@@ -44,6 +45,7 @@ app.use(
 app.use('/kyc', kycRoutes);
 app.use('/franchise', require('./routes/franchiseRoutes'));
 app.use("/categories", require("./routes/category.routes"));
+app.use("/api", paymentReportRoutes);
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
 app.use('/api', require('./routes/test'));

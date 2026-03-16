@@ -7,6 +7,7 @@ const checkLevels = require('../utils/levelChecker');
 const rewardEngine = require('../utils/rewardEngine');
 const matchingIncome = require('../utils/matchingIncome');
 const cloudinary = require("../config/cloudinary");
+const PaymentReport = require("../models/PaymentReport");
 
 
 // ⭐ Order ID Generator
@@ -81,6 +82,18 @@ exports.createOrder = async (req, res) => {
       paymentScreenshot: screenshot,
       paymentStatus: screenshot ? "paid" : "pending"
     });
+
+    await PaymentReport.create({
+
+ orderId: order.orderId,
+ user: order.user,
+ franchiseId: order.franchiseId,
+ amount: order.totalAmount,
+ totalBP: order.totalBP,
+ paymentScreenshot: order.paymentScreenshot,
+ paymentStatus:"pending"
+
+});
 
     res.json(order);
 
