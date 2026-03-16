@@ -6,6 +6,7 @@ const addBP = require('../utils/addBP');
 const checkLevels = require('../utils/levelChecker');
 const rewardEngine = require('../utils/rewardEngine');
 const matchingIncome = require('../utils/matchingIncome');
+const cloudinary = require("../config/cloudinary");
 
 
 // ⭐ Order ID Generator
@@ -35,8 +36,20 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: "No items" });
     }
 
-    const screenshot = req.file ? req.file.path : null;
 
+let screenshot = null;
+
+if (req.file) {
+
+  const result = await cloudinary.uploader.upload(
+    req.file.path,
+    {
+      folder: "payments"
+    }
+  );
+
+  screenshot = result.secure_url;   // ⭐ FINAL URL
+}
     let totalAmount = 0;
     let totalBP = 0;
     let orderItems = [];
@@ -82,6 +95,8 @@ const order = await Order.create({
 });
 
     res.json(order);
+    console.log(order.items[0].product)
+console.log(order.paymentScreenshot)
 
   } catch (err) {
     res.status(500).json({ error: err.message });
