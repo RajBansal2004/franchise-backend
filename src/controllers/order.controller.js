@@ -37,19 +37,7 @@ exports.createOrder = async (req, res) => {
     }
 
 
-let screenshot = null;
-
-if (req.file) {
-
-  const result = await cloudinary.uploader.upload(
-    req.file.path,
-    {
-      folder: "payments"
-    }
-  );
-
-  screenshot = result.secure_url;   // ⭐ FINAL URL
-}
+    let screenshot = req.file ? req.file.path : null;
     let totalAmount = 0;
     let totalBP = 0;
     let orderItems = [];
@@ -80,23 +68,21 @@ if (req.file) {
 
     }
 
-   const user = await User.findById(userId);
+    const user = await User.findById(userId);
 
-const order = await Order.create({
-  orderId: generateOrderId(),
-  user: userId,
-  orderFrom: user.role === "FRANCHISE" ? "FRANCHISE" : "USER",
-  franchiseId: user.role === "FRANCHISE" ? userId : null,
-  items: orderItems,
-  totalAmount,
-  totalBP,
-  paymentScreenshot: screenshot,
-  paymentStatus: screenshot ? "paid" : "pending"
-});
+    const order = await Order.create({
+      orderId: generateOrderId(),
+      user: userId,
+      orderFrom: user.role === "FRANCHISE" ? "FRANCHISE" : "USER",
+      franchiseId: user.role === "FRANCHISE" ? userId : null,
+      items: orderItems,
+      totalAmount,
+      totalBP,
+      paymentScreenshot: screenshot,
+      paymentStatus: screenshot ? "paid" : "pending"
+    });
 
     res.json(order);
-    console.log(order.items[0].product)
-console.log(order.paymentScreenshot)
 
   } catch (err) {
     res.status(500).json({ error: err.message });
