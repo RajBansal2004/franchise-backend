@@ -14,37 +14,82 @@ exports.getSmsLogs = async (req, res) => {
 
 exports.createAdmin = async (req, res) => {
   try {
-    const { fullName, email, password, role } = req.body;
-    if (!['ADMIN', 'SUBADMIN'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role' });
+
+    const {
+      fullName,
+      fatherName,
+      gender,
+      dob,
+      mobile,
+      email,
+      role,
+      state,
+      district,
+      pincode,
+      address,
+      aadhaarNumber,
+      panNumber
+    } = req.body;
+
+    if (!["ADMIN", "SUBADMIN"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
     }
 
-    const exists = await User.findOne({ email });
-    if (exists) {
-      return res.status(400).json({ message: 'Email already exists' });
-    }
+    const password = generatePassword();
 
     const uniqueId =
-      role === 'ADMIN'
+      role === "ADMIN"
         ? `ADM-${Date.now()}`
         : `SUB-${Date.now()}`;
 
-    await User.create({
+    const admin = new User({
+
       fullName,
+      fatherName,
+      gender,
+      dob,
+      mobile,
       email,
-      password,
-      plainPassword: password,
       role,
       uniqueId,
-      mobile: `${role}-${Date.now()}`,
-      gender: 'other',
-      dob: new Date('2000-01-01'),
-      kycStatus: 'approved'
+      password,
+      plainPassword: password,
+
+      location: {
+        state,
+        district,
+        pincode,
+      },
+
+      kycStatus: "pending",
+
+      kycDocs: {
+        aadhaar: {
+          number: aadhaarNumber,
+          frontImage: req.files?.aadhaarFront
+            ? req.files.aadhaarFront[0].path
+            : "",
+          backImage: req.files?.aadhaarBack
+            ? req.files.aadhaarBack[0].path
+            : "",
+        },
+
+        pan: {
+          number: panNumber,
+          frontImage: req.files?.panImage
+            ? req.files.panImage[0].path
+            : "",
+        },
+      },
     });
+
+    await admin.save();
 
     res.status(201).json({
       message: `${role} created successfully`,
-      uniqueId
+      uniqueId,
+      password,
+      admin,
     });
 
   } catch (err) {
