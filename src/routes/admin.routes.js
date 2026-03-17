@@ -22,6 +22,21 @@ router.post(
   ]),
   ctrl.createAdmin
 );
+router.get(
+  "/subadmin/profile",
+  auth,
+  permit("SUBADMIN","ADMIN"),
+  ctrl.getSubadminProfile
+);
+
+router.put(
+  "/subadmin/profile",
+  auth,
+  permit("SUBADMIN"),
+  upload.single("photo"),
+  ctrl.updateSubadminProfile
+);
+
 router.post('/franchise/create', auth, permit('ADMIN', 'SUBADMIN'), ctrl.createFranchiseByAdmin);
 router.get('/sms-logs', auth, permit('ADMIN'), ctrl.getSmsLogs);
 router.get("/user-orders", auth, ctrl.getUserOrders);

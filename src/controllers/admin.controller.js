@@ -11,7 +11,6 @@ exports.getSmsLogs = async (req, res) => {
 
   res.json(logs);
 };
-
 exports.createAdmin = async (req, res) => {
   try {
 
@@ -96,7 +95,80 @@ exports.createAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+exports.getSubadminProfile = async (req, res) => {
+  try {
 
+    const userId = req.user.id;
+
+    const user = await User.findById(userId)
+      .select(`
+        fullName fatherName gender dob email mobile role uniqueId
+        photo kycStatus
+        location
+        kycDocs
+        isActive isBlocked
+        createdAt
+      `);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Subadmin not found"
+      });
+    }
+
+    if (user.role !== "SUBADMIN") {
+      return res.status(403).json({
+        message: "Access denied"
+      });
+    }
+
+    res.json(user);
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
+
+exports.updateSubadminProfile = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const {
+      fullName,
+      fatherName,
+      mobile
+    } = req.body;
+
+    const updateData = {
+      fullName,
+      fatherName,
+      mobile
+    };
+
+    if (req.file) {
+      updateData.photo = req.file.path;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    ).select("-password -plainPassword");
+
+    res.json({
+      message: "Profile Updated Successfully",
+      user
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
 
 /**
  * 🔹 GET ALL PENDING KYC
