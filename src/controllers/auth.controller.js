@@ -354,7 +354,8 @@ exports.sendForgotPasswordOTP = async (req, res) => {
     res.json({
       success: true,
       message: "OTP sent successfully",
-      loginId: user.uniqueId
+      loginId: user.uniqueId,
+      otp: otp 
     });
 
   } catch (err) {
