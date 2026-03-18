@@ -312,25 +312,56 @@ exports.getMyTree = async (req, res) => {
 
 
 exports.sendForgotPasswordOTP = async (req, res) => {
-  const { email } = req.body;
+  try {
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    let { role, loginId } = req.body;
+
+    if (!role || !loginId) {
+      return res.status(400).json({
+        message: "Role and LoginId required"
+      });
+    }
+
+    role = role.toUpperCase().trim();
+    loginId = loginId.trim();
+
+    const user = await User.findOne({
+      role,
+      $or: [
+        { email: loginId },
+        { mobile: loginId },
+        { uniqueId: loginId }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    const otp = generateOTP();
+
+    user.otp = {
+      code: otp,
+      expiresAt: Date.now() + 5 * 60 * 1000
+    };
+
+    await user.save();
+
+    console.log("OTP 👉", otp);
+
+    res.json({
+      success: true,
+      message: "OTP sent successfully",
+      loginId: user.uniqueId
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
   }
-
-  const otp = generateOTP();
-  const hashedOtp = await bcrypt.hash(otp, 10);
-
-  user.otp = {
-    code: hashedOtp,
-    expiresAt: Date.now() + 5 * 60 * 1000
-  };
-  await user.save();
-
-  await sendOTPEmail(email, otp);
-
-  res.json({ message: 'OTP sent to email' });
 };
 
 
