@@ -1,7 +1,10 @@
 const router = require('express').Router();
 const ctrl = require('../controllers/auth.controller');
 const upload = require('../middlewares/upload');
+const auth = require("../middlewares/auth.middleware");
+router.put("/change-password", auth, ctrl.changePassword);
 
+module.exports = router;
 /* ================= DS REGISTER (WITH KYC DOCUMENTS) ================= */
 router.post(
   '/ds/register',

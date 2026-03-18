@@ -6,7 +6,79 @@ const { sendOTPEmail } = require('../utils/email');
 const { generateDSId, generatePassword } = require('../utils/credentials');
 const { sendCredentials } = require('../utils/notify');
 const { sendSMS } = require('../utils/sms');
-const bcrypt = require('bcryptjs');
+exports.changePassword = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    /* ================= VALIDATION ================= */
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields required"
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password mismatch"
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters"
+      });
+    }
+
+    /* ================= FIND USER ================= */
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    /* ================= CHECK OLD PASSWORD ================= */
+
+    const isMatch = await user.comparePassword(oldPassword);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password incorrect"
+      });
+    }
+
+    /* ================= UPDATE PASSWORD ================= */
+
+    user.password = newPassword;      // pre save middleware hash karega
+    user.plainPassword = newPassword; // optional
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Password changed successfully"
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
 
 exports.registerDS = async (req, res) => {  
   try {
