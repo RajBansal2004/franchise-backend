@@ -314,19 +314,17 @@ exports.getMyTree = async (req, res) => {
 exports.sendForgotPasswordOTP = async (req, res) => {
   try {
 
-    let { role, loginId } = req.body;
+    let { loginId } = req.body;
 
-    if (!role || !loginId) {
+    if (!loginId) {
       return res.status(400).json({
-        message: "Role and LoginId required"
+        message: "LoginId required"
       });
     }
 
-    role = role.toUpperCase().trim();
     loginId = loginId.trim();
 
     const user = await User.findOne({
-      role,
       $or: [
         { email: loginId },
         { mobile: loginId },
@@ -355,13 +353,17 @@ exports.sendForgotPasswordOTP = async (req, res) => {
       success: true,
       message: "OTP sent successfully",
       loginId: user.uniqueId,
-      otp: otp 
+      otp: otp   // testing purpose
     });
 
   } catch (err) {
+
+    console.log(err);   // ⭐ VERY IMPORTANT DEBUG
+
     res.status(500).json({
       message: err.message
     });
+
   }
 };
 
