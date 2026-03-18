@@ -366,45 +366,88 @@ exports.sendForgotPasswordOTP = async (req, res) => {
 
 
 exports.verifyOTP = async (req, res) => {
-  const { email, otp } = req.body;
+  try {
 
-  const user = await User.findOne({ email });
-  if (!user || !user.otp) {
-    return res.status(400).json({ message: 'Invalid request' });
+    const { loginId, otp } = req.body;
+
+    if (!loginId || !otp) {
+      return res.status(400).json({
+        message: "LoginId and OTP required"
+      });
+    }
+
+    const user = await User.findOne({
+      $or: [
+        { uniqueId: loginId },
+        { email: loginId },
+        { mobile: loginId }
+      ]
+    });
+
+    if (!user || !user.otp) {
+      return res.status(400).json({
+        message: "Invalid request"
+      });
+    }
+
+    if (Date.now() > user.otp.expiresAt) {
+      return res.status(400).json({
+        message: "OTP expired"
+      });
+    }
+
+    if (user.otp.code !== otp) {
+      return res.status(400).json({
+        message: "Invalid OTP"
+      });
+    }
+
+    // OTP verified → remove OTP
+    user.otp = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "OTP verified"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
   }
-
-  if (Date.now() > user.otp.expiresAt) {
-    return res.status(400).json({ message: 'OTP expired' });
-  }
-
-  const isValid = await bcrypt.compare(otp, user.otp.code);
-  if (!isValid) {
-    return res.status(400).json({ message: 'Invalid OTP' });
-  }
-
-  res.json({ message: 'OTP verified successfully' });
 };
 
 exports.resetPassword = async (req, res) => {
-  const { email, otp, newPassword } = req.body;
+  try {
 
-  const user = await User.findOne({ email });
-  if (!user || !user.otp) {
-    return res.status(400).json({ message: 'Invalid request' });
+    const { loginId, newPassword } = req.body;
+
+    const user = await User.findOne({
+      $or: [
+        { uniqueId: loginId },
+        { email: loginId },
+        { mobile: loginId }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Password reset successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
   }
-
-  if (Date.now() > user.otp.expiresAt) {
-    return res.status(400).json({ message: 'OTP expired' });
-  }
-
-  const isValid = await bcrypt.compare(otp, user.otp.code);
-  if (!isValid) {
-    return res.status(400).json({ message: 'Invalid OTP' });
-  }
-
-  user.password = newPassword; // model will hash
-  user.otp = undefined;
-  await user.save();
-
-  res.json({ message: 'Password reset successfully' });
 };
