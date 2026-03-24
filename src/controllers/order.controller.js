@@ -8,7 +8,7 @@ const rewardEngine = require('../utils/rewardEngine');
 const matchingIncome = require('../utils/matchingIncome');
 const cloudinary = require("../config/cloudinary");
 const PaymentReport = require("../models/PaymentReport");
-
+const FranchiseStock = require("../models/FranchiseStock");
 
 // ⭐ Order ID Generator
 const generateOrderId = () => {
