@@ -200,21 +200,41 @@ exports.approveOrder = async (req, res) => {
       return res.status(400).json({ message: "Payment not completed" });
     }
     // ⭐ STOCK DEDUCT
-    for (let item of order.items) {
+   for (let item of order.items) {
 
-      const product = await Product.findById(item.product);
+  const product = await Product.findById(item.product);
 
-      if (!product) {
-        return res.status(400).json({ message: "Product missing" });
+  if (!product) {
+    return res.status(400).json({ message: "Product missing" });
+  }
+
+  if (product.stock < item.qty) {
+    return res.status(400).json({ message: "Admin stock insufficient" });
+  }
+
+  // ⭐ ADMIN STOCK DEDUCT
+  product.stock -= item.qty;
+  await product.save();
+
+  // ⭐ ONLY IF ORDER FROM FRANCHISE → ADD STOCK
+  if (order.orderFrom === "FRANCHISE") {
+
+    await FranchiseStock.updateOne(
+      {
+        franchise: order.franchiseId,
+        product: item.product
+      },
+      {
+        $inc: { quantity: item.qty }
+      },
+      {
+        upsert: true
       }
+    );
 
-      if (product.stock < item.qty) {
-        return res.status(400).json({ message: "Stock insufficient" });
-      }
+  }
 
-      product.stock -= item.qty;
-      await product.save();
-    }
+}
 
     // ⭐ BP DISTRIBUTION
     await addBP(order.user, order.totalBP);
