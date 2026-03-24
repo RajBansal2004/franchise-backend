@@ -113,7 +113,7 @@ exports.getOrders = async (req, res) => {
       .populate('user', 'fullName email mobile role')
       .populate('items.product', 'title price');
 
-    res.json(orders);
+    res.json(orders); 
 
   } catch (err) {
     res.status(500).json({ error: err.message });

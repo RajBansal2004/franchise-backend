@@ -294,19 +294,30 @@ exports.activateUserId = async (req, res) => {
 
 exports.getFranchiseStock = async (req, res) => {
   try {
+
     const franchiseId = req.user.id;
 
     const stock = await FranchiseStock.find({
       franchise: franchiseId
     }).populate("product", "title price bp");
 
-    const formatted = stock.map(s => ({
-      productId: s.product?._id,
-      productName: s.product?.title,
-      price: s.product?.price,
-      bpPoint: s.product?.bp,
-      availableQty: s.quantity
-    }));
+    const formatted = stock.map(s => {
+
+      const price = Number(s.product?.price || 0);
+      const bp = Number(s.product?.bp || 0);
+      const qty = Number(s.quantity || 0);
+
+      return {
+        productId: s.product?._id,
+        productName: s.product?.title,
+        price,
+        bpPoint: bp,
+        availableQty: qty,
+        totalValue: price * qty,     // ⭐ FIX
+        totalBP: bp * qty            // ⭐ FIX
+      };
+
+    });
 
     res.json({
       success: true,
