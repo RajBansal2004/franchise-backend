@@ -1,9 +1,13 @@
 const User = require('../models/User');
 const Kyc = require('../models/Kyc');
 const Order = require('../models/Order');
+const FranchiseStock = require('../models/FranchiseStock');
+const Product = require('../models/Product');
+const mongoose = require("mongoose");
 const { generateFranchiseId, generatePassword } = require('../utils/credentials');
 const SmsLog = require('../models/SmsLog');
 const { sendSMS } = require('../utils/sms');
+
 exports.getSmsLogs = async (req, res) => {
   const logs = await SmsLog.find()
     .sort({ createdAt: -1 })
@@ -514,20 +518,63 @@ exports.adminApproveOrder = async (req,res)=>{
       return res.status(404).json({message:"Order not found"});
     }
 
+    if(order.status === "approved"){
+      return res.status(400).json({message:"Already approved"});
+    }
+
     if(order.paymentStatus !== "paid"){
       return res.status(400).json({message:"Payment not completed"});
     }
 
-    const user = await User.findById(order.user);
+    // ⭐ ADMIN STOCK DEDUCT
+    for(const item of order.items){
 
-    if(!user){
-      return res.status(404).json({message:"User not found"});
+      const product = await Product.findById(item.product);
+
+      if(!product){
+        return res.status(400).json({message:"Product missing"});
+      }
+
+      if(product.stock < item.qty){
+        return res.status(400).json({message:`${product.title} stock low`});
+      }
+
+      product.stock -= item.qty;
+      await product.save();
     }
 
-    // ================= USER ORDER =================
+    // ⭐⭐⭐ ADD FRANCHISE STOCK
+    if(order.orderFrom === "FRANCHISE" && order.franchiseId){
+
+      const franchiseObjectId = new mongoose.Types.ObjectId(order.franchiseId);
+
+      for(const item of order.items){
+
+        console.log("🔥 ADDING STOCK:", franchiseObjectId, item.product, item.qty);
+
+        await FranchiseStock.updateOne(
+          {
+            franchise: franchiseObjectId,
+            product: item.product
+          },
+          {
+            $inc:{ quantity: Number(item.qty) }
+          },
+          {
+            upsert:true
+          }
+        );
+
+      }
+
+    }
+
+    // ⭐ USER ACTIVATION (USER ORDER ONLY)
     if(order.orderFrom === "USER"){
 
-      if(!user.isActive){
+      const user = await User.findById(order.user);
+
+      if(user && !user.isActive){
 
         user.isActive = true;
         user.activatedBy = req.user.id;
@@ -539,8 +586,6 @@ exports.adminApproveOrder = async (req,res)=>{
 
     }
 
-    // ================= APPROVE ORDER =================
-
     order.status = "approved";
     order.approvedAt = new Date();
 
@@ -548,10 +593,11 @@ exports.adminApproveOrder = async (req,res)=>{
 
     res.json({
       success:true,
-      message:"Order approved successfully"
+      message:"Order approved + stock transferred"
     });
 
   }catch(err){
+    console.log(err);
     res.status(500).json({message:err.message});
   }
-}
+};
