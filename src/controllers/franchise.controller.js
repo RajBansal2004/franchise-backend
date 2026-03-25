@@ -6,6 +6,27 @@ const addBP = require("../utils/addBP");
 const FranchiseStock = require("../models/FranchiseStock");
 const mongoose = require('mongoose');
 
+const addFranchiseStock = async (order, session) => {
+
+  for (const item of order.items) {
+
+    await FranchiseStock.updateOne(
+      {
+        franchise: order.franchiseId,
+        product: item.product
+      },
+      {
+        $inc: { quantity: Number(item.qty) }
+      },
+      {
+        upsert: true,
+        session
+      }
+    );
+
+  }
+
+};
 // ================= STOCK DEDUCT HELPER (FIXED) =================
 const deductFranchiseStock = async (order, franchiseId, session) => {
   for (const item of order.items) {
@@ -66,46 +87,46 @@ exports.createBill = async (req, res) => {
     let totalBP = 0;
     const formattedItems = [];
 
-  for (const it of items) {
+    for (const it of items) {
 
-  const product = await Product.findById(it.productId);
-  if (!product) {
-    return res.status(404).json({ message: "Product not found" });
-  }
+      const product = await Product.findById(it.productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
 
-  const qty = Number(it.qty) || 1; // ✅ FIRST define qty
+      const qty = Number(it.qty) || 1; // ✅ FIRST define qty
 
-  // ✅ check franchise stock
- const franchiseStock = await FranchiseStock.findOne({
-  franchise: franchiseId,
-  product: product._id,
-});
+      // ✅ check franchise stock
+      const franchiseStock = await FranchiseStock.findOne({
+        franchise: franchiseId,
+        product: product._id,
+      });
 
-if (!franchiseStock) {
-  return res.status(400).json({
-    message: `${product.title} stock not available`,
-  });
-}
+      if (!franchiseStock) {
+        return res.status(400).json({
+          message: `${product.title} stock not available`,
+        });
+      }
 
-if (Number(franchiseStock.quantity) < qty) {
-  return res.status(400).json({
-    message: `${product.title} only ${franchiseStock.quantity} left in stock`,
-  });
-}
+      if (Number(franchiseStock.quantity) < qty) {
+        return res.status(400).json({
+          message: `${product.title} only ${franchiseStock.quantity} left in stock`,
+        });
+      }
 
-  const price = Number(product.price) || 0;
-  const bp = Number(product.bp) || 0;
+      const price = Number(product.price) || 0;
+      const bp = Number(product.bp) || 0;
 
-  totalAmount += price * qty;
-  totalBP += bp * qty;
+      totalAmount += price * qty;
+      totalBP += bp * qty;
 
-  formattedItems.push({
-    product: product._id,
-    qty,
-    price,
-    bp,
-  });
-}
+      formattedItems.push({
+        product: product._id,
+        qty,
+        price,
+        bp,
+      });
+    }
 
     const order = await Order.create({
       orderId: "ORD" + Date.now(),
@@ -144,6 +165,9 @@ exports.completePaymentOnly = async (req, res) => {
 
     // ✅ ALWAYS FIRST deduct franchise stock
     await deductFranchiseStock(order, order.franchiseId, session);
+
+    // ✅ ADD STOCK TO FRANCHISE (VERY IMPORTANT)
+    await addFranchiseStock(order, session);
 
     if (user.isActive) {
       // 🔥 REPURCHASE
@@ -331,28 +355,28 @@ exports.getFranchiseStock = async (req, res) => {
   }
 };
 
-exports.createFranchise = async (req,res) => {
+exports.createFranchise = async (req, res) => {
   try {
     const { name, contact, address, email, commissionPercent } = req.body;
     const uniqueId = 'FR-' + Date.now();
     const f = new Franchise({ name, uniqueId, contact, address, email, commissionPercent });
     await f.save();
     res.json(f);
-  } catch(err){ res.status(400).json({ error: err.message }); }
+  } catch (err) { res.status(400).json({ error: err.message }); }
 };
 
-exports.getFranchises = async (req,res) => {
+exports.getFranchises = async (req, res) => {
   try {
     const fs = await Franchise.find().limit(500);
     res.json(fs);
-  } catch(err){ res.status(400).json({ error: err.message }); }
+  } catch (err) { res.status(400).json({ error: err.message }); }
 };
 
-exports.updateFranchise = async (req,res) => {
+exports.updateFranchise = async (req, res) => {
   try {
     const f = await Franchise.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(f);
-  } catch(err){ res.status(400).json({ error: err.message }); }
+  } catch (err) { res.status(400).json({ error: err.message }); }
 };
 
 exports.getMyStock = async (req, res) => {
