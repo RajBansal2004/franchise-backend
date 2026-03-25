@@ -22,8 +22,8 @@ const generateOrderId = () => {
 exports.createOrder = async (req, res) => {
   try {
 
-    const userId = req.user.id;
-    let { items } = req.body;
+    const loginUserId = req.user.id;
+    let { items, franchiseId } = req.body;
 
     if (typeof items === "string") {
       items = JSON.parse(items);
@@ -33,12 +33,21 @@ exports.createOrder = async (req, res) => {
       items = [items];
     }
 
-    if (items.length === 0) {
-      return res.status(400).json({ message: "No items" });
+    if (!items.length) {
+      return res.status(400).json({ message: "No items selected" });
     }
 
+    const loginUser = await User.findById(loginUserId);
 
-    let screenshot = req.file ? req.file.path : null;
+    // ⭐ FINAL FRANCHISE ID DECISION
+    let finalFranchiseId = null;
+    let orderFrom = "USER";
+
+    if (loginUser.role === "FRANCHISE") {
+      finalFranchiseId = loginUserId;
+      orderFrom = "FRANCHISE";
+    }
+
     let totalAmount = 0;
     let totalBP = 0;
     let orderItems = [];
@@ -48,57 +57,57 @@ exports.createOrder = async (req, res) => {
       const product = await Product.findById(item.product);
 
       if (!product || !product.isActive) {
-        return res.status(400).json({ message: "Product invalid" });
+        return res.status(400).json({ message: "Invalid product" });
       }
 
-      const price = product.mrp;
-      const gst = product.gst || 0;
-      const bp = product.bp;
+      const qty = Number(item.qty) || 1;
+
+      const price = Number(product.mrp || 0);
+      const gst = Number(product.gst || 0);
+      const bp = Number(product.bp || 0);
 
       const priceWithGST = price + (price * gst / 100);
 
-      totalAmount += priceWithGST * item.qty;
-      totalBP += bp * item.qty;
+      totalAmount += priceWithGST * qty;
+      totalBP += bp * qty;
 
       orderItems.push({
         product: product._id,
-        qty: item.qty,
+        qty,
         price: priceWithGST,
         bp
       });
-
     }
 
-    const user = await User.findById(userId);
+    const screenshot = req.file ? req.file.path : null;
 
     const order = await Order.create({
-      orderId: generateOrderId(),
-      user: userId,
-      orderFrom: user.role === "FRANCHISE" ? "FRANCHISE" : "USER",
-      franchiseId: user.role === "FRANCHISE" ? userId : null,
+      orderId: "ORD" + Date.now(),
+      user: loginUserId,
+      orderFrom,
+      franchiseId: finalFranchiseId,
       items: orderItems,
       totalAmount,
       totalBP,
       paymentScreenshot: screenshot,
-      paymentStatus: screenshot ? "paid" : "pending"
+      paymentStatus: screenshot ? "paid" : "pending",
+      status: "pending"
     });
 
     await PaymentReport.create({
+      orderId: order.orderId,
+      user: order.user,
+      franchiseId: order.franchiseId,
+      amount: order.totalAmount,
+      totalBP: order.totalBP,
+      paymentScreenshot: order.paymentScreenshot,
+      paymentStatus: "pending"
+    });
 
- orderId: order.orderId,
- user: order.user,
- franchiseId: order.franchiseId,
- amount: order.totalAmount,
- totalBP: order.totalBP,
- paymentScreenshot: order.paymentScreenshot,
- paymentStatus:"pending"
-
-});
-
-    res.json(order);
+    res.json({ success: true, order });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -183,91 +192,70 @@ exports.getUserOrderDashboard = async (req, res) => {
  * APPROVE ORDER
  */
 exports.approveOrder = async (req, res) => {
-
   try {
 
     const order = await Order.findById(req.params.id);
 
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (order.status === "approved") {
+    if (order.status === "approved")
       return res.status(400).json({ message: "Already approved" });
-    }
 
-    if (order.paymentStatus !== "paid") {
-      return res.status(400).json({ message: "Payment not completed" });
-    }
-    // ⭐ STOCK DEDUCT
-   for (let item of order.items) {
+    if (order.paymentStatus !== "paid")
+      return res.status(400).json({ message: "Payment pending" });
 
-  const product = await Product.findById(item.product);
+    // ⭐ ADMIN STOCK DEDUCT
+    for (let item of order.items) {
 
-  if (!product) {
-    return res.status(400).json({ message: "Product missing" });
-  }
+      const product = await Product.findById(item.product);
 
-  if (product.stock < item.qty) {
-    return res.status(400).json({ message: "Admin stock insufficient" });
-  }
+      if (!product) throw new Error("Product missing");
 
-  // ⭐ ADMIN STOCK DEDUCT
-  product.stock -= item.qty;
-  await product.save();
-
-  // ⭐ ONLY IF ORDER FROM FRANCHISE → ADD STOCK
-  if (order.orderFrom === "FRANCHISE") {
-
-    await FranchiseStock.updateOne(
-      {
-        franchise: order.franchiseId,
-        product: item.product
-      },
-      {
-        $inc: { quantity: item.qty }
-      },
-      {
-        upsert: true
+      if (Number(product.stock) < Number(item.qty)) {
+        throw new Error(product.title + " admin stock low");
       }
-    );
 
-  }
-
-}
-
-    // ⭐ BP DISTRIBUTION
-    await addBP(order.user, order.totalBP);
-    // ⭐ FRANCHISE RETAIL INCOME
-    if (order.orderFrom === "FRANCHISE" && order.retailProfit > 0) {
-
-      const franchise = await User.findById(order.franchiseId);
-
-      if (franchise) {
-        franchise.incomeWallet += order.retailProfit;
-        franchise.totalIncome += order.retailProfit;
-        await franchise.save();
-      }
+      product.stock -= Number(item.qty);
+      await product.save();
     }
 
-    await matchingIncome(order.user);
+    // ⭐ FRANCHISE STOCK ADD
+    if (order.orderFrom === "FRANCHISE" && order.franchiseId) {
 
-    const user = await User.findById(order.user);
+      for (let item of order.items) {
 
-    await checkLevels(user);
-    await rewardEngine(user);
+        await FranchiseStock.updateOne(
+          {
+            franchise: order.franchiseId,
+            product: item.product
+          },
+          {
+            $inc: { quantity: Number(item.qty) }
+          },
+          { upsert: true }
+        );
 
-    await user.save();
+      }
+
+    }
 
     order.status = "approved";
     order.approvedAt = new Date();
-
     await order.save();
 
-    res.json({ message: "Order approved" });
+    // ⭐ PaymentReport update
+    await PaymentReport.updateOne(
+      { orderId: order.orderId },
+      { $set: { paymentStatus: "approved" } }
+    );
+
+    res.json({
+      success: true,
+      message: "Order approved + stock transferred"
+    });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 

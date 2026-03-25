@@ -6,27 +6,6 @@ const addBP = require("../utils/addBP");
 const FranchiseStock = require("../models/FranchiseStock");
 const mongoose = require('mongoose');
 
-const addFranchiseStock = async (order, session) => {
-
-  for (const item of order.items) {
-
-    await FranchiseStock.updateOne(
-      {
-        franchise: order.franchiseId,
-        product: item.product
-      },
-      {
-        $inc: { quantity: Number(item.qty) }
-      },
-      {
-        upsert: true,
-        session
-      }
-    );
-
-  }
-
-};
 // ================= STOCK DEDUCT HELPER (FIXED) =================
 const deductFranchiseStock = async (order, franchiseId, session) => {
   for (const item of order.items) {
@@ -165,9 +144,6 @@ exports.completePaymentOnly = async (req, res) => {
 
     // ✅ ALWAYS FIRST deduct franchise stock
     await deductFranchiseStock(order, order.franchiseId, session);
-
-    // ✅ ADD STOCK TO FRANCHISE (VERY IMPORTANT)
-    await addFranchiseStock(order, session);
 
     if (user.isActive) {
       // 🔥 REPURCHASE

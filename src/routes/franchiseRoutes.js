@@ -6,7 +6,7 @@ const ctrl = require('../controllers/franchise.controller');
 const permit = require('../middlewares/role.middleware');
 const upload = require('../middlewares/upload');
 
-router.get('/stock', auth, ctrl.getFranchiseStock);
+router.get('/stock', auth, permit('FRANCHISE'), ctrl.getFranchiseStock);
 router.get('/dashboard', auth, ctrl.getFranchiseDashboard);
 router.get('/profile', auth, ctrlUser.getProfile);
 router.put('/profile', auth, upload.single('photo'), ctrlUser.updatePhoto);
