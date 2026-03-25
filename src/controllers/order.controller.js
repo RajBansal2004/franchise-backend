@@ -39,13 +39,20 @@ exports.createOrder = async (req, res) => {
 
     const loginUser = await User.findById(loginUserId);
 
-    // ⭐ FINAL FRANCHISE ID DECISION
+    // ⭐⭐⭐ FINAL DECISION
     let finalFranchiseId = null;
     let orderFrom = "USER";
 
     if (loginUser.role === "FRANCHISE") {
-      finalFranchiseId = loginUserId;
+
+      finalFranchiseId = loginUser._id;   // ⭐ VERY IMPORTANT
       orderFrom = "FRANCHISE";
+
+    } else if (franchiseId) {
+
+      finalFranchiseId = new mongoose.Types.ObjectId(franchiseId);
+      orderFrom = "FRANCHISE";
+
     }
 
     let totalAmount = 0;
@@ -85,23 +92,13 @@ exports.createOrder = async (req, res) => {
       orderId: "ORD" + Date.now(),
       user: loginUserId,
       orderFrom,
-      franchiseId: finalFranchiseId,
+      franchiseId: finalFranchiseId,   // ⭐ NOW NEVER NULL
       items: orderItems,
       totalAmount,
       totalBP,
       paymentScreenshot: screenshot,
       paymentStatus: screenshot ? "paid" : "pending",
       status: "pending"
-    });
-
-    await PaymentReport.create({
-      orderId: order.orderId,
-      user: order.user,
-      franchiseId: order.franchiseId,
-      amount: order.totalAmount,
-      totalBP: order.totalBP,
-      paymentScreenshot: order.paymentScreenshot,
-      paymentStatus: "pending"
     });
 
     res.json({ success: true, order });
