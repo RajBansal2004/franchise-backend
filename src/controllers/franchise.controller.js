@@ -297,37 +297,43 @@ exports.getFranchiseStock = async (req, res) => {
 
     const franchiseId = req.user.id;
 
-    const stock = await FranchiseStock.find({
-      franchise: franchiseId
-    }).populate("product", "title price bp");
+    const stocks = await FranchiseStock.find({
+      franchise: franchiseId,
+      quantity: { $gt: 0 }
+    })
+    .populate("product");   // ⭐ VERY IMPORTANT
 
-    const formatted = stock.map(s => {
+    const data = stocks.map(s => {
 
-      const price = Number(s.product?.price || 0);
-      const bp = Number(s.product?.bp || 0);
+      const product = s.product || {};
+
+      const price = Number(product.mrp || 0);
+      const bp = Number(product.bp || 0);
       const qty = Number(s.quantity || 0);
 
       return {
-        productId: s.product?._id,
-        productName: s.product?.title,
-        price,
-        bpPoint: bp,
+        productId: product._id,
+        productName: product.title,
+        price: price,
         availableQty: qty,
-        totalValue: price * qty,     // ⭐ FIX
-        totalBP: bp * qty            // ⭐ FIX
+        bpPoint: bp,
+        totalValue: price * qty,
+        totalBP: bp * qty
       };
 
     });
 
     res.json({
       success: true,
-      count: formatted.length,
-      data: formatted
+      data
     });
 
   } catch (err) {
-    console.error("Franchise stock error:", err);
-    res.status(500).json({ message: err.message });
+    console.log("STOCK ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
