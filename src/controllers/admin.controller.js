@@ -510,6 +510,7 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
 };
 exports.adminApproveOrder = async (req,res)=>{
   console.log("🔥 ORDER APPROVE API HIT");
+
   const session = await mongoose.startSession();
 
   try{
@@ -520,29 +521,49 @@ exports.adminApproveOrder = async (req,res)=>{
 
     if(!order) throw new Error("Order not found");
 
-    if(order.status === "approved") throw new Error("Already approved");
+    if(order.status === "approved") 
+      throw new Error("Order already approved");
 
-    if(order.paymentStatus !== "paid") throw new Error("Payment pending");
+    if(order.paymentStatus !== "paid") 
+      throw new Error("Payment pending");
 
     // ⭐ ADMIN STOCK DEDUCT
     for(const item of order.items){
 
       const productId =
-        item.product._id ? item.product._id : item.product;
+        item.product?._id ? item.product._id : item.product;
 
       const product = await Product.findById(productId).session(session);
 
       if(!product) throw new Error("Product missing");
 
-      if(Number(product.stock) < Number(item.qty))
-        throw new Error(product.title + " stock low");
+      const stock = parseInt(product.stock || 0);
+      const qty   = parseInt(item.qty || 0);
 
-      product.stock -= Number(item.qty);
+      console.log({
+        product: product.title,
+        stock,
+        qty
+      });
+
+      // ⭐ OUT OF STOCK
+      if(stock <= 0){
+        throw new Error(product.title + " out of stock");
+      }
+
+      // ⭐ INSUFFICIENT STOCK
+      if(stock < qty){
+        throw new Error(product.title + " insufficient stock");
+      }
+
+      // ⭐ SAFE DEDUCT
+      product.stock = stock - qty;
+
       await product.save({ session });
 
     }
 
-    // ⭐⭐⭐ ADD FRANCHISE STOCK (100% SAFE)
+    // ⭐⭐⭐ ADD FRANCHISE STOCK
     if(order.orderFrom === "FRANCHISE" && order.franchiseId){
 
       const franchiseId = new mongoose.Types.ObjectId(order.franchiseId);
@@ -550,7 +571,7 @@ exports.adminApproveOrder = async (req,res)=>{
       for(const item of order.items){
 
         const productId =
-          item.product._id ? item.product._id : item.product;
+          item.product?._id ? item.product._id : item.product;
 
         await FranchiseStock.updateOne(
           {
@@ -558,7 +579,7 @@ exports.adminApproveOrder = async (req,res)=>{
             product: new mongoose.Types.ObjectId(productId)
           },
           {
-            $inc:{ quantity:Number(item.qty) }
+            $inc:{ quantity: parseInt(item.qty || 0) }
           },
           {
             upsert:true,
@@ -570,8 +591,8 @@ exports.adminApproveOrder = async (req,res)=>{
 
     }
 
-    order.status="approved";
-    order.approvedAt=new Date();
+    order.status = "approved";
+    order.approvedAt = new Date();
 
     await order.save({ session });
 
@@ -580,7 +601,7 @@ exports.adminApproveOrder = async (req,res)=>{
 
     res.json({
       success:true,
-      message:"✅ Stock transferred to franchise"
+      message:"✅ Order Approved + Stock Updated"
     });
 
   }catch(err){
