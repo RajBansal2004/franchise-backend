@@ -508,60 +508,60 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 exports.adminApproveOrder = async (req,res)=>{
+  const session = await mongoose.startSession();
+
   try{
 
-    const order = await Order.findById(req.params.id);
+    session.startTransaction();
 
-    if(!order){
-      return res.status(404).json({message:"Order not found"});
-    }
+    const order = await Order.findById(req.params.id).session(session);
 
-    if(order.status === "approved"){
-      return res.status(400).json({message:"Already approved"});
-    }
+    if(!order) throw new Error("Order not found");
 
-    if(order.paymentStatus !== "paid"){
-      return res.status(400).json({message:"Payment not completed"});
-    }
+    if(order.status === "approved") throw new Error("Already approved");
+
+    if(order.paymentStatus !== "paid") throw new Error("Payment pending");
 
     // ⭐ ADMIN STOCK DEDUCT
     for(const item of order.items){
 
-      const product = await Product.findById(item.product);
+      const productId =
+        item.product._id ? item.product._id : item.product;
 
-      if(!product){
-        return res.status(400).json({message:"Product missing"});
-      }
+      const product = await Product.findById(productId).session(session);
 
-      if(product.stock < item.qty){
-        return res.status(400).json({message:`${product.title} stock low`});
-      }
+      if(!product) throw new Error("Product missing");
 
-      product.stock -= item.qty;
-      await product.save();
+      if(Number(product.stock) < Number(item.qty))
+        throw new Error(product.title + " stock low");
+
+      product.stock -= Number(item.qty);
+      await product.save({ session });
+
     }
 
-    // ⭐⭐⭐ ADD FRANCHISE STOCK
+    // ⭐⭐⭐ ADD FRANCHISE STOCK (100% SAFE)
     if(order.orderFrom === "FRANCHISE" && order.franchiseId){
 
-      const franchiseObjectId = new mongoose.Types.ObjectId(order.franchiseId);
+      const franchiseId = new mongoose.Types.ObjectId(order.franchiseId);
 
       for(const item of order.items){
 
-        console.log("🔥 ADDING STOCK:", franchiseObjectId, item.product, item.qty);
+        const productId =
+          item.product._id ? item.product._id : item.product;
 
         await FranchiseStock.updateOne(
           {
-            franchise: franchiseObjectId,
-            product: item.product
+            franchise: franchiseId,
+            product: new mongoose.Types.ObjectId(productId)
           },
           {
-            $inc:{ quantity: Number(item.qty) }
+            $inc:{ quantity:Number(item.qty) }
           },
           {
-            upsert:true
+            upsert:true,
+            session
           }
         );
 
@@ -569,35 +569,26 @@ exports.adminApproveOrder = async (req,res)=>{
 
     }
 
-    // ⭐ USER ACTIVATION (USER ORDER ONLY)
-    if(order.orderFrom === "USER"){
+    order.status="approved";
+    order.approvedAt=new Date();
 
-      const user = await User.findById(order.user);
+    await order.save({ session });
 
-      if(user && !user.isActive){
-
-        user.isActive = true;
-        user.activatedBy = req.user.id;
-        user.activatedAt = new Date();
-
-        await user.save();
-
-      }
-
-    }
-
-    order.status = "approved";
-    order.approvedAt = new Date();
-
-    await order.save();
+    await session.commitTransaction();
+    session.endSession();
 
     res.json({
       success:true,
-      message:"Order approved + stock transferred"
+      message:"✅ Stock transferred to franchise"
     });
 
   }catch(err){
-    console.log(err);
-    res.status(500).json({message:err.message});
+
+    await session.abortTransaction();
+    session.endSession();
+
+    console.log("APPROVE ERROR:",err);
+
+    res.status(400).json({message:err.message});
   }
 };
