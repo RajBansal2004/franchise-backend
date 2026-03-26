@@ -509,6 +509,7 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
   }
 };
 exports.adminApproveOrder = async (req,res)=>{
+  console.log("🔥 ORDER APPROVE API HIT");
   const session = await mongoose.startSession();
 
   try{

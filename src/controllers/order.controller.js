@@ -189,6 +189,7 @@ exports.getUserOrderDashboard = async (req, res) => {
  * APPROVE ORDER
  */
 exports.approveOrder = async (req, res) => {
+   console.log("🔥 ADMIN APPROVE API HIT");
   try {
 
     const order = await Order.findById(req.params.id);
