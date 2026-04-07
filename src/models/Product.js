@@ -10,10 +10,10 @@ const productSchema = new mongoose.Schema({
   containt: String,
   mrp: { type: Number, default: 0 },
   category: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "Category",
-  required: true
-},
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    required: true
+  },
 
   franchisePrice: {
     type: Number,
@@ -32,8 +32,7 @@ const productSchema = new mongoose.Schema({
 
   incomeEligible: { type: Boolean, default: true },
 
-  bestseller: { type: Boolean, default: false },
-
+  isBestSelling: { type: Boolean, default: false },
   image: String,
   images: [String],
   isActive: { type: Boolean, default: true }
