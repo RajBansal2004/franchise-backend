@@ -68,7 +68,6 @@ exports.createOrder = async (req, res) => {
       }
 
       const qty = Number(item.qty) || 1;
-
       const price = Number(product.mrp || 0);
       const gst = Number(product.gst || 0);
       const bp = Number(product.bp || 0);
@@ -83,6 +82,12 @@ exports.createOrder = async (req, res) => {
         qty,
         price: priceWithGST,
         bp
+      });
+    }
+    // ✅ MINIMUM ORDER VALIDATION
+    if (orderFrom === "FRANCHISE" && totalAmount < 25000) {
+      return res.status(400).json({
+        message: "Minimum order amount for Franchise is ₹25,000"
       });
     }
 
@@ -119,7 +124,7 @@ exports.getOrders = async (req, res) => {
       .populate('user', 'fullName email mobile role')
       .populate('items.product', 'title price');
 
-    res.json(orders); 
+    res.json(orders);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -189,7 +194,7 @@ exports.getUserOrderDashboard = async (req, res) => {
  * APPROVE ORDER
  */
 exports.approveOrder = async (req, res) => {
-   console.log("🔥 ADMIN APPROVE API HIT");
+  console.log("🔥 ADMIN APPROVE API HIT");
   try {
 
     const order = await Order.findById(req.params.id);

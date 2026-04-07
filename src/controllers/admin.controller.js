@@ -508,7 +508,9 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.adminApproveOrder = async (req,res)=>{
+
   console.log("🔥 ORDER APPROVE API HIT");
 
   const session = await mongoose.startSession();
@@ -527,43 +529,9 @@ exports.adminApproveOrder = async (req,res)=>{
     if(order.paymentStatus !== "paid") 
       throw new Error("Payment pending");
 
-    // ⭐ ADMIN STOCK DEDUCT
-    for(const item of order.items){
+    console.log("✅ Admin unlimited stock enabled");
 
-      const productId =
-        item.product?._id ? item.product._id : item.product;
-
-      const product = await Product.findById(productId).session(session);
-
-      if(!product) throw new Error("Product missing");
-
-      const stock = parseInt(product.stock || 0);
-      const qty   = parseInt(item.qty || 0);
-
-      console.log({
-        product: product.title,
-        stock,
-        qty
-      });
-
-      // ⭐ OUT OF STOCK
-      if(stock <= 0){
-        throw new Error(product.title + " out of stock");
-      }
-
-      // ⭐ INSUFFICIENT STOCK
-      if(stock < qty){
-        throw new Error(product.title + " insufficient stock");
-      }
-
-      // ⭐ SAFE DEDUCT
-      product.stock = stock - qty;
-
-      await product.save({ session });
-
-    }
-
-    // ⭐⭐⭐ ADD FRANCHISE STOCK
+    // ⭐ ONLY FRANCHISE → ADD STOCK (ONLY ONCE)
     if(order.orderFrom === "FRANCHISE" && order.franchiseId){
 
       const franchiseId = new mongoose.Types.ObjectId(order.franchiseId);
@@ -591,6 +559,7 @@ exports.adminApproveOrder = async (req,res)=>{
 
     }
 
+    // ⭐ ORDER APPROVE
     order.status = "approved";
     order.approvedAt = new Date();
 
