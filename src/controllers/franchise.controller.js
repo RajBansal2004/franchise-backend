@@ -93,7 +93,7 @@ exports.createBill = async (req, res) => {
         });
       }
 
-      const price = Number(product.price) || 0;
+      const price = Number(product.mrp || product.price || 0);
       const bp = Number(product.bp) || 0;
 
       totalAmount += price * qty;
@@ -301,7 +301,7 @@ exports.getFranchiseStock = async (req, res) => {
       franchise: franchiseId,
       quantity: { $gt: 0 }
     })
-    .populate("product");   // ⭐ VERY IMPORTANT
+      .populate("product");   // ⭐ VERY IMPORTANT
 
     const data = stocks.map(s => {
 
