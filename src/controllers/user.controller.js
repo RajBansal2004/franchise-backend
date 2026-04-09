@@ -168,13 +168,14 @@ exports.getUserDashboard = async (req, res) => {
 
 shippingAddress: user.shippingAddress || {},
   status: user.isActive ? 'Active' : 'Inactive',
-  photo: user.photo
-},
- // 🔥🔥🔥 YE LINE ADD KARO (MAIN FIX)
+  photo: user.photo,
+  // 🔥🔥🔥 YE LINE ADD KARO (MAIN FIX)
   kycStatus: user.kycStatus,
 
   // (optional but useful)
   kycDocs: user.kycDocs,
+},
+ 
 
       /* ===== BUSINESS SUMMARY ===== */
 
