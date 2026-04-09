@@ -187,31 +187,31 @@ exports.getPendingKyc = async (req, res) => {
 /**
  * 🔹 APPROVE / REJECT KYC
  */
-exports.updateKycStatus = async (req, res) => { 
-  const { kycId } = req.params;
-  const { status } = req.body; // approved | rejected
+exports.updateKycStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
 
-  if (!['approved', 'rejected'].includes(status)) {
-    return res.status(400).json({ message: 'Invalid status' });
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.kycStatus = status;
+
+    await user.save();
+
+    res.json({
+      message: `KYC ${status} successfully`,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  const kyc = await Kyc.findById(kycId);
-  if (!kyc) {
-    return res.status(404).json({ message: 'KYC not found' });
-  }
-
-  // update KYC
-  kyc.status = status;
-  await kyc.save();
-
-  // update USER
-  await User.findByIdAndUpdate(kyc.user, {
-    kycStatus: status
-  });
-
-  res.json({
-    message: `KYC ${status} successfully`
-  });
 };
 
 
