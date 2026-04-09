@@ -373,7 +373,7 @@ exports.getUsers = async (req, res) => {
 
     const [users, total] = await Promise.all([
       User.find(filter)
-        .select('fullName uniqueId mobile plainPassword role isActive isBlocked kycStatus createdAt')
+        .select('fullName uniqueId mobile plainPassword role isActive isBlocked kycStatus kycDocs createdAt')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),
