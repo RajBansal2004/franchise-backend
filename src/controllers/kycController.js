@@ -12,69 +12,49 @@ exports.uploadKyc = async (req, res) => {
 
     console.log("📂 FILES RECEIVED:", files);
 
-    // ===== Ensure Object Exist =====
     user.kycDocs = user.kycDocs || {};
     user.kycDocs.aadhaar = user.kycDocs.aadhaar || {};
     user.kycDocs.pan = user.kycDocs.pan || {};
     user.kycDocs.voterId = user.kycDocs.voterId || {};
 
-    // ===== Aadhaar =====
+    // ✅ IMPORTANT: ONLY secure_url use करना है
     if (files.aadhaarFront) {
       user.kycDocs.aadhaar.frontImage =
-        files.aadhaarFront[0].path || files.aadhaarFront[0].secure_url;
+        files.aadhaarFront[0].path; // cloudinary url
     }
 
     if (files.aadhaarBack) {
       user.kycDocs.aadhaar.backImage =
-        files.aadhaarBack[0].path || files.aadhaarBack[0].secure_url;
+        files.aadhaarBack[0].path;
     }
 
-    // ===== PAN =====
     if (files.panFront) {
       user.kycDocs.pan.frontImage =
-        files.panFront[0].path || files.panFront[0].secure_url;
+        files.panFront[0].path;
     }
 
-    if (files.panBack) {
-      user.kycDocs.pan.backImage =
-        files.panBack[0].path || files.panBack[0].secure_url;
-    }
-
-    // ===== Voter =====
     if (files.voterFront) {
       user.kycDocs.voterId.frontImage =
-        files.voterFront[0].path || files.voterFront[0].secure_url;
+        files.voterFront[0].path;
     }
 
-    if (files.voterBack) {
-      user.kycDocs.voterId.backImage =
-        files.voterBack[0].path || files.voterBack[0].secure_url;
-    }
-
-    // ===== Bank Doc =====
     if (files.bankDoc) {
-      user.bankDoc =
-        files.bankDoc[0].path || files.bankDoc[0].secure_url;
+      user.bankDoc = files.bankDoc[0].path;
     }
 
-    // ===== Status =====
-    user.kycStatus = 'pending';
+    user.kycStatus = "pending";
 
     await user.save();
 
-    console.log("✅ SAVED USER:", user.kycDocs);
-
     res.json({
-      message: 'KYC Uploaded Successfully',
+      message: "KYC Uploaded Successfully",
       kycStatus: user.kycStatus,
       kycDocs: user.kycDocs
     });
 
   } catch (error) {
-    console.error("❌ KYC ERROR:", error);
-    res.status(500).json({
-      error: error.message
-    });
+    console.error("❌ ERROR:", error);
+    res.status(500).json({ error: error.message });
   }
 };
 

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const auth = require('../middlewares/auth.middleware');
-const uploadKyc = require('../middlewares/upload');
+const uploadKyc = require('../middlewares/uploadKyc');
 const kycCtrl = require('../controllers/kycController');
 const permit = require('../middlewares/role.middleware');
 
