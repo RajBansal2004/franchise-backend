@@ -14,7 +14,8 @@ router.post(
     { name: 'panFront', maxCount: 1 },
     { name: 'panBack', maxCount: 1 },
     { name: 'voterFront', maxCount: 1 },
-    { name: 'voterBack', maxCount: 1 }
+    { name: 'voterBack', maxCount: 1 },
+    { name: 'bankDoc', maxCount: 1 }
   ]),
   kycCtrl.uploadKyc
 );

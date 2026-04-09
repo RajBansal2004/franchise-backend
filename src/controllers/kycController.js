@@ -49,6 +49,9 @@ exports.uploadKyc = async (req, res) => {
     if (files.voterBack)
       user.kycDocs.voterId.backImage =
         files.voterBack[0].path;
+    if (files.bankDoc) {
+      user.bankDoc = files.bankDoc[0].path;
+    }
 
     user.kycStatus = 'pending';
 
