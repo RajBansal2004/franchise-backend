@@ -23,8 +23,9 @@ exports.createOrder = async (req, res) => {
   try {
 
     const loginUserId = req.user.id;
-    let { items, franchiseId } = req.body;
+    let { items } = req.body; // ❌ franchiseId हटाया
 
+    // ✅ Parse items
     if (typeof items === "string") {
       items = JSON.parse(items);
     }
@@ -37,28 +38,26 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: "No items selected" });
     }
 
+    // ✅ Get logged-in user
     const loginUser = await User.findById(loginUserId);
+    if (!loginUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    // ⭐⭐⭐ FINAL DECISION
-    let finalFranchiseId = null;
+    // ✅ FINAL DECISION (FIXED)
     let orderFrom = "USER";
+    let finalFranchiseId = null;
 
     if (loginUser.role === "FRANCHISE") {
-
-      finalFranchiseId = loginUser._id;   // ⭐ VERY IMPORTANT
       orderFrom = "FRANCHISE";
-
-    } else if (franchiseId) {
-
-      finalFranchiseId = new mongoose.Types.ObjectId(franchiseId);
-      orderFrom = "FRANCHISE";
-
+      finalFranchiseId = loginUser._id;
     }
 
     let totalAmount = 0;
     let totalBP = 0;
     let orderItems = [];
 
+    // ✅ LOOP PRODUCTS
     for (let item of items) {
 
       const product = await Product.findById(item.product);
@@ -84,20 +83,23 @@ exports.createOrder = async (req, res) => {
         bp
       });
     }
-    // ✅ MINIMUM ORDER VALIDATION
+
+    // ✅ MINIMUM ORDER VALIDATION (ONLY FRANCHISE)
     if (orderFrom === "FRANCHISE" && totalAmount < 25000) {
       return res.status(400).json({
         message: "Minimum order amount for Franchise is ₹25,000"
       });
     }
 
+    // ✅ Screenshot
     const screenshot = req.file ? req.file.path : null;
 
+    // ✅ CREATE ORDER
     const order = await Order.create({
       orderId: "ORD" + Date.now(),
       user: loginUserId,
       orderFrom,
-      franchiseId: finalFranchiseId,   // ⭐ NOW NEVER NULL
+      franchiseId: finalFranchiseId, // ✅ USER = null रहेगा
       items: orderItems,
       totalAmount,
       totalBP,
@@ -106,9 +108,14 @@ exports.createOrder = async (req, res) => {
       status: "pending"
     });
 
-    res.json({ success: true, order });
+    res.json({
+      success: true,
+      message: "Order created successfully",
+      order
+    });
 
   } catch (err) {
+    console.error("CREATE ORDER ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
