@@ -294,7 +294,7 @@ exports.toggleBlockStatus = async (req, res) => {
     user.isBlocked = isBlocked;
 
     if (isBlocked) {
-      user.isActive = false; 
+      user.isActive = false;
     }
 
     await user.save();
@@ -423,40 +423,40 @@ exports.createFranchiseByAdmin = async (req, res) => {
     const franchiseId = generateFranchiseId();
 
     // ✅ create user
-   const franchise = await User.create({
-  fullName,
-  fatherName,
-  gender,
-  dob,
-  mobile,
-  email,
+    const franchise = await User.create({
+      fullName,
+      fatherName,
+      gender,
+      dob,
+      mobile,
+      email,
 
-  role: 'FRANCHISE',          // ⭐ VERY IMPORTANT
-  organizationName: franchiseName, // ⭐ FIX
- uniqueId: franchiseId,        // ⭐ REQUIRED
+      role: 'FRANCHISE',          // ⭐ VERY IMPORTANT
+      organizationName: franchiseName, // ⭐ FIX
+      uniqueId: franchiseId,        // ⭐ REQUIRED
       password: password,           // ⭐ REQUIRED
       plainPassword: password,
-  franchiseName,
-  franchiseOwnerName: ownerName,
+      franchiseName,
+      franchiseOwnerName: ownerName,
 
-  location: {
-    state,
-    district,
-    pincode
-  },
+      location: {
+        state,
+        district,
+        pincode
+      },
 
-  shippingAddress: {
-    addressLine: address
-  }
-});
+      shippingAddress: {
+        addressLine: address
+      }
+    });
 
 
-   if (kycType && kycNumber) {
-  franchise.kycDocs[kycType] = {
-    number: kycNumber
-  };
-  await franchise.save();
-}
+    if (kycType && kycNumber) {
+      franchise.kycDocs[kycType] = {
+        number: kycNumber
+      };
+      await franchise.save();
+    }
 
 
     res.status(201).json({
@@ -477,13 +477,13 @@ exports.getUserOrders = async (req, res) => {
 
     const orders = await Order.find({
       orderFrom: "USER",
-      $or:[
+      $or: [
         { franchiseId: null },
-        { franchiseId: { $exists:false } }
+        { franchiseId: { $exists: false } }
       ]
     })
-    .populate("user","fullName email uniqueId role")
-    .populate("items.product","title images image price");
+      .populate("user", "fullName email uniqueId role")
+      .populate("items.product", "title images image price");
 
     res.json(orders);
 
@@ -496,11 +496,11 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
   try {
 
     const orders = await Order.find({
-      orderFrom: "FRANCHISE",
-      franchiseId: { $ne: null }
+      franchiseId: { $exists: true, $ne: null },
+      orderFrom: "FRANCHISE"
     })
-    .populate("user","fullName email uniqueId role")
-    .populate("items.product","title images image price");
+      .populate("user", "fullName email uniqueId role")
+      .populate("items.product", "title images image price");
 
     res.json(orders);
 
@@ -509,34 +509,34 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
   }
 };
 
-exports.adminApproveOrder = async (req,res)=>{
+exports.adminApproveOrder = async (req, res) => {
 
   console.log("🔥 ORDER APPROVE API HIT");
 
   const session = await mongoose.startSession();
 
-  try{
+  try {
 
     session.startTransaction();
 
     const order = await Order.findById(req.params.id).session(session);
 
-    if(!order) throw new Error("Order not found");
+    if (!order) throw new Error("Order not found");
 
-    if(order.status === "approved") 
+    if (order.status === "approved")
       throw new Error("Order already approved");
 
-    if(order.paymentStatus !== "paid") 
+    if (order.paymentStatus !== "paid")
       throw new Error("Payment pending");
 
     console.log("✅ Admin unlimited stock enabled");
 
     // ⭐ ONLY FRANCHISE → ADD STOCK (ONLY ONCE)
-    if(order.orderFrom === "FRANCHISE" && order.franchiseId){
+    if (order.orderFrom === "FRANCHISE" && order.franchiseId) {
 
       const franchiseId = new mongoose.Types.ObjectId(order.franchiseId);
 
-      for(const item of order.items){
+      for (const item of order.items) {
 
         const productId =
           item.product?._id ? item.product._id : item.product;
@@ -547,10 +547,10 @@ exports.adminApproveOrder = async (req,res)=>{
             product: new mongoose.Types.ObjectId(productId)
           },
           {
-            $inc:{ quantity: parseInt(item.qty || 0) }
+            $inc: { quantity: parseInt(item.qty || 0) }
           },
           {
-            upsert:true,
+            upsert: true,
             session
           }
         );
@@ -569,17 +569,17 @@ exports.adminApproveOrder = async (req,res)=>{
     session.endSession();
 
     res.json({
-      success:true,
-      message:"✅ Order Approved + Stock Updated"
+      success: true,
+      message: "✅ Order Approved + Stock Updated"
     });
 
-  }catch(err){
+  } catch (err) {
 
     await session.abortTransaction();
     session.endSession();
 
-    console.log("APPROVE ERROR:",err);
+    console.log("APPROVE ERROR:", err);
 
-    res.status(400).json({message:err.message});
+    res.status(400).json({ message: err.message });
   }
 };
