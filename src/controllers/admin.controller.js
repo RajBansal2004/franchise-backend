@@ -214,7 +214,6 @@ exports.updateKycStatus = async (req, res) => {
   }
 };
 
-
 exports.getDashboardStats = async (req, res) => {
   try {
     const [
@@ -279,7 +278,6 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 exports.toggleBlockStatus = async (req, res) => {
   try {
@@ -508,40 +506,50 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
 
 exports.adminApproveOrder = async (req, res) => {
 
-  console.log("🔥 ORDER APPROVE API HIT");
-
   const session = await mongoose.startSession();
 
   try {
-
     session.startTransaction();
+
+    const { activationBP } = req.body;
 
     const order = await Order.findById(req.params.id).session(session);
 
     if (!order) throw new Error("Order not found");
 
     if (order.status === "approved")
-      throw new Error("Order already approved");
+      throw new Error("Already approved");
 
     if (order.paymentStatus !== "paid")
       throw new Error("Payment pending");
 
-    console.log("✅ Admin unlimited stock enabled");
+    // ================= USER ORDER =================
+    if (order.orderFrom === "USER") {
 
-    // ⭐ ONLY FRANCHISE → ADD STOCK (ONLY ONCE)
+      if (![51, 101].includes(Number(activationBP))) {
+        throw new Error("Select valid BP (51 or 101)");
+      }
+
+      order.activationBP = activationBP;
+      order.isActivated = true;
+
+      await User.findByIdAndUpdate(order.user, {
+        isActive: true
+      }).session(session);
+    }
+
+    // ================= FRANCHISE ORDER =================
     if (order.orderFrom === "FRANCHISE" && order.franchiseId) {
-
-      const franchiseId = new mongoose.Types.ObjectId(order.franchiseId);
 
       for (const item of order.items) {
 
         const productId =
-          item.product?._id ? item.product._id : item.product;
+          item.product?._id || item.product;
 
         await FranchiseStock.updateOne(
           {
-            franchise: franchiseId,
-            product: new mongoose.Types.ObjectId(productId)
+            franchise: order.franchiseId,
+            product: productId
           },
           {
             $inc: { quantity: parseInt(item.qty || 0) }
@@ -551,12 +559,10 @@ exports.adminApproveOrder = async (req, res) => {
             session
           }
         );
-
       }
-
     }
 
-    // ⭐ ORDER APPROVE
+    // ================= FINAL =================
     order.status = "approved";
     order.approvedAt = new Date();
 
@@ -567,15 +573,12 @@ exports.adminApproveOrder = async (req, res) => {
 
     res.json({
       success: true,
-      message: "✅ Order Approved + Stock Updated"
+      message: "Order Approved Successfully"
     });
 
   } catch (err) {
-
     await session.abortTransaction();
     session.endSession();
-
-    console.log("APPROVE ERROR:", err);
 
     res.status(400).json({ message: err.message });
   }
