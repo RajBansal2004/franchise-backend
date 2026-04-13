@@ -476,11 +476,7 @@ exports.getUserOrders = async (req, res) => {
   try {
 
     const orders = await Order.find({
-      orderFrom: "USER",
-      $or: [
-        { franchiseId: null },
-        { franchiseId: { $exists: false } }
-      ]
+      orderFrom: "USER"
     })
       .populate("user", "fullName email uniqueId role")
       .populate("items.product", "title images image price")
@@ -497,22 +493,13 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
   try {
 
     const orders = await Order.find({
-      $or: [
-        { orderFrom: "FRANCHISE" },
-        { franchiseId: { $ne: null } } // 🔥 fallback safety
-      ]
+      orderFrom: "FRANCHISE"   // ✅ ONLY THIS
     })
       .populate("user", "fullName email uniqueId role")
       .populate("items.product", "title images image price")
       .sort({ createdAt: -1 });
-    console.log(orders.map(o => ({
-      id: o.orderId,
-      from: o.orderFrom,
-      franchiseId: o.franchiseId
-    })));
 
     res.json(orders);
-
 
   } catch (err) {
     res.status(500).json({ message: err.message });
