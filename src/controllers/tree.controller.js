@@ -1,25 +1,37 @@
 const User = require('../models/User');
 
+// ✅ RECURSIVE FUNCTION
+const buildTree = async (userId) => {
+  const user = await User.findById(userId)
+    .lean();
 
-// exports.getMyTree = async (req, res) => {
-// const user = await User.findById(req.user.id)
-// .populate('leftChildren')
-// .populate('rightChildren');
-// res.json(user);
-// };
+  if (!user) return null;
 
+  // LEFT CHILD
+  let leftChild = null;
+  if (user.leftChildren && user.leftChildren.length > 0) {
+    leftChild = await buildTree(user.leftChildren[0]);
+  }
 
-exports.getMyTree = async (req, res) => {
-  const user = await User.findById(req.user.id)
-    .populate('leftChildren')
-    .populate('rightChildren');
+  // RIGHT CHILD
+  let rightChild = null;
+  if (user.rightChildren && user.rightChildren.length > 0) {
+    rightChild = await buildTree(user.rightChildren[0]);
+  }
 
-  // 👉 FIRST CHILD nikal do
-  const formattedUser = {
-    ...user._doc,
-    leftChild: user.leftChildren[0] || null,
-    rightChild: user.rightChildren[0] || null,
+  return {
+    ...user,
+    leftChild,
+    rightChild
   };
+};
 
-  res.json(formattedUser);
+// ✅ API
+exports.getMyTree = async (req, res) => {
+  try {
+    const tree = await buildTree(req.user.id);
+    res.json(tree);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
