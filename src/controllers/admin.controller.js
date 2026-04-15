@@ -508,14 +508,21 @@ exports.adminApproveOrder = async (req, res) => {
 
   const session = await mongoose.startSession();
 
+  let user = null;
+  let parent = null;
+
   try {
     session.startTransaction();
 
     const { activationBP } = req.body;
 
+    console.log("👉 Approve API HIT:", req.params.id);
+
     const order = await Order.findById(req.params.id).session(session);
 
     if (!order) throw new Error("Order not found");
+
+    console.log("📦 Order Found:", order.orderId);
 
     if (order.status === "approved")
       throw new Error("Already approved");
@@ -526,6 +533,8 @@ exports.adminApproveOrder = async (req, res) => {
     // ================= USER ORDER =================
     if (order.orderFrom === "USER") {
 
+      console.log("👤 Processing USER order");
+
       if (![51, 101].includes(Number(activationBP))) {
         throw new Error("Select valid BP (51 or 101)");
       }
@@ -533,55 +542,75 @@ exports.adminApproveOrder = async (req, res) => {
       order.activationBP = activationBP;
       order.isActivated = true;
 
-      const user = await User.findById(order.user).session(session);
+      user = await User.findById(order.user).session(session);
 
-      // 🔥 ACTIVATE USER
+      if (!user) throw new Error("User not found");
+
+      console.log("👤 User:", user.fullName);
+
+      // ✅ Activate user
       user.isActive = true;
 
-      // 🔥 CALCULATE TOTAL BP FROM ORDER ITEMS
+      // 🔥 CALCULATE TOTAL BP
       let totalBP = 0;
 
       for (const item of order.items) {
-        totalBP += (item.bp || 0) * (item.qty || 0);
+        const itemBP = (item.bp || 0) * (item.qty || 0);
+        totalBP += itemBP;
+
+        console.log(`📦 Item BP: ${item.bp} × ${item.qty} = ${itemBP}`);
       }
 
       console.log("🔥 TOTAL BP:", totalBP);
 
-      // 🔥 SELF BP
+      // ✅ SELF BP
       user.selfBP = (user.selfBP || 0) + totalBP;
 
-      // 🔥 PARENT BP
+      console.log("✅ Updated SELF BP:", user.selfBP);
+
+      // ✅ PARENT UPDATE
       if (user.parentId) {
-        const parent = await User.findById(user.parentId).session(session);
 
-        if (user.position === "LEFT") {
-          parent.leftBP = (parent.leftBP || 0) + totalBP;
+        parent = await User.findById(user.parentId).session(session);
+
+        if (!parent) {
+          console.log("⚠️ Parent not found");
         } else {
-          parent.rightBP = (parent.rightBP || 0) + totalBP;
+
+          console.log("👨‍👦 Parent:", parent.fullName);
+
+          if (user.position === "LEFT") {
+            parent.leftBP = (parent.leftBP || 0) + totalBP;
+          } else {
+            parent.rightBP = (parent.rightBP || 0) + totalBP;
+          }
+
+          console.log("⬅️ Parent LEFT BP:", parent.leftBP);
+          console.log("➡️ Parent RIGHT BP:", parent.rightBP);
+
+          await parent.save({ session });
+
+          // 🔥 LEVEL CHECK (PARENT)
+          await checkLevels(parent);
         }
-
-        await parent.save({ session });
-
-        // 🔥 LEVEL CHECK FOR PARENT
-        await checkLevels(parent);
       }
 
-      // 🔥 LEVEL CHECK FOR USER
+      // 🔥 LEVEL CHECK (USER)
       await checkLevels(user);
 
       await user.save({ session });
     }
-    console.log("USER BP:", user.selfBP);
-    console.log("PARENT LEFT:", parent.leftBP);
-    console.log("PARENT RIGHT:", parent.rightBP);
 
     // ================= FRANCHISE ORDER =================
     if (order.orderFrom === "FRANCHISE" && order.franchiseId) {
 
+      console.log("🏢 Processing FRANCHISE order");
+
       for (const item of order.items) {
 
-        const productId =
-          item.product?._id || item.product;
+        const productId = item.product?._id || item.product;
+
+        console.log("📦 Adding Stock:", productId, "Qty:", item.qty);
 
         await FranchiseStock.updateOne(
           {
@@ -608,15 +637,23 @@ exports.adminApproveOrder = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
+    console.log("✅ ORDER APPROVED SUCCESS");
+
     res.json({
       success: true,
       message: "Order Approved Successfully"
     });
 
   } catch (err) {
+
     await session.abortTransaction();
     session.endSession();
 
-    res.status(400).json({ message: err.message });
+    console.error("❌ APPROVE ERROR:", err.message);
+
+    res.status(400).json({
+      success: false,
+      message: err.message
+    });
   }
 };
