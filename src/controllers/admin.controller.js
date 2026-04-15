@@ -514,8 +514,6 @@ exports.adminApproveOrder = async (req, res) => {
   try {
     session.startTransaction();
 
-    const { activationBP } = req.body;
-
     console.log("👉 Approve API HIT:", req.params.id);
 
     const order = await Order.findById(req.params.id).session(session);
@@ -535,23 +533,7 @@ exports.adminApproveOrder = async (req, res) => {
 
       console.log("👤 Processing USER order");
 
-      if (![51, 101].includes(Number(activationBP))) {
-        throw new Error("Select valid BP (51 or 101)");
-      }
-
-      order.activationBP = activationBP;
-      order.isActivated = true;
-
-      user = await User.findById(order.user).session(session);
-
-      if (!user) throw new Error("User not found");
-
-      console.log("👤 User:", user.fullName);
-
-      // ✅ Activate user
-      user.isActive = true;
-
-      // 🔥 CALCULATE TOTAL BP
+      // 🔥 CALCULATE TOTAL BP (ONLY ONCE)
       let totalBP = 0;
 
       for (const item of order.items) {
@@ -563,12 +545,36 @@ exports.adminApproveOrder = async (req, res) => {
 
       console.log("🔥 TOTAL BP:", totalBP);
 
-      // ✅ SELF BP
+      // ❌ MIN BP CHECK
+      if (totalBP < 51) {
+        throw new Error("Minimum 51 BP required for activation ❌");
+      }
+
+      // ✅ AUTO ACTIVATION LOGIC
+      let activationBPValue = totalBP >= 101 ? 101 : 51;
+
+      console.log("✅ ACTIVATION BP USED:", activationBPValue);
+
+      // ✅ SET IN ORDER
+      order.activationBP = activationBPValue;
+      order.isActivated = true;
+
+      // 🔥 GET USER
+      user = await User.findById(order.user).session(session);
+
+      if (!user) throw new Error("User not found");
+
+      console.log("👤 User:", user.fullName);
+
+      // ✅ Activate user
+      user.isActive = true;
+
+      // ✅ SELF BP UPDATE
       user.selfBP = (user.selfBP || 0) + totalBP;
 
       console.log("✅ Updated SELF BP:", user.selfBP);
 
-      // ✅ PARENT UPDATE
+      // ================= PARENT UPDATE =================
       if (user.parentId) {
 
         parent = await User.findById(user.parentId).session(session);
