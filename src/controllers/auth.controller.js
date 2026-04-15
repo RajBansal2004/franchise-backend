@@ -129,12 +129,13 @@ exports.registerDS = async (req, res) => {
     /* ================= KYC VALIDATION ================= */
     let kycDocs = {};
 
-    if (aadhaarNumber && aadhaarImage) {
-      kycDocs.aadhaar = {
-        number: aadhaarNumber,
-        image: `/uploads/kyc/${aadhaarImage}`
-      };
-    }
+  if (aadhaarNumber && aadhaarFront) {
+  kycDocs.aadhaar = {
+    number: aadhaarNumber,
+    frontImage: `/uploads/kyc/${aadhaarFront}`,
+    backImage: aadhaarBack ? `/uploads/kyc/${aadhaarBack}` : ""
+  };
+}
 
     if (panNumber && panImage) {
       kycDocs.pan = {
