@@ -80,7 +80,7 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-exports.registerDS = async (req, res) => {  
+exports.registerDS = async (req, res) => {
   try {
     const {
       fullName,
@@ -90,7 +90,7 @@ exports.registerDS = async (req, res) => {
       mobile,
       email,
       referralId,
-      position, 
+      position,
       location
     } = req.body;
 
@@ -98,7 +98,7 @@ exports.registerDS = async (req, res) => {
       return res.status(400).json({ message: 'All fields required' });
     }
 
-    if (!position || !['LEFT','RIGHT'].includes(position)) {
+    if (!position || !['LEFT', 'RIGHT'].includes(position)) {
       return res.status(400).json({ message: 'Position must be LEFT or RIGHT' });
     }
 
@@ -107,18 +107,20 @@ exports.registerDS = async (req, res) => {
 
     /* ================= LOCATION ================= */
     let parsedLocation = {};
-if (location) {
-  try {
-    parsedLocation = JSON.parse(location);
-  } catch (e) {
-    return res.status(400).json({
-      message: 'Invalid location JSON format'
-    });
-  }
-}
+    if (location) {
+      try {
+        parsedLocation = JSON.parse(location);
+      } catch (e) {
+        return res.status(400).json({
+          message: 'Invalid location JSON format'
+        });
+      }
+    }
 
     /* ================= KYC FILES ================= */
     const aadhaarImage = req.files?.aadhaarImage?.[0]?.filename || null;
+    const aadhaarFront = req.files?.aadhaarFront?.[0]?.filename || null;
+    const aadhaarBack = req.files?.aadhaarBack?.[0]?.filename || null;
     const panImage = req.files?.panImage?.[0]?.filename || null;
     const voterImage = req.files?.voterImage?.[0]?.filename || null;
 
@@ -153,37 +155,37 @@ if (location) {
         message: 'At least one complete KYC document (number + image) is required'
       });
     }
-  /* ================= FIND REFERRAL ================= */
+    /* ================= FIND REFERRAL ================= */
 
-if (!referralId) {
-  return res.status(400).json({
-    message: 'Referral ID is required'
-  });
-}
+    if (!referralId) {
+      return res.status(400).json({
+        message: 'Referral ID is required'
+      });
+    }
 
-parentUser = await User.findOne({ uniqueId: referralId });
+    parentUser = await User.findOne({ uniqueId: referralId });
 
-if (!parentUser) {
-  return res.status(400).json({
-    message: 'Invalid referral ID'
-  });
-}
+    if (!parentUser) {
+      return res.status(400).json({
+        message: 'Invalid referral ID'
+      });
+    }
 
-const leftCount = parentUser.leftChildren?.length || 0;
-const rightCount = parentUser.rightChildren?.length || 0;
+    const leftCount = parentUser.leftChildren?.length || 0;
+    const rightCount = parentUser.rightChildren?.length || 0;
 
 
-if (position === 'LEFT' && leftCount > rightCount) {
-  return res.status(400).json({
-    message: 'First complete RIGHT to make pair'
-  });
-}
+    if (position === 'LEFT' && leftCount > rightCount) {
+      return res.status(400).json({
+        message: 'First complete RIGHT to make pair'
+      });
+    }
 
-if (position === 'RIGHT' && rightCount > leftCount) {
-  return res.status(400).json({
-    message: 'First complete LEFT to make pair'
-  });
-}
+    if (position === 'RIGHT' && rightCount > leftCount) {
+      return res.status(400).json({
+        message: 'First complete LEFT to make pair'
+      });
+    }
 
 
     /* ================= CREATE USER ================= */
@@ -206,42 +208,42 @@ if (position === 'RIGHT' && rightCount > leftCount) {
       parentId: parentUser ? parentUser._id : null,
       position: parentUser ? position : null,
       level: parentUser ? parentUser.level + 1 : 0,
-      location:parsedLocation,
+      location: parsedLocation,
       kycDocs,
       kycStatus: 'pending'
     });
 
     /* ================= ATTACH TO TREE ================= */
-   if (parentUser) {
+    if (parentUser) {
 
-  if (position === 'LEFT') {
-    parentUser.leftChildren.push(user._id);
-  }
+      if (position === 'LEFT') {
+        parentUser.leftChildren.push(user._id);
+      }
 
-  if (position === 'RIGHT') {
-    parentUser.rightChildren.push(user._id);
-  }
+      if (position === 'RIGHT') {
+        parentUser.rightChildren.push(user._id);
+      }
 
-  await parentUser.save();
-}
+      await parentUser.save();
+    }
 
 
     /* ================= SEND CREDENTIALS ================= */
-//     await sendSMS({
-//       mobile,
-//       purpose: 'CREDENTIALS',
-//       message: `Welcome to Sushen Sanjeevani
-// ID: ${uniqueId}
-// Password: ${password}`
-//     });
+    //     await sendSMS({
+    //       mobile,
+    //       purpose: 'CREDENTIALS',
+    //       message: `Welcome to Sushen Sanjeevani
+    // ID: ${uniqueId}
+    // Password: ${password}`
+    //     });
 
-console.log(uniqueId);
-console.log(password);
+    console.log(uniqueId);
+    console.log(password);
 
     res.status(201).json({
       message: 'Direct Seller registered successfully',
       loginId: uniqueId,
-      password:password
+      password: password
     });
 
   } catch (err) {

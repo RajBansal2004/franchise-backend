@@ -9,7 +9,8 @@ module.exports = router;
 router.post(
   '/ds/register',
   upload.fields([
-    { name: 'aadhaarImage', maxCount: 1 },
+    { name: 'aadhaarFront', maxCount: 1 },
+    { name: 'aadhaarBack', maxCount: 1 },
     { name: 'panImage', maxCount: 1 },
     { name: 'voterImage', maxCount: 1 }
   ]),

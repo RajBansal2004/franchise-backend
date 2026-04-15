@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const { generateFranchiseId, generatePassword } = require('../utils/credentials');
 const SmsLog = require('../models/SmsLog');
 const { sendSMS } = require('../utils/sms');
+const checkLevels = require('../utils/levelChecker');
 
 exports.getSmsLogs = async (req, res) => {
   const logs = await SmsLog.find()
@@ -503,7 +504,6 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 exports.adminApproveOrder = async (req, res) => {
 
   const session = await mongoose.startSession();
@@ -533,10 +533,47 @@ exports.adminApproveOrder = async (req, res) => {
       order.activationBP = activationBP;
       order.isActivated = true;
 
-      await User.findByIdAndUpdate(order.user, {
-        isActive: true
-      }).session(session);
+      const user = await User.findById(order.user).session(session);
+
+      // 🔥 ACTIVATE USER
+      user.isActive = true;
+
+      // 🔥 CALCULATE TOTAL BP FROM ORDER ITEMS
+      let totalBP = 0;
+
+      for (const item of order.items) {
+        totalBP += (item.bp || 0) * (item.qty || 0);
+      }
+
+      console.log("🔥 TOTAL BP:", totalBP);
+
+      // 🔥 SELF BP
+      user.selfBP = (user.selfBP || 0) + totalBP;
+
+      // 🔥 PARENT BP
+      if (user.parentId) {
+        const parent = await User.findById(user.parentId).session(session);
+
+        if (user.position === "LEFT") {
+          parent.leftBP = (parent.leftBP || 0) + totalBP;
+        } else {
+          parent.rightBP = (parent.rightBP || 0) + totalBP;
+        }
+
+        await parent.save({ session });
+
+        // 🔥 LEVEL CHECK FOR PARENT
+        await checkLevels(parent);
+      }
+
+      // 🔥 LEVEL CHECK FOR USER
+      await checkLevels(user);
+
+      await user.save({ session });
     }
+    console.log("USER BP:", user.selfBP);
+    console.log("PARENT LEFT:", parent.leftBP);
+    console.log("PARENT RIGHT:", parent.rightBP);
 
     // ================= FRANCHISE ORDER =================
     if (order.orderFrom === "FRANCHISE" && order.franchiseId) {
