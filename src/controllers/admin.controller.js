@@ -533,7 +533,13 @@ exports.adminApproveOrder = async (req, res) => {
 
       console.log("👤 Processing USER order");
 
-      // 🔥 CALCULATE TOTAL BP (ONLY ONCE)
+      // 🔥 GET USER FIRST (FIXED)
+      user = await User.findById(order.user).session(session);
+      if (!user) throw new Error("User not found");
+
+      console.log("👤 User:", user.fullName);
+
+      // 🔥 CALCULATE TOTAL BP
       let totalBP = 0;
 
       for (const item of order.items) {
@@ -545,31 +551,37 @@ exports.adminApproveOrder = async (req, res) => {
 
       console.log("🔥 TOTAL BP:", totalBP);
 
-      // ❌ MIN BP CHECK
-      if (totalBP < 51) {
+      // ❌ MIN BP CHECK (ONLY FIRST ACTIVATION)
+      if (!user.isActive && totalBP < 51) {
         throw new Error("Minimum 51 BP required for activation ❌");
       }
 
-      // ✅ AUTO ACTIVATION LOGIC
-      let activationBPValue = totalBP >= 101 ? 101 : 51;
+      // ================= 🧠 ACTIVATION LOGIC =================
 
-      console.log("✅ ACTIVATION BP USED:", activationBPValue);
+      if (!user.isActive) {
+        console.log("🆕 FIRST TIME ACTIVATION");
 
-      // ✅ SET IN ORDER
-      order.activationBP = activationBPValue;
-      order.isActivated = true;
+        const { activationBP } = req.body;
 
-      // 🔥 GET USER
-      user = await User.findById(order.user).session(session);
+        // ❌ Validate selection
+        if (![51, 101].includes(Number(activationBP))) {
+          throw new Error("Invalid BP selected");
+        }
 
-      if (!user) throw new Error("User not found");
+        // ❌ Minimum check
+        if (totalBP < activationBP) {
+          throw new Error(`Minimum ${activationBP} BP required ❌`);
+        }
 
-      console.log("👤 User:", user.fullName);
+      } else {
+        console.log("♻️ USER ALREADY ACTIVE");
 
-      // ✅ Activate user
-      user.isActive = true;
+        order.activationBP = 0;
+        order.isActivated = false;
+      }
 
-      // ✅ SELF BP UPDATE
+      // ================= BP UPDATE =================
+
       user.selfBP = (user.selfBP || 0) + totalBP;
 
       console.log("✅ Updated SELF BP:", user.selfBP);
@@ -579,9 +591,7 @@ exports.adminApproveOrder = async (req, res) => {
 
         parent = await User.findById(user.parentId).session(session);
 
-        if (!parent) {
-          console.log("⚠️ Parent not found");
-        } else {
+        if (parent) {
 
           console.log("👨‍👦 Parent:", parent.fullName);
 
@@ -596,14 +606,14 @@ exports.adminApproveOrder = async (req, res) => {
 
           await parent.save({ session });
 
-          // 🔥 LEVEL CHECK (PARENT)
           await checkLevels(parent);
+
+        } else {
+          console.log("⚠️ Parent not found");
         }
       }
 
-      // 🔥 LEVEL CHECK (USER)
       await checkLevels(user);
-
       await user.save({ session });
     }
 
