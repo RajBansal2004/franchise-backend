@@ -63,6 +63,7 @@ exports.getProductsAdmin = async (req,res)=>{
 };
 
 exports.getProducts = async (req,res)=>{
- const data = await Product.find({isActive:true});
+ const data = await Product.find({isActive:true})
+ .populate("category");
  res.json(data);
 };
