@@ -48,6 +48,7 @@ app.use(
 app.use('/kyc', kycRoutes);
 app.use('/franchise', require('./routes/franchiseRoutes'));
 app.use("/categories", require("./routes/category.routes"));
+app.use("/achievements", require("./routes/achievements.routes"));
 app.use("/api", paymentReportRoutes);
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
