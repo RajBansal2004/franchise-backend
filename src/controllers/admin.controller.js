@@ -9,6 +9,30 @@ const SmsLog = require('../models/SmsLog');
 const { sendSMS } = require('../utils/sms');
 const checkLevels = require('../utils/levelChecker');
 
+const distributeBP = async (user, bp, session) => {
+  let currentUser = user;
+
+  while (currentUser.parentId) {
+
+    const parent = await User.findById(currentUser.parentId).session(session);
+    if (!parent) break;
+
+    // ✅ SAME SIDE BP ADD
+    if (currentUser.position === "LEFT") {
+      parent.leftBP = (parent.leftBP || 0) + bp;
+    } else {
+      parent.rightBP = (parent.rightBP || 0) + bp;
+    }
+
+    await parent.save({ session });
+    await checkLevels(parent);
+
+
+    // 👉 NEXT UPLINE
+    currentUser = parent;
+  }
+};
+
 exports.getSmsLogs = async (req, res) => {
   const logs = await SmsLog.find()
     .sort({ createdAt: -1 })
@@ -582,39 +606,15 @@ exports.adminApproveOrder = async (req, res) => {
 
       // ================= BP UPDATE =================
 
-      user.selfBP = (user.selfBP || 0) + totalBP;
-
       console.log("✅ Updated SELF BP:", user.selfBP);
 
       // ================= PARENT UPDATE =================
-      if (user.parentId) {
-
-        parent = await User.findById(user.parentId).session(session);
-
-        if (parent) {
-
-          console.log("👨‍👦 Parent:", parent.fullName);
-
-          if (user.position === "LEFT") {
-            parent.leftBP = (parent.leftBP || 0) + totalBP;
-          } else {
-            parent.rightBP = (parent.rightBP || 0) + totalBP;
-          }
-
-          console.log("⬅️ Parent LEFT BP:", parent.leftBP);
-          console.log("➡️ Parent RIGHT BP:", parent.rightBP);
-
-          await parent.save({ session });
-
-          await checkLevels(parent);
-
-        } else {
-          console.log("⚠️ Parent not found");
-        }
-      }
-
-      await checkLevels(user);
+      // ✅ SELF BP ADD
+      user.selfBP = (user.selfBP || 0) + totalBP;
       await user.save({ session });
+
+      // ✅ 🔥 UPLINE BP DISTRIBUTE
+      await distributeBP(user, totalBP, session);
     }
 
     // ================= FRANCHISE ORDER =================
