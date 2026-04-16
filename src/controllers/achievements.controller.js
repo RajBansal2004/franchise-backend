@@ -1,5 +1,7 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const User = require("../models/User");
+
 exports.getPublicStats = async (req, res) => {
   try {
 
@@ -9,15 +11,26 @@ exports.getPublicStats = async (req, res) => {
       status: "approved"
     });
 
-    // ✅ STATES
-    const states = await Order.distinct("shippingAddress.state", {
-      status: "approved"
+    // ✅ STATES (optimized - only state fetch)
+    const userStates = await User.find(
+      { _id: { $in: users } },
+      { "location.state": 1 }
+    );
+
+    const statesSet = new Set();
+
+    userStates.forEach(u => {
+      if (u.location?.state) {
+        statesSet.add(u.location.state);
+      }
     });
+
+    const states = Array.from(statesSet);
 
     // ✅ PRODUCTS
     const totalProducts = await Product.countDocuments();
 
-    // ✅ CERTIFICATES (manual)
+    // ✅ CERTIFICATES
     const totalCertificates = 10;
 
     res.json({
