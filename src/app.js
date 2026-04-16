@@ -16,6 +16,8 @@ const adminRoute=require('./routes/admin.routes');
 const userRoutes = require('./routes/user.routes');
 const kycRoutes = require('./routes/kycRoutes');
 const paymentReportRoutes = require("./routes/paymentReportRoutes");
+const cartRoutes = require("./routes/cart.routes");
+
 require('./cron');  
 require('./cron/bpReset');
 require('./cron/incomeReset');
@@ -38,6 +40,7 @@ app.use('/admin', adminRoute);
 app.use('/tree', require('./routes/tree.routes'));
 app.use('/report', reportRoutes);
 app.use('/user', userRoutes);
+app.use("/cart", cartRoutes);
 app.use(
   '/uploads',
   express.static(path.join(__dirname, '../uploads'))
