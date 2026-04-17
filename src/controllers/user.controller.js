@@ -5,7 +5,7 @@ const calculateStepPending = require('../utils/stepPendingCalculator');
 const Product = require('../models/Product');
 const checkLevels = require('../utils/levelChecker');
 const ROYALTY_CONFIG = require('../config/royalty.config');
-
+const { getAllDownline } = require('../utils/teamCounter');
 
 exports.purchaseProduct = async (req, res) => {
   try {
@@ -21,15 +21,21 @@ exports.purchaseProduct = async (req, res) => {
 
     // 🔹 SELF BP
     user.selfBP += totalBP;
-
+    // WEEKLY / MONTHLY BP
+    user.weeklyLeftBP += totalBP;
+    user.monthlyLeftBP += totalBP;
     // 🔹 BINARY BP (DIRECT PARENT)
     if (user.parentId) {
       const parent = await User.findById(user.parentId);
 
       if (user.position === 'LEFT') {
         parent.leftBP += totalBP;
+        parent.weeklyLeftBP += totalBP;
+        parent.monthlyLeftBP += totalBP;
       } else {
         parent.rightBP += totalBP;
+        parent.weeklyRightBP += totalBP;
+        parent.monthlyRightBP += totalBP;
       }
 
       await parent.save();
@@ -140,83 +146,92 @@ exports.getUserDashboard = async (req, res) => {
 
     const incentiveActive = teamMembers.filter(u => u.selfBP > 0).length;
     const incentiveInactive = teamMembers.length - incentiveActive;
+    const activeBonusTeam = teamMembers.filter(u => u.selfBP > 0).length;
+    const inactiveBonusTeam = teamMembers.length - activeBonusTeam;
+    const allTeam = await getAllDownline(userId);
 
+    const active = allTeam.filter(u => u.isActive).length;
+    const inactive = allTeam.length - active;
     /* ================= RESPONSE ================= */
 
     res.json({
 
       /* ===== PROFILE ===== */
 
-     profile:{
-  name: user.fullName,
-  dsId: user.uniqueId,
-  referralId: user.uniqueId, // अगर अलग referral field है तो change करो
+      profile: {
+        name: user.fullName,
+        dsId: user.uniqueId,
+        referralId: user.uniqueId, // अगर अलग referral field है तो change करो
 
-  fatherName: user.fatherName || "",
-  gender: user.gender || "",
+        fatherName: user.fatherName || "",
+        gender: user.gender || "",
 
-  mobile: user.mobile,
-  email: user.email,
-  photo:user.photo,
-  dob:user.dob,
+        mobile: user.mobile,
+        email: user.email,
+        photo: user.photo,
+        dob: user.dob,
 
-  // ⭐ LOCATION ADDRESS (Permanent Address)
-  pincode: user.location?.pincode || "",
-  district: user.location?.district || "",
-  state: user.location?.state || "",
-  address: `${user.location?.village || ""} ${user.location?.block || ""}`.trim(),
+        // ⭐ LOCATION ADDRESS (Permanent Address)
+        pincode: user.location?.pincode || "",
+        district: user.location?.district || "",
+        state: user.location?.state || "",
+        address: `${user.location?.village || ""} ${user.location?.block || ""}`.trim(),
 
-shippingAddress: user.shippingAddress || {},
-  status: user.isActive ? 'Active' : 'Inactive',
-  photo: user.photo,
-  // 🔥🔥🔥 YE LINE ADD KARO (MAIN FIX)
-  kycStatus: user.kycStatus,
+        shippingAddress: user.shippingAddress || {},
+        status: user.isActive ? 'Active' : 'Inactive',
+        photo: user.photo,
+        // 🔥🔥🔥 YE LINE ADD KARO (MAIN FIX)
+        kycStatus: user.kycStatus,
 
-  // (optional but useful)
-  kycDocs: user.kycDocs,
-},
- 
+        // (optional but useful)
+        kycDocs: user.kycDocs,
+      },
+
 
       /* ===== BUSINESS SUMMARY ===== */
 
-      business:{
-        selfBP:user.selfBP || 0,
+      business: {
+        selfBP: user.selfBP || 0,
 
-        totalBonusBP:user.leftBP || 0,
-        totalIncentiveBP:user.rightBP || 0,
+        totalBonusBP: user.leftBP || 0,
+        totalIncentiveBP: user.rightBP || 0,
 
-        weeklyBonusBP:user.weeklyLeftBP || 0,
-        weeklyIncentiveBP:user.weeklyRightBP || 0,
+        weeklyBonusBP: user.weeklyLeftBP || 0,
+        weeklyIncentiveBP: user.weeklyRightBP || 0,
 
-        monthlyBonusBP:user.monthlyLeftBP || 0,
-        monthlyIncentiveBP:user.monthlyRightBP || 0
+        monthlyBonusBP: user.monthlyLeftBP || 0,
+        monthlyIncentiveBP: user.monthlyRightBP || 0
       },
 
       /* ===== INCOME SUMMARY ===== */
 
-      income:{
-        weeklyIncome:user.weeklyIncome || 0,
-        monthlyIncome:user.monthlyIncome || 0,
+      income: {
+        weeklyIncome: user.weeklyIncome || 0,
+        monthlyIncome: user.monthlyIncome || 0,
 
-        thirdLegIncome:user.thirdLegIncome || 0,
-        royaltyIncome:user.royaltyIncome || 0,
-        levelRewardIncome:user.levelRewardIncome || 0,
+        thirdLegIncome: user.thirdLegIncome || 0,
+        royaltyIncome: user.royaltyIncome || 0,
+        levelRewardIncome: user.levelRewardIncome || 0,
 
-        totalIncome:user.totalIncome || 0,
+        totalIncome: user.totalIncome || 0,
 
         walletBalance: wallet?.balance || user.incomeWallet || 0
       },
 
       /* ===== TEAM SUMMARY ===== */
 
-      team:{
+      team: {
         directTeam,
-        totalTeam: teamMembers.length,
+        totalTeam: allTeam.length,
         activeTeam,
         inactiveTeam,
-        incentiveTeam:{
+        incentiveTeam: {
           active: incentiveActive,
           inactive: incentiveInactive
+        },
+        bonusTeam: {
+          active: activeBonusTeam,
+          inactive: inactiveBonusTeam
         }
       }
 
@@ -229,42 +244,42 @@ shippingAddress: user.shippingAddress || {},
 
 
 exports.getIdCard = async (req, res) => {
- try {
+  try {
 
-  const user = await User.findById(req.user._id)
-  .select("fullName uniqueId mobile photo kycDocs kycStatus shippingAddress");
+    const user = await User.findById(req.user._id)
+      .select("fullName uniqueId mobile photo kycDocs kycStatus shippingAddress");
 
-  if(!user){
-    return res.status(404).json({msg:"User not found"});
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    res.json({
+      name: user.fullName,
+      dsId: user.uniqueId,
+      referralId: user.uniqueId,
+
+      fatherName: user.fatherName || "",
+      gender: user.gender || "",
+
+      mobile: user.mobile,
+      email: user.email,
+
+      pincode: user.pincode || "",
+      district: user.district || "",
+      state: user.state || "",
+
+      address: user.address || "",
+      shippingAddress: user.shippingAddress || "",
+      kyc: user.kycDocs,
+      kycStatus: user.kycStatus,
+      status: user.isActive ? 'Active' : 'Inactive',
+      photo: user.photo
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ msg: "ID card fetch error" });
   }
-
-  res.json({
-    name: user.fullName,
-  dsId: user.uniqueId,
-  referralId: user.uniqueId, 
-
-  fatherName: user.fatherName || "",
-  gender: user.gender || "",
-
-  mobile: user.mobile,
-  email: user.email,
-
-  pincode: user.pincode || "",
-  district: user.district || "",
-  state: user.state || "",
-
-  address: user.address || "",
-  shippingAddress: user.shippingAddress || "",
-  kyc:user.kycDocs,
-    kycStatus:user.kycStatus,
-  status: user.isActive ? 'Active' : 'Inactive',
-  photo: user.photo
-  });
-
- } catch (err) {
-  console.log(err);
-  res.status(500).json({ msg: "ID card fetch error" });
- }
 };
 
 /* ===== Update Shipping Address ===== */
@@ -308,7 +323,7 @@ exports.updatePhoto = async (req, res) => {
     }
 
     // Save file path in database
-user.photo = `/uploads/kyc/${req.file.filename}`;
+    user.photo = `/uploads/kyc/${req.file.filename}`;
     await user.save();
 
     res.json({

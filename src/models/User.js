@@ -108,6 +108,7 @@ weeklyIncome: { type: Number, default: 0 },
 monthlyIncome: { type: Number, default: 0 },
 thirdLegIncome: { type: Number, default: 0 },
 royaltyIncome: { type: Number, default: 0 },
+lastRoyaltyMonth: { type: Number, default: 0 },
 levelRewardIncome: { type: Number, default: 0 },
 totalIncome: { type: Number, default: 0 },
 /* ================= RANK & LEVEL ================= */

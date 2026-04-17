@@ -1,3 +1,4 @@
+const User = require('../models/User');
 const levels = require('../config/levels');
 
 function getRoyaltyKey(level) {
@@ -9,25 +10,23 @@ function getRoyaltyKey(level) {
 }
 
 module.exports = async function checkLevels(user) {
-  let updated = false;
 
+  let updated = false;
   for (const lvl of levels) {
 
-    // already achieved → skip
     if (user.level >= lvl.level) continue;
 
     const leftOK = user.leftBP >= (lvl.leftBP || 0);
     const rightOK = user.rightBP >= (lvl.rightBP || 0);
 
-    if (!leftOK || !rightOK) break; // next levels impossible
+    if (!leftOK || !rightOK) break;
 
-    // ✅ LEVEL ACHIEVED
     user.level = lvl.level;
     user.currentRank = lvl.rank;
     user.levelAchievedAt = new Date();
 
-    // 🔐 Royalty eligibility
     const royaltyKey = getRoyaltyKey(lvl.level);
+
     if (royaltyKey) {
       user.royaltyEligible[royaltyKey] = true;
     }
@@ -35,7 +34,5 @@ module.exports = async function checkLevels(user) {
     updated = true;
   }
 
-  if (updated) {
-    await user.save();
-  }
+  if (updated) await user.save();
 };

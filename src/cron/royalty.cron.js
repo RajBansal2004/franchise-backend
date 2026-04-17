@@ -4,14 +4,19 @@ const calculateRoyalty = require('../utils/royaltyEngine');
 
 cron.schedule('0 0 1 * *', async () => {
 
-  console.log("Royalty Distribution Running...");
+  console.log("🔥 Royalty Distribution Running...");
 
-  const users = await User.find();
-
-  const companyTurnover = await getCompanyTurnover(); // tum banayoge
+  const users = await User.find({
+    isActive: true,
+    kycStatus: 'approved'
+  });
 
   for(const user of users){
-     await calculateRoyalty(user._id, companyTurnover);
+     await calculateRoyalty(user._id);
   }
 
+  console.log("✅ Royalty Done");
+
+}, {
+  timezone: "Asia/Kolkata"
 });

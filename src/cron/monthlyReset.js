@@ -17,7 +17,6 @@ const startMonthlyReset = () => {
             monthlyLeftBP: 0,
             monthlyRightBP: 0,
             monthlyIncome: 0,
-            royaltyIncome: 0
           }
         }
       );

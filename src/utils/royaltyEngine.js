@@ -1,33 +1,57 @@
 const royaltyConfig = require('../config/royalty.config');
 const User = require('../models/User');
 
-async function calculateRoyalty(user){
+function getRoyaltyKey(level) {
+  if (level >= 5 && level <= 8) return 'regional';
+  if (level >= 9 && level <= 12) return 'state';
+  if (level >= 13 && level <= 14) return 'national';
+  if (level === 15) return 'international';
+  return null;
+}
 
- try{
+async function calculateRoyalty(userId) {
 
-   if(user.level < 5) return;
+  try {
 
-   const royaltySlab = royaltyConfig.find(r => r.level === user.level);
-   if(!royaltySlab) return;
+    const user = await User.findById(userId);
+    if (!user) return;
 
-   // ⭐ Pair BP (client logic)
-   const pairBP = Math.min(user.monthlyLeftBP , user.monthlyRightBP);
+    if (user.level < 5) return;
 
-   const percent = royaltySlab.maxPercent;
+    const royaltySlab = royaltyConfig.find(r => r.level === user.level);
+    if (!royaltySlab) return;
 
-   const royaltyIncome = (pairBP * percent) / 100;
+    // ⭐ Pair BP
+    const pairBP = Math.min(user.monthlyLeftBP, user.monthlyRightBP);
 
-   user.royaltyIncome = royaltyIncome;
+    if (pairBP <= 0) return;
 
-   if(royaltyIncome >= royaltySlab.target){
-      user.royaltyEligible.regional = true;
-   } else {
-      user.royaltyEligible.regional = false;
-   }
+    const percent = royaltySlab.maxPercent;
 
- }catch(err){
-   console.log("Royalty Error", err.message);
- }
+    const royaltyIncome = (pairBP * percent) / 100;
+const currentMonth = new Date().getMonth();
+
+if(user.lastRoyaltyMonth === currentMonth){
+  return; // already paid
+}
+    // ✅ ADD (not replace)
+    user.royaltyIncome = royaltyIncome;
+    user.totalIncome += royaltyIncome;
+    user.incomeWallet += royaltyIncome;
+
+    // ✅ Correct eligibility mapping
+    const key = getRoyaltyKey(user.level);
+    if (key) {
+      user.royaltyEligible[key] = pairBP >= royaltySlab.target;
+    }
+    user.lastRoyaltyMonth = currentMonth;
+
+
+    await user.save();
+
+  } catch (err) {
+    console.log("Royalty Error", err.message);
+  }
 
 }
 
