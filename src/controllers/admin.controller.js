@@ -505,7 +505,7 @@ exports.getUserOrders = async (req, res) => {
     const orders = await Order.find({
       orderFrom: "USER"
     })
-      .populate("user", "fullName email uniqueId role")
+      .populate("user", "fullName email uniqueId role isActive")
       .populate("items.product", "title images image price")
       .sort({ createdAt: -1 });
 
@@ -522,7 +522,7 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
     const orders = await Order.find({
       orderFrom: "FRANCHISE"   // ✅ ONLY THIS
     })
-      .populate("user", "fullName email uniqueId role")
+      .populate("user", "fullName email uniqueId role isActive")
       .populate("items.product", "title images image price")
       .sort({ createdAt: -1 });
 
@@ -604,11 +604,6 @@ exports.adminApproveOrder = async (req, res) => {
         user.activatedBy = order.user;
         user.activationBP = activationBP;
 
-      } else {
-        console.log("♻️ USER ALREADY ACTIVE");
-
-        order.activationBP = 0;
-        order.isActivated = false;
       }
 
       // ================= BP UPDATE =================
