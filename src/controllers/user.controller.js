@@ -7,6 +7,7 @@ const checkLevels = require('../utils/levelChecker');
 const ROYALTY_CONFIG = require('../config/royalty.config');
 const { getAllDownline } = require('../utils/teamCounter');
 const matchingIncome = require('../utils/matchingIncome');
+const calculateMonthlyIncome = require('../utils/monthlyIncome');
 
 exports.purchaseProduct = async (req, res) => {
   try {
@@ -23,46 +24,52 @@ exports.purchaseProduct = async (req, res) => {
     // 🔹 SELF BP
     user.selfBP += totalBP;
 
-// 2. PARENT UPDATE
-if (user.parentId) {
-  const parent = await User.findById(user.parentId);
+    // 2. PARENT UPDATE
+    if (user.parentId) {
+      const parent = await User.findById(user.parentId);
 
-  if (user.position === 'LEFT') {
-    parent.leftBP += totalBP;
-    parent.weeklyLeftBP += totalBP;
-    parent.monthlyLeftBP += totalBP;
-  } else {
-    parent.rightBP += totalBP;
-    parent.weeklyRightBP += totalBP;
-    parent.monthlyRightBP += totalBP;
-  }
+      if (user.position === 'LEFT') {
+        parent.leftBP += totalBP;
+        parent.weeklyLeftBP += totalBP;
+        parent.monthlyLeftBP += totalBP;
+      } else {
+        parent.rightBP += totalBP;
+        parent.weeklyRightBP += totalBP;
+        parent.monthlyRightBP += totalBP;
+      }
 
-  await parent.save();
+      await parent.save();
 
-  // ✅ LEVEL
-  await checkLevels(parent);
+      // ✅ LEVEL
+      await checkLevels(parent);
 
-  // ✅ MATCHING
-  await matchingIncome(parent._id);
+      // ✅ MATCHING
+      await matchingIncome(parent._id);
 
-  // ✅ THIRD LEG
-  const children = await User.find({ parentId: parent._id });
+      // ✅ THIRD LEG
+      const children = await User.find({ parentId: parent._id }).sort({ createdAt: 1 });
 
-  if (children.length >= 3) {
-    const income = totalBP * 5; 
+      if (children.length >= 3) {
+        const thirdUser = children[2];
 
-    parent.thirdLegIncome += income;
-    parent.totalIncome += income;
-    parent.incomeWallet += income;
+        // ✅ Only give income on THIRD USER purchase
+        if (thirdUser._id.toString() === user._id.toString()) {
 
-    await parent.save();
-  }
-}
+          const income = totalBP * 5;
 
-// 3. USER LEVEL
-await checkLevels(user);
+          parent.thirdLegIncome += income;
+          parent.totalIncome += income;
+          parent.incomeWallet += income;
 
-await user.save();
+          await parent.save();
+        }
+      }
+    }
+
+    // 3. USER LEVEL
+    await checkLevels(user);
+
+    await user.save();
 
     res.json({
       message: 'Purchase successful',
@@ -148,32 +155,33 @@ exports.getUserDashboard = async (req, res) => {
   try {
 
     const userId = req.user._id;
+    // ✅ ADD THIS
+    await calculateMonthlyIncome(userId); // monthly
 
-    const user = await User.findById(userId);
+    let user = await User.findById(userId);
     const wallet = await Wallet.findOne({ user: userId });
 
     /* ================= TEAM SUMMARY ================= */
 
     const directTeam = await User.countDocuments({ parentId: userId });
 
-    const teamMembers = await User.find({ parentId: userId });
-
-    const activeTeam = teamMembers.filter(u => u.isActive).length;
-    const inactiveTeam = teamMembers.length - activeTeam;
-
-    // ✅ BONUS TEAM (Active = isActive)
-    const activeBonusTeam = teamMembers.filter(u => u.isActive).length;
-    const inactiveBonusTeam = teamMembers.length - activeBonusTeam;
-
-    // ✅ INCENTIVE TEAM (BP based)
-    const incentiveActive = teamMembers.filter(u => u.selfBP > 0).length;
-    const incentiveInactive = teamMembers.length - incentiveActive;
-
-
     const allTeam = await getAllDownline(userId);
 
-    const active = allTeam.filter(u => u.isActive).length;
-    const inactive = allTeam.length - active;
+    // TOTAL
+    const totalTeam = allTeam.length;
+
+    // ACTIVE / INACTIVE (FULL TREE)
+    const activeTeam = allTeam.filter(u => u.isActive).length;
+    const inactiveTeam = totalTeam - activeTeam;
+
+    // BONUS TEAM
+    const activeBonusTeam = allTeam.filter(u => u.isActive).length;
+    const inactiveBonusTeam = totalTeam - activeBonusTeam;
+
+    // INCENTIVE TEAM (BP based)
+    const incentiveActive = allTeam.filter(u => u.selfBP > 0).length;
+    const incentiveInactive = totalTeam - incentiveActive;
+
     /* ================= RESPONSE ================= */
 
     res.json({
