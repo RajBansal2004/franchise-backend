@@ -11,16 +11,16 @@ const checkLevels = require('../utils/levelChecker');
 
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
-
-  // 🔥 IMPORTANT: direction lock at first node
-  const direction = user.position; // LEFT or RIGHT
+  let child = user;
 
   while (currentUser.parentId) {
 
     const parent = await User.findById(currentUser.parentId).session(session);
     if (!parent) break;
 
-    // ✅ ALWAYS use locked direction
+    // ✅ IMPORTANT: use child's position every level
+    const direction = child.position;
+
     if (direction === "LEFT") {
       parent.leftBP = (parent.leftBP || 0) + bp;
     } else {
@@ -31,6 +31,8 @@ const distributeBP = async (user, bp, session) => {
 
     await checkLevels(parent);
 
+    // move upward
+    child = currentUser;
     currentUser = parent;
   }
 };
@@ -598,6 +600,9 @@ exports.adminApproveOrder = async (req, res) => {
         if (totalBP < activationBP) {
           throw new Error(`Minimum ${activationBP} BP required ❌`);
         }
+        user.isActive = true;
+        user.activatedBy = order.user;
+        user.activationBP = activationBP;
 
       } else {
         console.log("♻️ USER ALREADY ACTIVE");
