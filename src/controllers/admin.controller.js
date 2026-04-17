@@ -12,23 +12,25 @@ const checkLevels = require('../utils/levelChecker');
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
 
+  // 🔥 IMPORTANT: direction lock at first node
+  const direction = user.position; // LEFT or RIGHT
+
   while (currentUser.parentId) {
 
     const parent = await User.findById(currentUser.parentId).session(session);
     if (!parent) break;
 
-    // ✅ SAME SIDE BP ADD
-    if (currentUser.position === "LEFT") {
+    // ✅ ALWAYS use locked direction
+    if (direction === "LEFT") {
       parent.leftBP = (parent.leftBP || 0) + bp;
     } else {
       parent.rightBP = (parent.rightBP || 0) + bp;
     }
 
     await parent.save({ session });
+
     await checkLevels(parent);
 
-
-    // 👉 NEXT UPLINE
     currentUser = parent;
   }
 };
