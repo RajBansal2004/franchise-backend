@@ -155,9 +155,6 @@ exports.getUserDashboard = async (req, res) => {
   try {
 
     const userId = req.user._id;
-    // ✅ ADD THIS
-    await calculateMonthlyIncome(userId); // monthly
-
     let user = await User.findById(userId);
     const wallet = await Wallet.findOne({ user: userId });
 

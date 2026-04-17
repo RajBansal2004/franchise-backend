@@ -1,33 +1,17 @@
 const cron = require('node-cron');
-const User = require('../models/User');
+const calculateMonthlyIncome = require('../utils/monthlyIncome');
 
-const startMonthlyReset = () => {
+cron.schedule('0 0 1 * *', async () => {
+  console.log("🔄 Monthly Processing Started");
 
-  // 🔥 Every month 1st date at 12:00 AM
-  cron.schedule('0 0 1 * *', async () => {
+  await calculateMonthlyIncome();
 
-    console.log("🔄 Monthly Reset Started");
-
-    try {
-
-      await User.updateMany(
-        {},
-        {
-          $set: {
-            monthlyLeftBP: 0,
-            monthlyRightBP: 0,
-          }
-        }
-      );
-
-      console.log("✅ Monthly Reset Completed");
-
-    } catch (err) {
-      console.error("❌ Monthly Reset Error:", err);
+  await User.updateMany({}, {
+    $set: {
+      monthlyLeftBP: 0,
+      monthlyRightBP: 0,
     }
-
   });
 
-};
-
-module.exports = startMonthlyReset;
+  console.log("✅ Monthly Processing Done");
+});

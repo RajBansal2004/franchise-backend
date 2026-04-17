@@ -7,23 +7,15 @@ module.exports = async function matchingIncome(userId){
 
   const matchBP = Math.min(user.weeklyLeftBP, user.weeklyRightBP);
 
-  // ❌ Minimum condition
   if(matchBP < 50) return;
 
-  // ✅ ₹10 per BP
   let income = matchBP * 10;
 
   let cap = 0;
 
-  // ✅ Activation based cap
-  if(user.activationBP === 51){
-    cap = 100000; // 1 lakh
-  } 
-  else if(user.activationBP === 101){
-    cap = 150000; // 1.5 lakh
-  }
+  if(user.activationBP === 51) cap = 100000;
+  else if(user.activationBP === 101) cap = 150000;
 
-  // ✅ Cap apply
   if(cap && user.weeklyIncome + income > cap){
     income = cap - user.weeklyIncome;
     if(income <= 0) return;
@@ -33,8 +25,10 @@ module.exports = async function matchingIncome(userId){
   user.totalIncome += income;
   user.incomeWallet += income;
 
- user.weeklyLeftBP = Math.max(0, user.weeklyLeftBP - matchBP);
-user.weeklyRightBP = Math.max(0, user.weeklyRightBP - matchBP);
+  user.weeklyLeftBP -= matchBP;
+  user.weeklyRightBP -= matchBP;
+
+  user.lastWeeklyPaidAt = new Date();
 
   await user.save();
 };

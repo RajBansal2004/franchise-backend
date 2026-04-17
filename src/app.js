@@ -21,9 +21,7 @@ const cartRoutes = require("./routes/cart.routes");
 require('./cron');  
 require('./cron/bpReset');
 require('./cron/incomeReset');
-const startMonthlyReset = require('./cron/monthlyReset');
-
-startMonthlyReset();
+require('./cron/monthlyReset');
 
 const app = express();
 app.use(express.json());
