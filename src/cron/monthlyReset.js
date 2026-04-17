@@ -16,7 +16,6 @@ const startMonthlyReset = () => {
           $set: {
             monthlyLeftBP: 0,
             monthlyRightBP: 0,
-            monthlyIncome: 0,
           }
         }
       );

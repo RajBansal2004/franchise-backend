@@ -35,7 +35,7 @@ if(user.lastRoyaltyMonth === currentMonth){
   return; // already paid
 }
     // ✅ ADD (not replace)
-    user.royaltyIncome = royaltyIncome;
+    user.royaltyIncome += royaltyIncome;
     user.totalIncome += royaltyIncome;
     user.incomeWallet += royaltyIncome;
 

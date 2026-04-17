@@ -6,6 +6,7 @@ const Product = require('../models/Product');
 const checkLevels = require('../utils/levelChecker');
 const ROYALTY_CONFIG = require('../config/royalty.config');
 const { getAllDownline } = require('../utils/teamCounter');
+const matchingIncome = require('../utils/matchingIncome');
 
 exports.purchaseProduct = async (req, res) => {
   try {
@@ -21,31 +22,47 @@ exports.purchaseProduct = async (req, res) => {
 
     // 🔹 SELF BP
     user.selfBP += totalBP;
-    // WEEKLY / MONTHLY BP
-    user.weeklyLeftBP += totalBP;
-    user.monthlyLeftBP += totalBP;
-    // 🔹 BINARY BP (DIRECT PARENT)
-    if (user.parentId) {
-      const parent = await User.findById(user.parentId);
 
-      if (user.position === 'LEFT') {
-        parent.leftBP += totalBP;
-        parent.weeklyLeftBP += totalBP;
-        parent.monthlyLeftBP += totalBP;
-      } else {
-        parent.rightBP += totalBP;
-        parent.weeklyRightBP += totalBP;
-        parent.monthlyRightBP += totalBP;
-      }
+// 2. PARENT UPDATE
+if (user.parentId) {
+  const parent = await User.findById(user.parentId);
 
-      await parent.save();
-      await checkLevels(parent);
-    }
+  if (user.position === 'LEFT') {
+    parent.leftBP += totalBP;
+    parent.weeklyLeftBP += totalBP;
+    parent.monthlyLeftBP += totalBP;
+  } else {
+    parent.rightBP += totalBP;
+    parent.weeklyRightBP += totalBP;
+    parent.monthlyRightBP += totalBP;
+  }
 
-    // 🔹 LEVEL CHECK
-    await checkLevels(user);
+  await parent.save();
 
-    await user.save();
+  // ✅ LEVEL
+  await checkLevels(parent);
+
+  // ✅ MATCHING
+  await matchingIncome(parent._id);
+
+  // ✅ THIRD LEG
+  const children = await User.find({ parentId: parent._id });
+
+  if (children.length >= 3) {
+    const income = totalBP * 5; 
+
+    parent.thirdLegIncome += income;
+    parent.totalIncome += income;
+    parent.incomeWallet += income;
+
+    await parent.save();
+  }
+}
+
+// 3. USER LEVEL
+await checkLevels(user);
+
+await user.save();
 
     res.json({
       message: 'Purchase successful',
@@ -144,10 +161,15 @@ exports.getUserDashboard = async (req, res) => {
     const activeTeam = teamMembers.filter(u => u.isActive).length;
     const inactiveTeam = teamMembers.length - activeTeam;
 
+    // ✅ BONUS TEAM (Active = isActive)
+    const activeBonusTeam = teamMembers.filter(u => u.isActive).length;
+    const inactiveBonusTeam = teamMembers.length - activeBonusTeam;
+
+    // ✅ INCENTIVE TEAM (BP based)
     const incentiveActive = teamMembers.filter(u => u.selfBP > 0).length;
     const incentiveInactive = teamMembers.length - incentiveActive;
-    const activeBonusTeam = teamMembers.filter(u => u.selfBP > 0).length;
-    const inactiveBonusTeam = teamMembers.length - activeBonusTeam;
+
+
     const allTeam = await getAllDownline(userId);
 
     const active = allTeam.filter(u => u.isActive).length;
