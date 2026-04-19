@@ -42,6 +42,7 @@ router.get('/sms-logs', auth, permit('ADMIN'), ctrl.getSmsLogs);
 router.get("/user-orders", auth, ctrl.getUserOrders);
 router.get("/franchise-orders", auth, ctrl.getFranchiseOrdersAdmin);
 router.put("/approve/:id", auth, ctrl.adminApproveOrder);
+router.get("/foundation-bp", auth, ctrl.getFoundationBP);
 // ✅ KYC UPDATE ROUTE
 router.put("/user/:id/kyc", auth, ctrl.updateKycStatus);
 

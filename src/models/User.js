@@ -178,7 +178,10 @@ kycDocs: {
   }
 
 },
-
+foundationBP: {
+  type: Number,
+  default: 0
+},
 
   kycStatus: {
     type: String,

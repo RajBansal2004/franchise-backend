@@ -532,6 +532,7 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.adminApproveOrder = async (req, res) => {
 
   const session = await mongoose.startSession();
@@ -611,12 +612,57 @@ exports.adminApproveOrder = async (req, res) => {
       console.log("✅ Updated SELF BP:", user.selfBP);
 
       // ================= PARENT UPDATE =================
-      // ✅ SELF BP ADD
-      user.selfBP = (user.selfBP || 0) + totalBP;
-      await user.save({ session });
+     let usableBP = totalBP;
+let foundationBP = 0;
 
-      // ✅ 🔥 UPLINE BP DISTRIBUTE
-      await distributeBP(user, totalBP, session);
+if (!user.isActive) {
+
+  const { activationBP } = req.body;
+
+  if (![51, 101].includes(Number(activationBP))) {
+    throw new Error("Invalid BP selected");
+  }
+
+  if (totalBP < activationBP) {
+    throw new Error(`Minimum ${activationBP} BP required ❌`);
+  }
+
+  user.isActive = true;
+  user.activatedBy = order.user;
+  user.activationBP = activationBP;
+
+  // 🔥 CORE LOGIC
+  if (activationBP === 51) {
+    usableBP = 50;
+    foundationBP = totalBP - 50;
+  }
+
+  if (activationBP === 101) {
+    usableBP = 100;
+    foundationBP = totalBP - 100;
+  }
+
+  if (foundationBP < 0) foundationBP = 0;
+
+  // ✅ Add to user
+  user.selfBP = (user.selfBP || 0) + usableBP;
+
+  // ✅ Save foundation BP
+  user.foundationBP = (user.foundationBP || 0) + foundationBP;
+
+  await user.save({ session });
+
+  // ✅ Only usable BP goes to upline
+  await distributeBP(user, usableBP, session);
+
+} else {
+
+  // 🔥 NORMAL PURCHASE (no split)
+  user.selfBP = (user.selfBP || 0) + totalBP;
+  await user.save({ session });
+
+  await distributeBP(user, totalBP, session);
+}
     }
 
     // ================= FRANCHISE ORDER =================
@@ -673,5 +719,20 @@ exports.adminApproveOrder = async (req, res) => {
       success: false,
       message: err.message
     });
+  }
+};
+exports.getFoundationBP = async (req, res) => {
+  try {
+
+    const data = await User.find({
+      foundationBP: { $gt: 0 }
+    })
+    .select("fullName uniqueId mobile foundationBP createdAt")
+    .sort({ createdAt: -1 });
+
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
