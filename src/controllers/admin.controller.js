@@ -8,6 +8,7 @@ const { generateFranchiseId, generatePassword } = require('../utils/credentials'
 const SmsLog = require('../models/SmsLog');
 const { sendSMS } = require('../utils/sms');
 const checkLevels = require('../utils/levelChecker');
+const FoundationHistory = require("../models/FoundationHistory");
 
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
@@ -29,7 +30,7 @@ const distributeBP = async (user, bp, session) => {
 
     await parent.save({ session });
 
-    await checkLevels(parent);
+    await checkLevels(parent,session);
 
     // move upward
     child = currentUser;
@@ -587,82 +588,76 @@ exports.adminApproveOrder = async (req, res) => {
 
       // ================= 🧠 ACTIVATION LOGIC =================
 
-      if (!user.isActive) {
+      const isFirstActivation = !user.isActive;
+
+      let usableBP = totalBP;
+      let foundationBP = 0;
+
+      if (isFirstActivation) {
+
         console.log("🆕 FIRST TIME ACTIVATION");
 
         const { activationBP } = req.body;
 
-        // ❌ Validate selection
         if (![51, 101].includes(Number(activationBP))) {
           throw new Error("Invalid BP selected");
         }
 
-        // ❌ Minimum check
         if (totalBP < activationBP) {
           throw new Error(`Minimum ${activationBP} BP required ❌`);
         }
+
         user.isActive = true;
         user.activatedBy = order.user;
         user.activationBP = activationBP;
 
+        // 🔥 CORE SPLIT LOGIC
+        if (activationBP === 51) {
+          usableBP = 50;
+          foundationBP = totalBP - 50;
+        }
+
+        if (activationBP === 101) {
+          usableBP = 100;
+          foundationBP = totalBP - 100;
+        }
+
+        if (foundationBP < 0) foundationBP = 0;
+
+      } else {
+        // NORMAL PURCHASE
+        usableBP = totalBP;
+        foundationBP = 0;
       }
 
-      // ================= BP UPDATE =================
+      // ✅ SELF BP
+      user.selfBP = (user.selfBP || 0) + usableBP;
 
-      console.log("✅ Updated SELF BP:", user.selfBP);
+      // ✅ FOUNDATION BP
+      if (foundationBP > 0) {
+        user.foundationBP = (user.foundationBP || 0) + foundationBP;
+        // ✅ SAVE HISTORY
+        const alreadyExists = await FoundationHistory.findOne({
+          userId: user._id,
+          orderId: order._id
+        }).session(session);
 
-      // ================= PARENT UPDATE =================
-     let usableBP = totalBP;
-let foundationBP = 0;
+        if (!alreadyExists && foundationBP > 0) {
+          await FoundationHistory.create([{
+            userId: user._id,
+            orderId: order._id,
+            fullName: user.fullName,
+            uniqueId: user.uniqueId,
+            mobile: user.mobile,
+            bp: foundationBP
+          }], { session });
+        }
+      }
 
-if (!user.isActive) {
+      await user.save({ session });
 
-  const { activationBP } = req.body;
-
-  if (![51, 101].includes(Number(activationBP))) {
-    throw new Error("Invalid BP selected");
-  }
-
-  if (totalBP < activationBP) {
-    throw new Error(`Minimum ${activationBP} BP required ❌`);
-  }
-
-  user.isActive = true;
-  user.activatedBy = order.user;
-  user.activationBP = activationBP;
-
-  // 🔥 CORE LOGIC
-  if (activationBP === 51) {
-    usableBP = 50;
-    foundationBP = totalBP - 50;
-  }
-
-  if (activationBP === 101) {
-    usableBP = 100;
-    foundationBP = totalBP - 100;
-  }
-
-  if (foundationBP < 0) foundationBP = 0;
-
-  // ✅ Add to user
-  user.selfBP = (user.selfBP || 0) + usableBP;
-
-  // ✅ Save foundation BP
-  user.foundationBP = (user.foundationBP || 0) + foundationBP;
-
-  await user.save({ session });
-
-  // ✅ Only usable BP goes to upline
-  await distributeBP(user, usableBP, session);
-
-} else {
-
-  // 🔥 NORMAL PURCHASE (no split)
-  user.selfBP = (user.selfBP || 0) + totalBP;
-  await user.save({ session });
-
-  await distributeBP(user, totalBP, session);
-}
+      // ✅ DISTRIBUTE ONLY USABLE BP
+      await distributeBP(user, usableBP, session);
     }
 
     // ================= FRANCHISE ORDER =================
@@ -724,13 +719,108 @@ if (!user.isActive) {
 exports.getFoundationBP = async (req, res) => {
   try {
 
-    const data = await User.find({
-      foundationBP: { $gt: 0 }
-    })
-    .select("fullName uniqueId mobile foundationBP createdAt")
-    .sort({ createdAt: -1 });
+    const { fromDate, toDate, search } = req.query;
+
+    let filter = {};
+
+    // 🔍 DATE FILTER
+    if (fromDate || toDate) {
+      filter.createdAt = {};
+
+      if (fromDate) {
+        filter.createdAt.$gte = new Date(fromDate);
+      }
+
+      if (toDate) {
+        filter.createdAt.$lte = new Date(toDate + "T23:59:59");
+      }
+    }
+
+    // 🔍 SEARCH FILTER
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { uniqueId: { $regex: search, $options: "i" } },
+        { mobile: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const data = await FoundationHistory.find(filter)
+      .sort({ createdAt: -1 });
 
     res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getTurnoverReport = async (req, res) => {
+  try {
+
+    const Order = require("../models/Order");
+
+    // 🔥 CREDIT (incoming money)
+    const creditData = await Order.aggregate([
+      {
+        $match: {
+          paymentStatus: "paid"
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            }
+          },
+          totalAmount: { $sum: "$totalAmount" }
+        }
+      },
+      {
+        $project: {
+          date: "$_id.date",
+          totalAmount: 1,
+          type: { $literal: "credit" },
+          _id: 0
+        }
+      }
+    ]);
+
+    // 🔥 DEBIT (example: payouts / incomes)
+    // agar alag collection hai (Income / Wallet etc.)
+    const debitData = await Order.aggregate([
+      {
+        $match: {
+          status: "approved"
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$approvedAt" }
+            }
+          },
+          totalAmount: { $sum: "$totalAmount" }
+        }
+      },
+      {
+        $project: {
+          date: "$_id.date",
+          totalAmount: 1,
+          type: { $literal: "debit" },
+          _id: 0
+        }
+      }
+    ]);
+
+    // 🔥 MERGE
+    const result = [...creditData, ...debitData].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    );
+
+    res.json(result);
 
   } catch (err) {
     res.status(500).json({ message: err.message });
