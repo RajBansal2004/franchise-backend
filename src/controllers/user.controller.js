@@ -163,6 +163,11 @@ exports.getUserDashboard = async (req, res) => {
     const directTeam = await User.countDocuments({ parentId: userId });
 
     const allTeam = await getAllDownline(userId);
+    // ✅ LEFT SIDE TEAM (Bonus Team)
+    const leftTeam = allTeam.filter(u => u.position === "LEFT");
+
+    // ✅ RIGHT SIDE TEAM (Incentive Team)
+    const rightTeam = allTeam.filter(u => u.position === "RIGHT");
 
     // TOTAL
     const totalTeam = allTeam.length;
@@ -171,13 +176,13 @@ exports.getUserDashboard = async (req, res) => {
     const activeTeam = allTeam.filter(u => u.isActive).length;
     const inactiveTeam = totalTeam - activeTeam;
 
-    // BONUS TEAM
-    const activeBonusTeam = allTeam.filter(u => u.isActive).length;
-    const inactiveBonusTeam = totalTeam - activeBonusTeam;
+    // ✅ BONUS TEAM (LEFT SIDE)
+    const bonusActive = leftTeam.filter(u => u.isActive).length;
+    const bonusInactive = leftTeam.length - bonusActive;
 
-    // INCENTIVE TEAM (BP based)
-    const incentiveActive = allTeam.filter(u => u.selfBP > 0).length;
-    const incentiveInactive = totalTeam - incentiveActive;
+    // ✅ INCENTIVE TEAM (RIGHT SIDE)
+    const incentiveActive = rightTeam.filter(u => u.isActive).length;
+    const incentiveInactive = rightTeam.length - incentiveActive;
 
     /* ================= RESPONSE ================= */
 
@@ -257,8 +262,8 @@ exports.getUserDashboard = async (req, res) => {
           inactive: incentiveInactive
         },
         bonusTeam: {
-          active: activeBonusTeam,
-          inactive: inactiveBonusTeam
+          active: bonusActive,
+          inactive: bonusInactive
         }
       }
 
