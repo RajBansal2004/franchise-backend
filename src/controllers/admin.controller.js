@@ -9,6 +9,8 @@ const SmsLog = require('../models/SmsLog');
 const { sendSMS } = require('../utils/sms');
 const checkLevels = require('../utils/levelChecker');
 const FoundationHistory = require("../models/FoundationHistory");
+const Credit = require("../models/Credit");
+const Debit = require("../models/Debit");
 
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
@@ -822,6 +824,73 @@ exports.getTurnoverReport = async (req, res) => {
 
     res.json(result);
 
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+// ➕ ADD CREDIT
+exports.addCredit = async (req, res) => {
+  try {
+    const credit = await Credit.create(req.body);
+    res.json({ success: true, credit });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// 📄 GET CREDIT
+exports.getCredits = async (req, res) => {
+  try {
+    const { type, fromDate, toDate } = req.query;
+
+    let filter = {};
+    if (type) filter.type = type;
+
+    if (fromDate || toDate) {
+      filter.date = {};
+      if (fromDate) filter.date.$gte = new Date(fromDate);
+      if (toDate) filter.date.$lte = new Date(toDate + "T23:59:59");
+    }
+
+    const data = await Credit.find(filter).sort({ date: -1 });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+// ➕ ADD DEBIT
+exports.addDebit = async (req, res) => {
+  try {
+    const debit = await Debit.create(req.body);
+    res.json({ success: true, debit });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// 📄 GET DEBIT
+exports.getDebits = async (req, res) => {
+  try {
+    const { type, subType, fromDate, toDate } = req.query;
+
+    let filter = {};
+    if (type) filter.type = type;
+    if (subType) filter.subType = subType;
+
+    if (fromDate || toDate) {
+      filter.date = {};
+      if (fromDate) filter.date.$gte = new Date(fromDate);
+      if (toDate) filter.date.$lte = new Date(toDate + "T23:59:59");
+    }
+
+    const data = await Debit.find(filter).sort({ date: -1 });
+
+    res.json(data);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -44,6 +44,10 @@ router.get("/franchise-orders", auth, ctrl.getFranchiseOrdersAdmin);
 router.put("/approve/:id", auth, ctrl.adminApproveOrder);
 router.get("/foundation-bp", auth, ctrl.getFoundationBP);
 router.get("/turnover", auth, ctrl.getTurnoverReport);
+router.post("/debit",auth, ctrl.addDebit);
+router.get("/debit",auth, ctrl.getDebits);
+router.post("/credit",auth, ctrl.addCredit);
+router.get("/credit",auth, ctrl.getCredits);
 // ✅ KYC UPDATE ROUTE
 router.put("/user/:id/kyc", auth, ctrl.updateKycStatus);
 
