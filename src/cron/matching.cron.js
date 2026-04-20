@@ -16,8 +16,6 @@ module.exports = async function runMatchingCron() {
 
   for (const user of users) {
 
-    await matchingIncome(user._id);
-
     await checkLevels(user);
     rewardEngine(user);
 

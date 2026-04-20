@@ -43,9 +43,6 @@ exports.purchaseProduct = async (req, res) => {
       // ✅ LEVEL
       await checkLevels(parent);
 
-      // ✅ MATCHING
-      await matchingIncome(parent._id);
-
       // ✅ THIRD LEG
       const children = await User.find({ parentId: parent._id }).sort({ createdAt: 1 });
 

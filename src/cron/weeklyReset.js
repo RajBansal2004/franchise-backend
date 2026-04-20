@@ -12,8 +12,6 @@ cron.schedule('0 0 * * 0', async () => {
 
     user.weeklyLeftBP = 0;
     user.weeklyRightBP = 0;
-    user.weeklyIncome = 0;
-    user.lastWeeklyPaidAt = null;
 
     await user.save();
   }

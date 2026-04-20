@@ -25,14 +25,18 @@ const distributeBP = async (user, bp, session) => {
     const direction = child.position;
 
     if (direction === "LEFT") {
-      parent.leftBP = (parent.leftBP || 0) + bp;
+      parent.leftBP += bp;
+      parent.weeklyLeftBP += bp;     // ✅ ADD THIS
+      parent.monthlyLeftBP += bp;    // ✅ ADD THIS
     } else {
-      parent.rightBP = (parent.rightBP || 0) + bp;
+      parent.rightBP += bp;
+      parent.weeklyRightBP += bp;    // ✅ ADD THIS
+      parent.monthlyRightBP += bp;   // ✅ ADD THIS
     }
 
     await parent.save({ session });
-
-    await checkLevels(parent,session);
+    await matchingIncome(parent._id);
+    await checkLevels(parent, session);
 
     // move upward
     child = currentUser;
@@ -660,6 +664,7 @@ exports.adminApproveOrder = async (req, res) => {
 
       // ✅ DISTRIBUTE ONLY USABLE BP
       await distributeBP(user, usableBP, session);
+    
     }
 
     // ================= FRANCHISE ORDER =================

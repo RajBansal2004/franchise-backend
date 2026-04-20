@@ -126,6 +126,8 @@ const userSchema = new mongoose.Schema({
     national: { type: Boolean, default: false },
     international: { type: Boolean, default: false }
   },
+  activationBP: { type: Number, default: 0 },
+  lastWeeklyPaidAt: Date,
 
 
 
