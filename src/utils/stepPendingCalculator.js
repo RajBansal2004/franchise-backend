@@ -4,22 +4,47 @@ function calculateStepPending(user) {
 
   const result = [];
 
-  // ✅ ORIGINAL BP
   let leftBP = user.leftBP || 0;
   let rightBP = user.rightBP || 0;
 
+  let isBlocked = false; // 👈 once pending, no more deduction
+
   for (const step of steps) {
 
-    // ✅ CHECK USING CURRENT BALANCE
-    const usedLeft = Math.min(leftBP, step.leftReq);
-    const usedRight = Math.min(rightBP, step.rightReq);
+    let usedLeft = 0;
+    let usedRight = 0;
+    let remainBonusBP = 0;
+    let remainIncentiveBP = 0;
+    let completed = false;
 
-    const remainBonusBP = step.leftReq - usedLeft;
-    const remainIncentiveBP = step.rightReq - usedRight;
+    if (!isBlocked) {
 
-    const completed =
-      remainBonusBP === 0 &&
-      remainIncentiveBP === 0;
+      // ✅ try to complete step
+      usedLeft = Math.min(leftBP, step.leftReq);
+      usedRight = Math.min(rightBP, step.rightReq);
+
+      remainBonusBP = step.leftReq - usedLeft;
+      remainIncentiveBP = step.rightReq - usedRight;
+
+      completed =
+        remainBonusBP === 0 &&
+        remainIncentiveBP === 0;
+
+      // ✅ if completed → deduct BP
+      if (completed) {
+        leftBP -= step.leftReq;
+        rightBP -= step.rightReq;
+      } else {
+        // ❌ next steps block हो जाएंगे
+        isBlocked = true;
+      }
+
+    } else {
+      // 🔒 blocked state → no deduction
+      remainBonusBP = step.leftReq;
+      remainIncentiveBP = step.rightReq;
+      completed = false;
+    }
 
     result.push({
       step: step.step,
@@ -39,15 +64,6 @@ function calculateStepPending(user) {
 
       status: completed ? 'Completed' : 'Pending'
     });
-
-    // ✅ 🔥 CARRY FORWARD LOGIC (MAIN FIX)
-    if (completed) {
-      leftBP -= step.leftReq;
-      rightBP -= step.rightReq;
-    } else {
-      // ❌ agar current step complete nahi hua → आगे break
-      break;
-    }
   }
 
   const completedSteps = result.filter(r => r.status === 'Completed').length;
