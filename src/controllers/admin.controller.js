@@ -617,7 +617,9 @@ exports.adminApproveOrder = async (req, res) => {
         user.isActive = true;
         user.activatedBy = order.user;
         user.activationBP = activationBP;
-
+        // ✅ ADD THIS (MISSING BUG)
+        order.isActivated = true;
+        order.activationBP = activationBP;
         // 🔥 CORE SPLIT LOGIC
         if (activationBP === 51) {
           usableBP = 50;
@@ -665,8 +667,7 @@ exports.adminApproveOrder = async (req, res) => {
 
       // ✅ DISTRIBUTE ONLY USABLE BP
       await distributeBP(user, usableBP, session);
-      await matchingIncome(user._id);
-    
+
     }
 
     // ================= FRANCHISE ORDER =================
