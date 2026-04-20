@@ -11,7 +11,7 @@ const checkLevels = require('../utils/levelChecker');
 const FoundationHistory = require("../models/FoundationHistory");
 const Credit = require("../models/Credit");
 const Debit = require("../models/Debit");
-
+const matchingIncome = require('../utils/matchingIncome');
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
   let child = user;
@@ -21,24 +21,25 @@ const distributeBP = async (user, bp, session) => {
     const parent = await User.findById(currentUser.parentId).session(session);
     if (!parent) break;
 
-    // ✅ IMPORTANT: use child's position every level
     const direction = child.position;
 
     if (direction === "LEFT") {
-      parent.leftBP += bp;
-      parent.weeklyLeftBP += bp;     // ✅ ADD THIS
-      parent.monthlyLeftBP += bp;    // ✅ ADD THIS
+      parent.leftBP = (parent.leftBP || 0) + bp;
+      parent.weeklyLeftBP = (parent.weeklyLeftBP || 0) + bp;
+      parent.monthlyLeftBP = (parent.monthlyLeftBP || 0) + bp;
     } else {
-      parent.rightBP += bp;
-      parent.weeklyRightBP += bp;    // ✅ ADD THIS
-      parent.monthlyRightBP += bp;   // ✅ ADD THIS
+      parent.rightBP = (parent.rightBP || 0) + bp;
+      parent.weeklyRightBP = (parent.weeklyRightBP || 0) + bp;
+      parent.monthlyRightBP = (parent.monthlyRightBP || 0) + bp;
     }
 
     await parent.save({ session });
+
+    // ✅ SAFE CALL (IMPORTANT)
     await matchingIncome(parent._id);
+
     await checkLevels(parent, session);
 
-    // move upward
     child = currentUser;
     currentUser = parent;
   }
@@ -664,6 +665,7 @@ exports.adminApproveOrder = async (req, res) => {
 
       // ✅ DISTRIBUTE ONLY USABLE BP
       await distributeBP(user, usableBP, session);
+      await matchingIncome(user._id);
     
     }
 

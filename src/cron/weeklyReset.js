@@ -1,6 +1,5 @@
 const cron = require('node-cron');
 const User = require('../models/User');
-const matchingIncome = require('../utils/matchingIncome');
 
 cron.schedule('0 0 * * 0', async () => {
   console.log("🔄 Weekly Processing Started");
@@ -8,8 +7,6 @@ cron.schedule('0 0 * * 0', async () => {
   const users = await User.find();
 
   for (let user of users) {
-    await matchingIncome(user._id);
-
     user.weeklyLeftBP = 0;
     user.weeklyRightBP = 0;
 

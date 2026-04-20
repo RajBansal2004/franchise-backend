@@ -1,9 +1,9 @@
 const User = require('../models/User');
 
-module.exports = async function matchingIncome(userId){
+module.exports = async function matchingIncome(userId) {
 
   const user = await User.findById(userId);
-  if(!user) return;
+  if (!user) return;
 
   const leftBP = user.weeklyLeftBP || 0;
   const rightBP = user.weeklyRightBP || 0;
@@ -12,24 +12,27 @@ module.exports = async function matchingIncome(userId){
 
   const pair = Math.floor(matchBP / 50);
 
-  if(pair <= 0) return;
+  if (pair <= 0) return;
 
-  let income = pair * 50 * 10;
+  let income = pair * 50 * 10; // 10 per BP
 
   let cap = 0;
 
-  if(user.activationBP === 51) cap = 100000;
-  else if(user.activationBP === 101) cap = 150000;
+  if (user.activationBP === 51) cap = 100000;
+  else if (user.activationBP === 101) cap = 150000;
 
- if(cap && user.totalIncome + income > cap){
-  income = cap - user.totalIncome;
-}
+  // ✅ CAP PROTECTION
+  if (cap && user.totalIncome >= cap) return;
+
+  if (cap && user.totalIncome + income > cap) {
+    income = cap - user.totalIncome;
+  }
 
   const usedBP = pair * 50;
 
-  user.weeklyIncome += income;
-  user.totalIncome += income;
-  user.incomeWallet += income;
+  user.weeklyIncome = (user.weeklyIncome || 0) + income;
+  user.totalIncome = (user.totalIncome || 0) + income;
+  user.incomeWallet = (user.incomeWallet || 0) + income;
 
   user.weeklyLeftBP -= usedBP;
   user.weeklyRightBP -= usedBP;
