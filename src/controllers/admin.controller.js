@@ -36,7 +36,7 @@ const distributeBP = async (user, bp, session) => {
     await parent.save({ session });
 
     // ✅ SAFE CALL (IMPORTANT)
-    await matchingIncome(parent._id);
+    await matchingIncome(parent._id, session);
 
     await checkLevels(parent, session);
 

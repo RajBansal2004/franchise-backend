@@ -1,30 +1,27 @@
 const User = require('../models/User');
 
-module.exports = async function matchingIncome(userId) {
+module.exports = async function matchingIncome(userId, session){
 
-  const user = await User.findById(userId);
-  if (!user) return;
+  const user = await User.findById(userId).session(session); // ✅ FIX
+
+  if(!user) return;
 
   const leftBP = user.weeklyLeftBP || 0;
   const rightBP = user.weeklyRightBP || 0;
 
   const matchBP = Math.min(leftBP, rightBP);
-
   const pair = Math.floor(matchBP / 50);
 
-  if (pair <= 0) return;
+  if(pair <= 0) return;
 
-  let income = pair * 50 * 10; // 10 per BP
+  let income = pair * 50 * 10;
 
   let cap = 0;
 
-  if (user.activationBP === 51) cap = 100000;
-  else if (user.activationBP === 101) cap = 150000;
+  if(user.activationBP === 51) cap = 100000;
+  else if(user.activationBP === 101) cap = 150000;
 
-  // ✅ CAP PROTECTION
-  if (cap && user.totalIncome >= cap) return;
-
-  if (cap && user.totalIncome + income > cap) {
+  if(cap && user.totalIncome + income > cap){
     income = cap - user.totalIncome;
   }
 
@@ -39,7 +36,5 @@ module.exports = async function matchingIncome(userId) {
 
   user.lastWeeklyPaidAt = new Date();
 
-  await user.save();
-
-  console.log(`✅ Matching Income ₹${income} given to ${user.uniqueId}`);
+  await user.save({ session }); // ✅ FIX
 };
