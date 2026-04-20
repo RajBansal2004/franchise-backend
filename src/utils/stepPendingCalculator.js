@@ -7,7 +7,7 @@ function calculateStepPending(user) {
   let leftBP = user.leftBP || 0;
   let rightBP = user.rightBP || 0;
 
-  let isBlocked = false; // 👈 once pending, no more deduction
+  let isBlocked = false;
 
   for (const step of steps) {
 
@@ -30,19 +30,21 @@ function calculateStepPending(user) {
         remainBonusBP === 0 &&
         remainIncentiveBP === 0;
 
-      // ✅ if completed → deduct BP
       if (completed) {
         leftBP -= step.leftReq;
         rightBP -= step.rightReq;
       } else {
-        // ❌ next steps block हो जाएंगे
         isBlocked = true;
       }
 
     } else {
-      // 🔒 blocked state → no deduction
-      remainBonusBP = step.leftReq;
-      remainIncentiveBP = step.rightReq;
+      // 🔥 FIX: use SAME remaining BP (no reset)
+      usedLeft = Math.min(leftBP, step.leftReq);
+      usedRight = Math.min(rightBP, step.rightReq);
+
+      remainBonusBP = step.leftReq - usedLeft;
+      remainIncentiveBP = step.rightReq - usedRight;
+
       completed = false;
     }
 
