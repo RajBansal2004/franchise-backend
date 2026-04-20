@@ -122,11 +122,20 @@ exports.getRoyaltySummary = async (req, res) => {
           ? `${item.minPercent}%`
           : `${item.minPercent}-${item.maxPercent}%`;
 
+      // ✅ IMPORTANT FIX (level check)
+      let status = "Locked";
+
+      if (user.level >= item.level) {
+        status = consideredBP >= item.target
+          ? "Eligible"
+          : "Not Eligible";
+      }
+
       return {
         level: item.level,
-        targetAmount: item.target,   // 👈 important rename
+        targetAmount: item.target,
         percentage,
-        status: consideredBP >= item.target ? "Eligible" : "Not Eligible"
+        status
       };
     });
 

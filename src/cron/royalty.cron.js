@@ -11,11 +11,18 @@ cron.schedule('0 0 1 * *', async () => {
     kycStatus: 'approved'
   });
 
-  for(const user of users){
-     await calculateRoyalty(user._id);
+  for (const user of users) {
+
+    await calculateRoyalty(user._id);
+
+    // ✅ RESET MONTHLY BP AFTER ROYALTY
+    user.monthlyLeftBP = 0;
+    user.monthlyRightBP = 0;
+
+    await user.save();
   }
 
-  console.log("✅ Royalty Done");
+  console.log("✅ Royalty + Reset Done");
 
 }, {
   timezone: "Asia/Kolkata"

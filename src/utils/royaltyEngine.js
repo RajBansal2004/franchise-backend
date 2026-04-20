@@ -1,14 +1,6 @@
 const royaltyConfig = require('../config/royalty.config');
 const User = require('../models/User');
 
-function getRoyaltyKey(level) {
-  if (level >= 5 && level <= 8) return 'regional';
-  if (level >= 9 && level <= 12) return 'state';
-  if (level >= 13 && level <= 14) return 'national';
-  if (level === 15) return 'international';
-  return null;
-}
-
 async function calculateRoyalty(userId) {
 
   try {
@@ -16,36 +8,35 @@ async function calculateRoyalty(userId) {
     const user = await User.findById(userId);
     if (!user) return;
 
+    // ❌ Level <5 → NO ROYALTY
     if (user.level < 5) return;
 
     const royaltySlab = royaltyConfig.find(r => r.level === user.level);
     if (!royaltySlab) return;
 
-    // ⭐ Pair BP
-    const pairBP = Math.min(user.monthlyLeftBP, user.monthlyRightBP);
+    const leftBP = user.monthlyLeftBP || 0;
+    const rightBP = user.monthlyRightBP || 0;
 
-    if (pairBP <= 0) return;
+    const pairBP = Math.min(leftBP, rightBP);
+
+    // ❌ Target complete नहीं → NO ROYALTY
+    if (pairBP < royaltySlab.target) return;
 
     const percent = royaltySlab.maxPercent;
 
     const royaltyIncome = (pairBP * percent) / 100;
-const currentMonth = new Date().getMonth();
 
-if(user.lastRoyaltyMonth === currentMonth){
-  return; // already paid
-}
-    // ✅ ADD (not replace)
+    const currentMonth = new Date().getMonth();
+
+    // ❌ Already paid
+    if (user.lastRoyaltyMonth === currentMonth) return;
+
+    // ✅ ADD income
     user.royaltyIncome += royaltyIncome;
     user.totalIncome += royaltyIncome;
     user.incomeWallet += royaltyIncome;
 
-    // ✅ Correct eligibility mapping
-    const key = getRoyaltyKey(user.level);
-    if (key) {
-      user.royaltyEligible[key] = pairBP >= royaltySlab.target;
-    }
     user.lastRoyaltyMonth = currentMonth;
-
 
     await user.save();
 
