@@ -10,10 +10,10 @@ function calculateStepPending(user) {
 
     // ✅ Direct check (independent level)
     const remainBonusBP =
-      leftBP >= step.leftReq ? 0 : step.leftReq;
+      leftBP >= step.leftReq ? 0 : step.leftReq - leftBP;
 
     const remainIncentiveBP =
-      rightBP >= step.rightReq ? 0 : step.rightReq;
+      rightBP >= step.rightReq ? 0 : step.rightReq - rightBP;
 
     const completed =
       remainBonusBP === 0 &&

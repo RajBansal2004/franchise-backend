@@ -105,7 +105,6 @@ exports.getStepPending = async (req, res) => {
 };
 
 
-
 exports.getRoyaltySummary = async (req, res) => {
   try {
 
@@ -144,8 +143,6 @@ exports.getRoyaltySummary = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-
 
 
 exports.getUserDashboard = async (req, res) => {
