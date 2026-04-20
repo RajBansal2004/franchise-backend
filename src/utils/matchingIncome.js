@@ -12,6 +12,13 @@ module.exports = async function matchingIncome(userId, session) {
   const matchBP = Math.min(leftBP, rightBP);
   const pair = Math.floor(matchBP / 50);
 
+    console.log("👉 Matching Check:", {
+    user: user.uniqueId,
+    leftBP,
+    rightBP,
+    pair
+  });
+
   if (pair <= 0) return;
 
   let income = pair * 50 * 10;

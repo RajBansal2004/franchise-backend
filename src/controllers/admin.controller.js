@@ -668,6 +668,7 @@ exports.adminApproveOrder = async (req, res) => {
       // ✅ DISTRIBUTE ONLY USABLE BP
       await distributeBP(user, usableBP, session);
 
+      await matchingIncome(user._id, session);
     }
 
     // ================= FRANCHISE ORDER =================
