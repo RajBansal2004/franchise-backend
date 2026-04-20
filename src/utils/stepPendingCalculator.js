@@ -1,19 +1,21 @@
 const steps = require('../config/royaltySteps');
 
 function calculateStepPending(user) {
+
   const result = [];
 
-  const leftBP = user.leftBP || 0;
-  const rightBP = user.rightBP || 0;
+  // ✅ ORIGINAL BP
+  let leftBP = user.leftBP || 0;
+  let rightBP = user.rightBP || 0;
 
   for (const step of steps) {
 
-    // ✅ Direct check (independent level)
-    const remainBonusBP =
-      leftBP >= step.leftReq ? 0 : step.leftReq - leftBP;
+    // ✅ CHECK USING CURRENT BALANCE
+    const usedLeft = Math.min(leftBP, step.leftReq);
+    const usedRight = Math.min(rightBP, step.rightReq);
 
-    const remainIncentiveBP =
-      rightBP >= step.rightReq ? 0 : step.rightReq - rightBP;
+    const remainBonusBP = step.leftReq - usedLeft;
+    const remainIncentiveBP = step.rightReq - usedRight;
 
     const completed =
       remainBonusBP === 0 &&
@@ -29,11 +31,23 @@ function calculateStepPending(user) {
       userLeftBP: leftBP,
       userRightBP: rightBP,
 
+      usedLeft,
+      usedRight,
+
       remainBonusBP,
       remainIncentiveBP,
 
       status: completed ? 'Completed' : 'Pending'
     });
+
+    // ✅ 🔥 CARRY FORWARD LOGIC (MAIN FIX)
+    if (completed) {
+      leftBP -= step.leftReq;
+      rightBP -= step.rightReq;
+    } else {
+      // ❌ agar current step complete nahi hua → आगे break
+      break;
+    }
   }
 
   const completedSteps = result.filter(r => r.status === 'Completed').length;
@@ -42,7 +56,7 @@ function calculateStepPending(user) {
     totalLevel: steps.length,
     completed: completedSteps,
     pending: steps.length - completedSteps,
-    currentLevel: completedSteps, // 🔵 BLUE LEVEL
+    currentLevel: completedSteps,
     steps: result
   };
 }
