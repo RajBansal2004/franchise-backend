@@ -6,10 +6,18 @@ const creditSchema = new mongoose.Schema({
     enum: ["USER", "FRANCHISE", "SHAREHOLDER"],
     required: true
   },
+   // 🔥 NEW FIELD (IMPORTANT)
+  incomeType: {
+    type: String,
+    enum: ["MATCHING", "LEVEL", "ROYALTY", "DIRECT"],
+  },
+
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
   // common
   amount: { type: Number, required: true },
   date: { type: Date, default: Date.now },
+  
 
   // user / franchise
   name: String,
@@ -19,7 +27,8 @@ const creditSchema = new mongoose.Schema({
   // shareholder only
   fatherName: String,
   nomineeName: String,
-  shareCount: Number
+  shareCount: Number,
+  remark: String
 
 }, { timestamps: true });
 

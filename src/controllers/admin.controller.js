@@ -851,10 +851,12 @@ exports.addCredit = async (req, res) => {
 // 📄 GET CREDIT
 exports.getCredits = async (req, res) => {
   try {
-    const { type, fromDate, toDate } = req.query;
+    const { type, incomeType, fromDate, toDate } = req.query;
 
     let filter = {};
+
     if (type) filter.type = type;
+    if (incomeType) filter.incomeType = incomeType;
 
     if (fromDate || toDate) {
       filter.date = {};

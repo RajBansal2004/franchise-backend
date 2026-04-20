@@ -43,14 +43,18 @@ module.exports = async function matchingIncome(userId, session) {
 
   user.lastWeeklyPaidAt = new Date();
 
-  // ✅ ONLY CREDIT ENTRY
-  await Credit.create([{
-    userId: user._id,
-    amount: income,
-    type: "MATCHING",
-    remark: "Matching Income",
-    date: new Date()
-  }], { session });
+  
+   await Credit.insertMany([{
+  userId: user._id,
+  type: "USER",
+  incomeType: "MATCHING",
+  amount: income,
+  name: user.fullName,
+  loginId: user.uniqueId,
+  mobile: user.mobile,
+  remark: "Matching Income",
+  date: new Date()
+}], { session });
 
   await user.save({ session });
 };
