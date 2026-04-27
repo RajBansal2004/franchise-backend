@@ -1,4 +1,4 @@
-const Email = require("../models/Email");
+const Email = require("../models/email.model");
 
 
 exports.create = async (req, res) => {
