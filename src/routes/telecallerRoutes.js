@@ -1,5 +1,5 @@
-import express from "express";
-import * as ctrl from "../controllers/telecallerController.js";
+const express = require("express");
+const ctrl = require("../controllers/telecallerController");
 
 const router = express.Router();
 
@@ -8,4 +8,4 @@ router.get("/", ctrl.getAll);
 router.put("/:id", ctrl.update);
 router.delete("/:id", ctrl.remove);
 
-export default router;
+module.exports = router;   // ✅ IMPORTANT
