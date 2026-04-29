@@ -1,9 +1,10 @@
 const express = require("express");
-const grievanceCtrl = require("../controllers/grievance.controller");
+const ctrl = require("../controllers/grievance.controller");
 
 const router = express.Router();
 
-router.get("/", grievanceCtrl.getAll);
-router.put("/:id", grievanceCtrl.reply);
+router.post("/", ctrl.create);   
+router.get("/", ctrl.getAll);    
+router.put("/:id", ctrl.reply);
 
 module.exports = router;

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const grievanceSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   subject: String,
+  name: String, 
   message: String,
   mobile: String,
   status: { type: String, enum: ['open','in_progress','resolved'], default: 'open' },
