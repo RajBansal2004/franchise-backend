@@ -19,6 +19,8 @@ const paymentReportRoutes = require("./routes/paymentReportRoutes");
 const cartRoutes = require("./routes/cart.routes");
 const emailRoutes = require("./routes/emailRoutes");
 const telecallerRoutes = require("./routes/telecallerRoutes");
+const licenseRoutes = require("./routes/licenseRoutes");
+
 require('./cron');  
 require('./cron/bpReset');
 require('./cron/incomeReset');
@@ -51,6 +53,7 @@ app.use("/achievements", require("./routes/achievements.routes"));
 app.use("/api", paymentReportRoutes);
 app.use("/email", emailRoutes);
 app.use("/telecaller", telecallerRoutes);
+app.use("/license", licenseRoutes);
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
 app.use('/api', require('./routes/test'));
