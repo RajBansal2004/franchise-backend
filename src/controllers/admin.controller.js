@@ -906,3 +906,41 @@ exports.getDebits = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+
+
+
+// ✅ ASSIGN WORK (MAIN API)
+exports.assignWorkToSubAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { workTypes } = req.body;
+
+    if (!Array.isArray(workTypes)) {
+      return res.status(400).json({
+        message: "workTypes must be an array",
+      });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user || user.role !== "SUBADMIN") {
+      return res.status(404).json({
+        message: "SubAdmin not found",
+      });
+    }
+
+    user.allowedWorkTypes = workTypes;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Work assigned successfully",
+      data: user,
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

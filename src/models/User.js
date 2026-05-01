@@ -139,6 +139,10 @@ const userSchema = new mongoose.Schema({
     village: String,
     pincode: String
   },
+     allowedWorkTypes: {
+      type: [String],
+      default: [],
+    },
   // ===== Dashboard BP =====
 
   weeklyLeftBP: { type: Number, default: 0 },
