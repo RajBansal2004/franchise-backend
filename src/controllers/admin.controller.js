@@ -149,6 +149,7 @@ exports.getSubadminProfile = async (req, res) => {
         kycDocs
         isActive isBlocked
         createdAt
+        allowedWorkTypes   // ✅ ADD THIS
       `);
 
     if (!user) {
@@ -163,7 +164,15 @@ exports.getSubadminProfile = async (req, res) => {
       });
     }
 
-    res.json(user);
+    res.json({
+      ...user.toObject(),
+
+      // 🔥 CONVERT TO PERMISSIONS FORMAT
+      permissions: (user.allowedWorkTypes || []).reduce((acc, work) => {
+        acc[work] = ["view"]; // default permission
+        return acc;
+      }, {})
+    });
 
   } catch (err) {
     res.status(500).json({
