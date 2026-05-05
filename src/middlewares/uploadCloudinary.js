@@ -8,6 +8,7 @@ const storage = new CloudinaryStorage({
 
     let folder = "uploads/misc";
 
+    // ✅ EXISTING
     if (file.fieldname === "image") {
       folder = "uploads/products";
     }
@@ -18,6 +19,15 @@ const storage = new CloudinaryStorage({
 
     if (file.fieldname === "kycImage") {
       folder = "uploads/kyc";
+    }
+
+    // 🔥 NEW (IMPORTANT)
+    if (file.fieldname === "sliderImages") {
+      folder = "uploads/slider";
+    }
+
+    if (file.fieldname === "founderImage") {
+      folder = "uploads/founder";
     }
 
     return {

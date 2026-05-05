@@ -57,6 +57,7 @@ app.use("/license", licenseRoutes);
 // health
 app.get('/api/health', (req,res)=> res.json({status:'ok'}));
 app.use('/api', require('./routes/test'));
+app.use("/settings", require("./routes/settings.routes"));
 
 app.use(errorHandler);
 
