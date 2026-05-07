@@ -27,21 +27,18 @@ router.post(
       let settings = await Settings.findOne();
       if (!settings) settings = new Settings();
 
-      // ❌ OLD DELETE
-      if (settings.sliderImages?.length) {
-        for (let img of settings.sliderImages) {
-          if (img.public_id) {
-            await cloudinary.uploader.destroy(img.public_id);
-          }
-        }
-      }
-
       const images = req.files.map((file) => ({
         url: file.path,
         public_id: file.filename,
       }));
 
-      settings.sliderImages = images;
+      settings.sliderImages = [
+        ...settings.sliderImages,
+        ...images
+      ].filter(
+        (v, i, arr) =>
+          arr.findIndex(t => t.url === v.url) === i
+      );
       await settings.save();
 
       res.json({
