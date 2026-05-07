@@ -352,15 +352,18 @@ exports.getDashboardStats = async (req, res) => {
 
       // ================= KYC =================
       User.countDocuments({
-        kycStatus: 'approved'
+        kycStatus: 'approved',
+        role: { $in: ['USER', 'FRANCHISE','SUBADMIN'] }
       }),
 
       User.countDocuments({
-        kycStatus: 'pending'
+        kycStatus: 'pending',
+        role: { $in: ['USER', 'FRANCHISE','SUBADMIN'] }
       }),
 
       User.countDocuments({
-        kycStatus: 'rejected'
+        kycStatus: 'rejected',
+        role: { $in: ['USER', 'FRANCHISE','SUBADMIN'] }
       })
 
     ]);
