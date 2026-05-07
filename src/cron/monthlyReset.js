@@ -1,8 +1,8 @@
 const cron = require('node-cron');
 const calculateMonthlyIncome = require('../utils/monthlyIncome');
 
-cron.schedule('0 0 1 * *', async () => {
-  console.log("🔄 Monthly Processing Started");
+cron.schedule('59 23 28-31  * *', async () => {
+  console.log("Monthly Processing Started");
 
   await calculateMonthlyIncome();
 
@@ -13,5 +13,8 @@ cron.schedule('0 0 1 * *', async () => {
     }
   });
 
-  console.log("✅ Monthly Processing Done");
-});
+  console.log("Monthly Processing Done");
+}
+  , {
+    timezone: "Asia/Kolkata"
+  });

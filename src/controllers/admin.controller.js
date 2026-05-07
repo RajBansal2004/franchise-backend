@@ -1050,3 +1050,58 @@ exports.assignWorkToSubAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// ================= WEEKLY CLOSING =================
+exports.weeklyClosing = async (req, res) => {
+  try {
+
+    await User.updateMany(
+      {},
+      {
+        $set: {
+          weeklyLeftBP: 0,
+          weeklyRightBP: 0,
+          weeklyIncome: 0
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: "Weekly Closing Done Successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
+
+
+// ================= MONTHLY CLOSING =================
+exports.monthlyClosing = async (req, res) => {
+  try {
+
+    await User.updateMany(
+      {},
+      {
+        $set: {
+          monthlyLeftBP: 0,
+          monthlyRightBP: 0,
+          monthlyIncome: 0
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: "Monthly Closing Done Successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};

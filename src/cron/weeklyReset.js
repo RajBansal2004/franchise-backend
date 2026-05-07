@@ -1,17 +1,34 @@
 const cron = require('node-cron');
 const User = require('../models/User');
 
-cron.schedule('0 0 * * 0', async () => {
-  console.log("🔄 Weekly Processing Started");
+cron.schedule(
+  '0 0 * * 3',
+  async () => {
 
-  const users = await User.find();
+    try {
 
-  for (let user of users) {
-    user.weeklyLeftBP = 0;
-    user.weeklyRightBP = 0;
+      console.log("🔄 Weekly Closing Started");
 
-    await user.save();
+      await User.updateMany(
+        {},
+        {
+          $set: {
+            weeklyLeftBP: 0,
+            weeklyRightBP: 0
+          }
+        }
+      );
+
+      console.log("✅ Weekly Closing Completed");
+
+    } catch (err) {
+
+      console.log("❌ Weekly Closing Error:", err.message);
+
+    }
+
+  },
+  {
+    timezone: "Asia/Kolkata"
   }
-
-  console.log("✅ Weekly Processing Done");
-});
+);

@@ -48,6 +48,19 @@ router.post("/debit",auth, ctrl.addDebit);
 router.get("/debit",auth, ctrl.getDebits);
 router.post("/credit",auth, ctrl.addCredit);
 router.get("/credit",auth, ctrl.getCredits);
+router.post(
+  "/weekly-closing",
+  auth,
+  permit("ADMIN"),
+  ctrl.weeklyClosing
+);
+
+router.post(
+  "/monthly-closing",
+  auth,
+  permit("ADMIN"),
+  ctrl.monthlyClosing
+);
 // ✅ KYC UPDATE ROUTE
 router.put("/user/:id/kyc", auth, ctrl.updateKycStatus);
 
