@@ -262,7 +262,9 @@ exports.updateKycStatus = async (req, res) => {
 
 exports.getDashboardStats = async (req, res) => {
   try {
+
     const [
+
       // USERS
       totalUsers,
       activeUsers,
@@ -275,53 +277,131 @@ exports.getDashboardStats = async (req, res) => {
       inactiveFranchises,
       blockedFranchises,
 
+      // SUBADMIN
+      totalSubadmins,
+      activeSubadmins,
+      inactiveSubadmins,
+      blockedSubadmins,
+
       // KYC
       kycApproved,
       kycPending,
       kycRejected
+
     ] = await Promise.all([
 
-      // USERS
+      // ================= USERS =================
       User.countDocuments({ role: 'USER' }),
-      User.countDocuments({ role: 'USER', isActive: true, isBlocked: false }),
-      User.countDocuments({ role: 'USER', isActive: false, isBlocked: false }),
-      User.countDocuments({ role: 'USER', isBlocked: true }),
 
-      // FRANCHISE
+      User.countDocuments({
+        role: 'USER',
+        isActive: true,
+        isBlocked: false
+      }),
+
+      User.countDocuments({
+        role: 'USER',
+        isActive: false,
+        isBlocked: false
+      }),
+
+      User.countDocuments({
+        role: 'USER',
+        isBlocked: true
+      }),
+
+      // ================= FRANCHISE =================
       User.countDocuments({ role: 'FRANCHISE' }),
-      User.countDocuments({ role: 'FRANCHISE', isActive: true, isBlocked: false }),
-      User.countDocuments({ role: 'FRANCHISE', isActive: false, isBlocked: false }),
-      User.countDocuments({ role: 'FRANCHISE', isBlocked: true }),
 
-      // KYC
-      User.countDocuments({ kycStatus: 'approved' }),
-      User.countDocuments({ kycStatus: 'pending' }),
-      User.countDocuments({ kycStatus: 'rejected' })
+      User.countDocuments({
+        role: 'FRANCHISE',
+        isActive: true,
+        isBlocked: false
+      }),
+
+      User.countDocuments({
+        role: 'FRANCHISE',
+        isActive: false,
+        isBlocked: false
+      }),
+
+      User.countDocuments({
+        role: 'FRANCHISE',
+        isBlocked: true
+      }),
+
+      // ================= SUBADMIN =================
+      User.countDocuments({ role: 'SUBADMIN' }),
+
+      User.countDocuments({
+        role: 'SUBADMIN',
+        isActive: true,
+        isBlocked: false
+      }),
+
+      User.countDocuments({
+        role: 'SUBADMIN',
+        isActive: false,
+        isBlocked: false
+      }),
+
+      User.countDocuments({
+        role: 'SUBADMIN',
+        isBlocked: true
+      }),
+
+      // ================= KYC =================
+      User.countDocuments({
+        kycStatus: 'approved'
+      }),
+
+      User.countDocuments({
+        kycStatus: 'pending'
+      }),
+
+      User.countDocuments({
+        kycStatus: 'rejected'
+      })
+
     ]);
 
     res.json({
       success: true,
+
       users: {
         total: totalUsers,
         active: activeUsers,
         inactive: inactiveUsers,
         blocked: blockedUsers
       },
+
       franchises: {
         total: totalFranchises,
         active: activeFranchises,
         inactive: inactiveFranchises,
         blocked: blockedFranchises
       },
+
+      // ✅ NEW
+      subadmins: {
+        total: totalSubadmins,
+        active: activeSubadmins,
+        inactive: inactiveSubadmins,
+        blocked: blockedSubadmins
+      },
+
       kyc: {
         approved: kycApproved,
         pending: kycPending,
         rejected: kycRejected
       }
+
     });
 
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      message: err.message
+    });
   }
 };
 
@@ -886,7 +966,21 @@ exports.getCredits = async (req, res) => {
 // ➕ ADD DEBIT
 exports.addDebit = async (req, res) => {
   try {
-    const debit = await Debit.create(req.body);
+    const {
+      amount,
+      minusTds = 0,
+      minusMaintenance = 0
+    } = req.body;
+
+    const finalAmount =
+      Number(amount)
+      - Number(minusTds)
+      - Number(minusMaintenance);
+
+    const debit = await Debit.create({
+      ...req.body,
+      finalAmount
+    });
     res.json({ success: true, debit });
   } catch (err) {
     res.status(500).json({ message: err.message });

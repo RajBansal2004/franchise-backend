@@ -33,7 +33,21 @@ const debitSchema = new mongoose.Schema({
 
   // company
   beneficiaryAccount: String,
-  description: String
+  description: String,
+  minusTds: {
+  type: Number,
+  default: 0
+},
+
+minusMaintenance: {
+  type: Number,
+  default: 0
+},
+
+finalAmount: {
+  type: Number,
+  default: 0
+}
 
 }, { timestamps: true });
 
