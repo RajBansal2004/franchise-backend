@@ -498,15 +498,32 @@ exports.getUsers = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    const [users, total] = await Promise.all([
-      User.find(filter)
-        .select('fullName uniqueId mobile plainPassword role isActive isBlocked kycStatus kycDocs createdAt')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(Number(limit)),
+   const [users, total] = await Promise.all([
+  User.find(filter)
+    .select(`
+      fullName
+      franchiseName
+      franchiseOwnerName
+      uniqueId
+      mobile
+      email
+      plainPassword
+      role
+      isActive
+      isBlocked
+      kycStatus
+      photo
+      location
+      kycDocs
+      shippingAddress
+      createdAt
+    `)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(Number(limit)),
 
-      User.countDocuments(filter)
-    ]);
+  User.countDocuments(filter)
+]);
 
     res.json({
       total,
