@@ -8,4 +8,4 @@ router.get("/", ctrl.getAll);
 router.put("/:id", ctrl.update);
 router.delete("/:id", ctrl.remove);
 
-module.exports = router;   // ✅ IMPORTANT
+module.exports = router;

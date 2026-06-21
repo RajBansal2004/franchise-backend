@@ -29,6 +29,17 @@ const storage = new CloudinaryStorage({
     if (file.fieldname === "founderImage") {
       folder = "uploads/founder";
     }
+    if (file.fieldname === "directorImage") {
+  folder = "uploads/director";
+}
+
+if (file.fieldname === "memberImage") {
+  folder = "uploads/founder-members";
+}
+
+if (file.fieldname === "offerImage") {
+  folder = "uploads/offers";
+}
 
     return {
       folder,

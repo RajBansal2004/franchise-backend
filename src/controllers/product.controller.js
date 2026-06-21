@@ -39,13 +39,32 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-exports.updateProduct = async (req,res)=>{
- const p = await Product.findByIdAndUpdate(
-   req.params.id,
-   req.body,
-   {new:true}
- );
- res.json(p);
+exports.updateProduct = async (req, res) => {
+  try {
+
+    const updateData = { ...req.body };
+
+    if (req.files?.image) {
+      updateData.image = req.files.image[0].path;
+    }
+
+    if (req.files?.images) {
+      updateData.images = req.files.images.map(img => img.path);
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    res.json(product);
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message
+    });
+  }
 };
 
 
