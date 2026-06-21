@@ -350,24 +350,32 @@ exports.updatePhoto = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (!user) {
-      return res.status(404).json({ msg: "User not found" });
+      return res.status(404).json({
+        msg: "User not found"
+      });
     }
 
     if (!req.file) {
-      return res.status(400).json({ msg: "No photo uploaded" });
+      return res.status(400).json({
+        msg: "No photo uploaded"
+      });
     }
 
-    // Save file path in database
     user.photo = `/uploads/kyc/${req.file.filename}`;
+
     await user.save();
 
     res.json({
       msg: "Photo updated successfully",
-      photo: user.photo
+      profile: {
+        photo: user.photo
+      }
     });
 
   } catch (err) {
-    res.status(500).json({ msg: err.message });
+    res.status(500).json({
+      msg: err.message
+    });
   }
 };
 
@@ -375,12 +383,47 @@ exports.updatePhoto = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select(
-      'franchiseName franchiseOwnerName email mobile fatherName gender dob location shippingAddress photo'
+      `
+      franchiseName
+      franchiseOwnerName
+      email
+      mobile
+      fatherName
+      gender
+      dob
+      location
+      shippingAddress
+      photo
+      uniqueId
+      isActive
+      `
     );
 
-    res.json(user);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    res.json({
+      profile: {
+        name: user.franchiseOwnerName || user.franchiseName,
+        referralId: user.uniqueId,
+        mobile: user.mobile,
+        email: user.email,
+        fatherName: user.fatherName,
+        gender: user.gender,
+        dob: user.dob,
+        location: user.location,
+        shippingAddress: user.shippingAddress,
+        photo: user.photo,
+        status: user.isActive ? "Active" : "Inactive"
+      }
+    });
 
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({
+      message: err.message
+    });
   }
 };
