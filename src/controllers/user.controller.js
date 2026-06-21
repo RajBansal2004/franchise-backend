@@ -374,10 +374,10 @@ exports.updatePhoto = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select(
-      `
+    const user = await User.findById(req.user.id).select(`
       franchiseName
       franchiseOwnerName
+      fullName
       email
       mobile
       fatherName
@@ -388,8 +388,7 @@ exports.getProfile = async (req, res) => {
       photo
       uniqueId
       isActive
-      `
-    );
+    `);
 
     if (!user) {
       return res.status(404).json({
@@ -399,16 +398,26 @@ exports.getProfile = async (req, res) => {
 
     res.json({
       profile: {
-        name: user.franchiseOwnerName || user.franchiseName,
+        franchiseName: user.franchiseName || "",
+        franchiseOwnerName: user.franchiseOwnerName || "",
+        fullName: user.fullName || "",
         referralId: user.uniqueId,
-        mobile: user.mobile,
-        email: user.email,
-        fatherName: user.fatherName,
-        gender: user.gender,
-        dob: user.dob,
-        location: user.location,
-        shippingAddress: user.shippingAddress,
-        photo: user.photo,
+
+        mobile: user.mobile || "",
+        email: user.email || "",
+
+        fatherName: user.fatherName || "",
+        gender: user.gender || "",
+        dob: user.dob || "",
+
+        pincode: user.location?.pincode || "",
+        district: user.location?.district || "",
+        state: user.location?.state || "",
+        address: `${user.location?.village || ""} ${user.location?.block || ""}`.trim(),
+
+        shippingAddress: user.shippingAddress || {},
+        photo: user.photo || "",
+
         status: user.isActive ? "Active" : "Inactive"
       }
     });
