@@ -5,25 +5,26 @@ const orderSchema = new mongoose.Schema({
   orderId: { type: String, required: true, unique: true },
 
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-orderFrom:{
- type:String,
- enum:['USER','FRANCHISE'],
- required:true
-},
+  orderFrom: {
+    type: String,
+    enum: ['USER', 'FRANCHISE'],
+    required: true
+  },
 
-franchiseId: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: 'User',
-  default: null
-},
+  franchiseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
 
-retailProfit: {
-  type: Number,
-  default: 0
-}
-,
+  retailProfit: {
+    type: Number,
+    default: 0
+  }
+  ,
   items: [{
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    hsnCode: String,
     qty: Number,
     price: Number,
     bp: Number
@@ -35,25 +36,25 @@ retailProfit: {
 
   paymentStatus: {
     type: String,
-    enum:['pending','paid','failed'],
+    enum: ['pending', 'paid', 'failed'],
     default: 'pending'
   },
 
   status: {
     type: String,
-    enum:['pending','approved','cancelled'],
+    enum: ['pending', 'approved', 'cancelled'],
     default: 'pending'
   },
 
   activationBP: {
-  type: Number,
-  default: 0
-},
-isActivated: {
-  type: Boolean,
-  default: false
-},
-paymentScreenshot: String,
+    type: Number,
+    default: 0
+  },
+  isActivated: {
+    type: Boolean,
+    default: false
+  },
+  paymentScreenshot: String,
 
   approvedAt: Date,
 

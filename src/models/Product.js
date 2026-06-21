@@ -3,7 +3,10 @@ const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema({
 
   title: { type: String, required: true },
-
+  hsnCode: {
+    type: String,
+    default: ""
+  },
   sku: { type: String, required: true, unique: true },
 
   description: String,

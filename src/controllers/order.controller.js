@@ -67,20 +67,17 @@ exports.createOrder = async (req, res) => {
       }
 
       const qty = Number(item.qty) || 1;
-      const price = Number(product.mrp || 0);
-      const gst = Number(product.gst || 0);
+      const price = Number(product.dp || 0);
       const bp = Number(product.bp || 0);
-
-      const priceWithGST = price + (price * gst / 100);
-
-      totalAmount += priceWithGST * qty;
+      totalAmount += price * qty;
       totalBP += bp * qty;
 
       orderItems.push({
         product: product._id,
         qty,
-        price: priceWithGST,
-        bp
+        price,
+        bp,
+        hsnCode: product.hsnCode 
       });
     }
 
@@ -129,7 +126,7 @@ exports.getOrders = async (req, res) => {
 
     const orders = await Order.find()
       .populate('user', 'fullName email mobile role')
-      .populate('items.product', 'title price');
+      .populate('items.product', 'title dp image');
 
     res.json(orders);
 
@@ -318,14 +315,15 @@ exports.createFranchiseActivationOrder = async (req, res) => {
         return res.status(400).json({ message: "Stock insufficient" });
       }
 
-      totalAmount += product.price * item.qty;
+      totalAmount += product.dp * item.qty;
       totalBP += product.bp * item.qty;
 
       orderItems.push({
         product: product._id,
         qty: item.qty,
-        price: product.price,
-        bp: product.bp
+        price: product.dp,
+        bp: product.bp,
+          hsnCode: product.hsnCode || ""
       });
     }
 
