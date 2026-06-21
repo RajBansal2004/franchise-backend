@@ -346,36 +346,28 @@ exports.updateShippingAddress = async (req, res) => {
 
 exports.updatePhoto = async (req, res) => {
   try {
-
     const user = await User.findById(req.user._id);
 
     if (!user) {
-      return res.status(404).json({
-        msg: "User not found"
-      });
+      return res.status(404).json({ msg: "User not found" });
     }
 
     if (!req.file) {
-      return res.status(400).json({
-        msg: "No photo uploaded"
-      });
+      return res.status(400).json({ msg: "No photo uploaded" });
     }
 
-    user.photo = `/uploads/kyc/${req.file.filename}`;
+    // Cloudinary URL save karo
+    user.photo = req.file.path;
 
     await user.save();
 
     res.json({
       msg: "Photo updated successfully",
-      profile: {
-        photo: user.photo
-      }
+      photo: user.photo,
     });
 
   } catch (err) {
-    res.status(500).json({
-      msg: err.message
-    });
+    res.status(500).json({ msg: err.message });
   }
 };
 

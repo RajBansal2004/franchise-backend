@@ -3,6 +3,7 @@ const ctrl = require('../controllers/user.controller');
 const auth = require('../middlewares/auth.middleware');
 const permit = require('../middlewares/role.middleware');
 const uploadKyc = require('../middlewares/upload');
+const upload = require("../middlewares/uploadCloudinary");
 
 router.get('/profile', auth, permit('USER'), ctrl.getUserDashboard);
 router.get('/royalty/summary', auth, permit('USER'), ctrl.getRoyaltySummary);
@@ -15,7 +16,7 @@ router.put('/shipping-address', auth, ctrl.updateShippingAddress);
 router.put(
   '/profile',
   auth,
-  uploadKyc.single('photo'),
+  upload.single('photo'),
   ctrl.updatePhoto
 );
 

@@ -67,7 +67,6 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-
 exports.deleteProduct = async (req,res)=>{
  await Product.findByIdAndUpdate(
    req.params.id,

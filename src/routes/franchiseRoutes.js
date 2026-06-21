@@ -4,7 +4,7 @@ const auth = require('../middlewares/auth.middleware');
 const ctrlUser = require('../controllers/user.controller');
 const ctrl = require('../controllers/franchise.controller');
 const permit = require('../middlewares/role.middleware');
-const upload = require('../middlewares/upload');
+const upload = require('../middlewares/uploadCloudinary');
 
 router.get('/stock', auth, permit('FRANCHISE'), ctrl.getFranchiseStock);
 router.get('/dashboard', auth, ctrl.getFranchiseDashboard);
