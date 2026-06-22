@@ -193,7 +193,17 @@ exports.registerDS = async (req, res) => {
     const uniqueId = generateDSId(fullName, mobile);
     const password = generatePassword();
 
+let rootPosition = null;
 
+if (parentUser) {
+  if (!parentUser.parentId) {
+    // Direct child of root user
+    rootPosition = position;
+  } else {
+    // Parent ka rootPosition inherit karega
+    rootPosition = parentUser.rootPosition;
+  }
+}
     const user = await User.create({
       fullName,
       fatherName,
@@ -208,6 +218,7 @@ exports.registerDS = async (req, res) => {
       referralId,
       parentId: parentUser ? parentUser._id : null,
       position: parentUser ? position : null,
+      rootPosition,
       level: parentUser ? parentUser.level + 1 : 0,
       location: parsedLocation,
       kycDocs,

@@ -61,7 +61,28 @@ app.use("/settings", require("./routes/settings.routes"));
 
 app.use(errorHandler);
 
+// const PORT = process.env.PORT || 4000;
+// connectDB(process.env.MONGO_URI).then(() => {
+//   app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+// });
+
 const PORT = process.env.PORT || 4000;
-connectDB(process.env.MONGO_URI).then(() => {
-  app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+
+const migrateRootPosition = require("./utils/updateRootPosition");
+
+connectDB(process.env.MONGO_URI).then(async () => {
+  try {
+    console.log("🚀 Starting Root Position Migration...");
+
+    await migrateRootPosition();
+
+    console.log("✅ Migration Completed");
+
+    app.listen(PORT, () => {
+      console.log(`Server running on ${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("❌ Migration Error:", err);
+  }
 });

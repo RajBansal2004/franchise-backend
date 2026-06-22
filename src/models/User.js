@@ -70,6 +70,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['LEFT', 'RIGHT']
   },
+  rootPosition: {
+  type: String,
+  enum: ['LEFT', 'RIGHT'],
+  default: null
+},
 
   leftChildren: [
     { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

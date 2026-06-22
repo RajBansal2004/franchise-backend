@@ -14,14 +14,13 @@ const Debit = require("../models/Debit");
 const matchingIncome = require('../utils/matchingIncome');
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
-  let child = user;
+
+  const direction = user.rootPosition || user.position;
 
   while (currentUser.parentId) {
-
     const parent = await User.findById(currentUser.parentId).session(session);
-    if (!parent) break;
 
-    const direction = child.position;
+    if (!parent) break;
 
     if (direction === "LEFT") {
       parent.leftBP = (parent.leftBP || 0) + bp;
@@ -35,12 +34,9 @@ const distributeBP = async (user, bp, session) => {
 
     await parent.save({ session });
 
-    // ✅ SAFE CALL (IMPORTANT)
     await matchingIncome(parent._id, session);
-
     await checkLevels(parent, session);
 
-    child = currentUser;
     currentUser = parent;
   }
 };
