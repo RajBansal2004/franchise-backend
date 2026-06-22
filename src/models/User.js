@@ -181,9 +181,16 @@ const userSchema = new mongoose.Schema({
       number: String,
       frontImage: String,
       backImage: String
-    }
+    },
+     bank: {
+    image: String,
+    accountNo: String,
+    ifsc: String,
+    holderName: String
+  }
 
   },
+
   foundationBP: {
     type: Number,
     default: 0
