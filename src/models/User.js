@@ -195,7 +195,25 @@ const userSchema = new mongoose.Schema({
     default: 'pending'
   },
 
+franchiseKyc: {
+  idType: String,
 
+  idFront: String,
+  idBack: String,
+
+  pan: String,
+  bankPassbook: String,
+},
+
+legalDocs: {
+  fssai: String,
+  msme: String,
+  udyam: String,
+  gumasta: String,
+  centerPan: String,
+  mca: String,
+  gst: String,
+},
   /* ================= OTP ================= */
   otp: {
     code: String,

@@ -12,6 +12,28 @@ const storage = new CloudinaryStorage({
     if (file.fieldname === "image") {
       folder = "uploads/products";
     }
+    // Franchise KYC
+    if (
+      ["idFront", "idBack", "pan", "bankPassbook"]
+        .includes(file.fieldname)
+    ) {
+      folder = "uploads/franchise-kyc";
+    }
+
+    // Franchise Legal Docs
+    if (
+      [
+        "fssai",
+        "msme",
+        "udyam",
+        "gumasta",
+        "centerPan",
+        "mca",
+        "gst"
+      ].includes(file.fieldname)
+    ) {
+      folder = "uploads/franchise-legal";
+    }
 
     if (file.fieldname === "paymentScreenshot") {
       folder = "uploads/payments";
@@ -30,16 +52,16 @@ const storage = new CloudinaryStorage({
       folder = "uploads/founder";
     }
     if (file.fieldname === "directorImage") {
-  folder = "uploads/director";
-}
+      folder = "uploads/director";
+    }
 
-if (file.fieldname === "memberImage") {
-  folder = "uploads/founder-members";
-}
+    if (file.fieldname === "memberImage") {
+      folder = "uploads/founder-members";
+    }
 
-if (file.fieldname === "offerImage") {
-  folder = "uploads/offers";
-}
+    if (file.fieldname === "offerImage") {
+      folder = "uploads/offers";
+    }
 
     return {
       folder,

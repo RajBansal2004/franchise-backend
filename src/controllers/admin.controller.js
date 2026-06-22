@@ -353,17 +353,17 @@ exports.getDashboardStats = async (req, res) => {
       // ================= KYC =================
       User.countDocuments({
         kycStatus: 'approved',
-        role: { $in: ['USER', 'FRANCHISE','SUBADMIN'] }
+        role: { $in: ['USER', 'FRANCHISE', 'SUBADMIN'] }
       }),
 
       User.countDocuments({
         kycStatus: 'pending',
-        role: { $in: ['USER', 'FRANCHISE','SUBADMIN'] }
+        role: { $in: ['USER', 'FRANCHISE', 'SUBADMIN'] }
       }),
 
       User.countDocuments({
         kycStatus: 'rejected',
-        role: { $in: ['USER', 'FRANCHISE','SUBADMIN'] }
+        role: { $in: ['USER', 'FRANCHISE', 'SUBADMIN'] }
       })
 
     ]);
@@ -498,9 +498,9 @@ exports.getUsers = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-   const [users, total] = await Promise.all([
-  User.find(filter)
-    .select(`
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select(`
       fullName
       franchiseName
       franchiseOwnerName
@@ -515,15 +515,17 @@ exports.getUsers = async (req, res) => {
       photo
       location
       kycDocs
+      franchiseKyc
+      legalDocs
       shippingAddress
       createdAt
     `)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(Number(limit)),
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
 
-  User.countDocuments(filter)
-]);
+      User.countDocuments(filter)
+    ]);
 
     res.json({
       total,

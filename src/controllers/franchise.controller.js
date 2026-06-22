@@ -426,3 +426,92 @@ exports.getFranchiseDashboard = async (req, res) => {
   }
 };
 
+exports.uploadFranchiseKyc = async (req, res) => {
+  try {
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Franchise not found"
+      });
+    }
+
+    user.franchiseKyc = {
+      idType: req.body.idType,
+
+      idFront: req.files?.idFront?.[0]?.path || "",
+      idBack: req.files?.idBack?.[0]?.path || "",
+
+      pan: req.files?.pan?.[0]?.path || "",
+      bankPassbook:
+        req.files?.bankPassbook?.[0]?.path || "",
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "KYC Uploaded Successfully",
+      data: user.franchiseKyc
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
+exports.uploadLegalDocs = async (req, res) => {
+  try {
+
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Franchise not found"
+      });
+    }
+
+    user.legalDocs = {
+      fssai: req.files?.fssai?.[0]?.path || "",
+      msme: req.files?.msme?.[0]?.path || "",
+      udyam: req.files?.udyam?.[0]?.path || "",
+      gumasta: req.files?.gumasta?.[0]?.path || "",
+      centerPan: req.files?.centerPan?.[0]?.path || "",
+      mca: req.files?.mca?.[0]?.path || "",
+      gst: req.files?.gst?.[0]?.path || "",
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Legal Documents Uploaded",
+      data: user.legalDocs
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
+
+exports.getFranchiseDocs = async (req, res) => {
+  try {
+
+    const user = await User.findById(req.user.id)
+      .select("franchiseKyc legalDocs");
+
+    res.json({
+      franchiseKyc: user.franchiseKyc,
+      legalDocs: user.legalDocs
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
