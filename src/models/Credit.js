@@ -9,7 +9,7 @@ const creditSchema = new mongoose.Schema({
    // 🔥 NEW FIELD (IMPORTANT)
   incomeType: {
     type: String,
-    enum: ["MATCHING", "LEVEL", "ROYALTY", "DIRECT"],
+    enum: ["MATCHING", "LEVEL", "ROYALTY", "DIRECT",  "PRODUCT_DP" ],
   },
 
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
