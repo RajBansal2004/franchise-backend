@@ -48,6 +48,18 @@ router.post("/debit",auth, ctrl.addDebit);
 router.get("/debit",auth, ctrl.getDebits);
 router.post("/credit",auth, ctrl.addCredit);
 router.get("/credit",auth, ctrl.getCredits);
+router.put(
+  "/user/:id",
+  auth,
+  permit("ADMIN"),
+  ctrl.updateUserByAdmin
+);
+router.put(
+  "/franchise/:id",
+  auth,
+  permit("ADMIN"),
+  ctrl.updateFranchiseByAdmin
+);
 router.post(
   "/weekly-closing",
   auth,

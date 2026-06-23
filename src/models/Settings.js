@@ -64,7 +64,17 @@ const SettingsSchema = new mongoose.Schema({
   // Google Forms
   weeklyClosingForm: String,
   monthlyClosingForm: String,
-
+  testimonials: [
+    {
+      name: String,
+      designation: String,
+      message: String,
+      image: {
+        url: String,
+        public_id: String,
+      },
+    },
+  ],
   // Manual Controls
   weeklyClosingEnabled: {
     type: Boolean,

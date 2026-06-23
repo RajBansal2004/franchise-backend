@@ -353,6 +353,161 @@ router.put("/closing-control", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+router.post(
+  "/testimonial",
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      let settings = await Settings.findOne();
+
+      if (!settings) {
+        settings = new Settings();
+      }
+
+      settings.testimonials.push({
+        name: req.body.name,
+        designation: req.body.designation,
+        message: req.body.message,
+        image: req.file
+          ? {
+              url: req.file.path,
+              public_id: req.file.filename,
+            }
+          : null,
+      });
+
+      await settings.save();
+
+      res.json({
+        success: true,
+        message: "Testimonial Added",
+        data: settings,
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
+router.get("/testimonials", async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+
+    if (!settings) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    res.json({
+      success: true,
+      data: settings.testimonials || [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+router.delete(
+  "/testimonial/:id",
+  async (req, res) => {
+    try {
+      const settings = await Settings.findOne();
+
+      const testimonial =
+        settings.testimonials.id(req.params.id);
+
+      if (!testimonial) {
+        return res.status(404).json({
+          success: false,
+          message: "Testimonial not found",
+        });
+      }
+
+      if (testimonial.image?.public_id) {
+        await cloudinary.uploader.destroy(
+          testimonial.image.public_id
+        );
+      }
+
+      settings.testimonials.pull(req.params.id);
+
+      await settings.save();
+
+      res.json({
+        success: true,
+        message: "Testimonial Deleted",
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+router.put(
+  "/testimonial/:id",
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const settings = await Settings.findOne();
+
+      const testimonial =
+        settings.testimonials.id(req.params.id);
+
+      if (!testimonial) {
+        return res.status(404).json({
+          success: false,
+          message: "Testimonial not found",
+        });
+      }
+
+      testimonial.name =
+        req.body.name || testimonial.name;
+
+      testimonial.designation =
+        req.body.designation ||
+        testimonial.designation;
+
+      testimonial.message =
+        req.body.message ||
+        testimonial.message;
+
+      if (req.file) {
+        if (testimonial.image?.public_id) {
+          await cloudinary.uploader.destroy(
+            testimonial.image.public_id
+          );
+        }
+
+        testimonial.image = {
+          url: req.file.path,
+          public_id: req.file.filename,
+        };
+      }
+
+      await settings.save();
+
+      res.json({
+        success: true,
+        message: "Testimonial Updated",
+        data: testimonial,
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
 
 router.delete("/founder-member/:id", async (req, res) => {
   const settings = await Settings.findOne();

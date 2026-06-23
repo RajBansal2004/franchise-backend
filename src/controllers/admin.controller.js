@@ -431,6 +431,133 @@ exports.toggleBlockStatus = async (req, res) => {
   }
 };
 
+exports.updateUserByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const allowedFields = [
+      "fullName",
+      "fatherName",
+      "mobile",
+      "email",
+      "dob",
+      "gender",
+      "kycStatus",
+      "isActive",
+      "isBlocked",
+      "plainPassword"
+    ];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        user[field] = req.body[field];
+      }
+    });
+
+    // Location
+    if (req.body.location) {
+      user.location = {
+        ...user.location,
+        ...req.body.location,
+      };
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "User Updated Successfully",
+      data: user,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
+
+exports.updateFranchiseByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const franchise = await User.findById(id);
+
+    if (!franchise || franchise.role !== "FRANCHISE") {
+      return res.status(404).json({
+        success: false,
+        message: "Franchise not found"
+      });
+    }
+
+    const allowedFields = [
+      "fullName",
+      "fatherName",
+      "mobile",
+      "email",
+      "dob",
+      "gender",
+      "franchiseName",
+      "franchiseOwnerName",
+      "isActive",
+      "isBlocked",
+      "kycStatus",
+      "plainPassword"
+    ];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        franchise[field] = req.body[field];
+      }
+    });
+
+    // Location Update
+    if (req.body.location) {
+      franchise.location = {
+        ...franchise.location,
+        ...req.body.location
+      };
+    }
+
+    // Shipping Address Update
+    if (req.body.shippingAddress) {
+      franchise.shippingAddress = {
+        ...franchise.shippingAddress,
+        ...req.body.shippingAddress
+      };
+    }
+
+    // KYC Update
+    if (req.body.kycDocs) {
+      franchise.kycDocs = {
+        ...franchise.kycDocs,
+        ...req.body.kycDocs
+      };
+    }
+
+    await franchise.save();
+
+    res.json({
+      success: true,
+      message: "Franchise Updated Successfully",
+      data: franchise
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
 exports.toggleActiveStatus = async (req, res) => {
   try {
     const { userId } = req.params;
