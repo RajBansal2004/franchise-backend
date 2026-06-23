@@ -73,7 +73,7 @@ const userSchema = new mongoose.Schema({
   rootPosition: {
   type: String,
   enum: ['LEFT', 'RIGHT'],
-  default: null
+  required: false
 },
 
   leftChildren: [

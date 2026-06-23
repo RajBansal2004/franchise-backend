@@ -18,7 +18,10 @@ const creditSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   date: { type: Date, default: Date.now },
   
-
+orderId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Order"
+},
   // user / franchise
   name: String,
   loginId: String,

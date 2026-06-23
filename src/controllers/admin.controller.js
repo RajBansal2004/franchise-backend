@@ -810,6 +810,50 @@ exports.adminApproveOrder = async (req, res) => {
     order.approvedAt = new Date();
 
     await order.save({ session });
+    let totalDP = 0;
+
+    for (const item of order.items) {
+      const product = await Product.findById(item.product)
+        .select("dp")
+        .session(session);
+
+      if (product) {
+        totalDP += (product.dp || 0) * (item.qty || 0);
+      }
+    }
+    // ✅ CREDIT ENTRY FOR PRODUCT DP (USER + FRANCHISE)
+
+    const creditUser =
+      order.orderFrom === "USER"
+        ? await User.findById(order.user).session(session)
+        : await User.findById(order.franchiseId).session(session);
+
+    const alreadyCredit = await Credit.findOne({
+      orderId: order._id,
+      incomeType: "PRODUCT_DP"
+    }).session(session);
+
+    if (!alreadyCredit && creditUser) {
+      await Credit.create([{
+        userId: creditUser._id,
+        orderId: order._id,
+
+        type: order.orderFrom, // USER / FRANCHISE
+        incomeType: "PRODUCT_DP",
+
+        amount: totalDP, // DP Amount
+
+        name:
+          creditUser.fullName ||
+          creditUser.franchiseOwnerName,
+
+        loginId: creditUser.uniqueId,
+        mobile: creditUser.mobile,
+
+        remark: `${order.orderFrom} Product Purchase (${order.orderId})`,
+        date: new Date()
+      }], { session });
+    }
 
     await session.commitTransaction();
     session.endSession();
