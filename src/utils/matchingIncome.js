@@ -43,6 +43,11 @@ module.exports = async function matchingIncome(userId, session) {
   user.totalIncome = (user.totalIncome || 0) + income;
   user.incomeWallet = (user.incomeWallet || 0) + income;
   user.walletBalance = (user.walletBalance || 0) + income;
+  user.lifetimeWeeklyIncome =
+    (user.lifetimeWeeklyIncome || 0) + income;
+
+user.lifetimeTotalIncome =
+    (user.lifetimeTotalIncome || 0) + income;
 
   // ✅ SAFE BP DEDUCTION
   user.weeklyLeftBP = Math.max(0, user.weeklyLeftBP - usedBP);

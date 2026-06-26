@@ -11,6 +11,7 @@ router.get('/royalty/step-pending', auth, permit('USER'), ctrl.getStepPending);
 router.post('/purchase', auth, permit('USER'), ctrl.purchaseProduct);
 router.get('/dashboard', auth, ctrl.getUserDashboard);
 router.put('/shipping-address', auth, ctrl.updateShippingAddress);
+router.get('/account', auth, permit('USER'), ctrl.getAccountSummary);
 
 // Profile
 router.put(

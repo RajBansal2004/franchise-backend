@@ -57,6 +57,11 @@ exports.purchaseProduct = async (req, res) => {
           parent.thirdLegIncome += income;
           parent.totalIncome += income;
           parent.incomeWallet += income;
+          parent.lifetimeThirdLegIncome =
+            (parent.lifetimeThirdLegIncome || 0) + income;
+
+          parent.lifetimeTotalIncome =
+            (parent.lifetimeTotalIncome || 0) + income;
 
           await parent.save();
         }
@@ -247,6 +252,7 @@ exports.getUserDashboard = async (req, res) => {
         thirdLegIncome: user.thirdLegIncome || 0,
         royaltyIncome: user.royaltyIncome || 0,
         levelRewardIncome: user.levelRewardIncome || 0,
+        
 
         totalIncome: user.totalIncome || 0,
 
@@ -274,6 +280,108 @@ exports.getUserDashboard = async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+exports.getAccountSummary = async (req, res) => {
+  try {
+
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    const wallet = await Wallet.findOne({ user: userId });
+
+    // ================= TEAM =================
+
+    const directTeam = await User.countDocuments({
+      parentId: userId
+    });
+
+    const allTeam = await getAllDownline(userId);
+
+    const leftTeam = allTeam.filter(
+      u => u.position === "LEFT"
+    );
+
+    const rightTeam = allTeam.filter(
+      u => u.position === "RIGHT"
+    );
+
+    const activeTeam = allTeam.filter(
+      u => u.isActive
+    ).length;
+
+    const inactiveTeam = allTeam.length - activeTeam;
+
+    const bonusActive = leftTeam.filter(
+      u => u.isActive
+    ).length;
+
+    const bonusInactive =
+      leftTeam.length - bonusActive;
+
+    const incentiveActive = rightTeam.filter(
+      u => u.isActive
+    ).length;
+
+    const incentiveInactive =
+      rightTeam.length - incentiveActive;
+
+    res.json({
+
+      income: {
+
+        totalIncome:
+          user.lifetimeTotalIncome || 0,
+
+        weeklyIncome:
+          user.lifetimeWeeklyIncome || 0,
+
+        monthlyIncome:
+          user.lifetimeMonthlyIncome || 0,
+
+        royaltyIncome:
+          user.lifetimeRoyaltyIncome || 0,
+
+        thirdLegIncome:
+          user.lifetimeThirdLegIncome || 0,
+
+        levelRewardIncome:
+          user.lifetimeLevelRewardIncome || 0,
+
+        walletBalance:
+          wallet?.balance ||
+          user.incomeWallet ||
+          0
+      },
+
+      team: {
+
+        directTeam,
+
+        totalTeam: allTeam.length,
+
+        activeTeam,
+
+        inactiveTeam,
+
+        bonusActive,
+
+        bonusInactive,
+
+        incentiveActive,
+
+        incentiveInactive
+
+      }
+
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      message: err.message
+    });
+
   }
 };
 

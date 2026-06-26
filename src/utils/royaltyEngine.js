@@ -35,6 +35,11 @@ async function calculateRoyalty(userId) {
     user.royaltyIncome += royaltyIncome;
     user.totalIncome += royaltyIncome;
     user.incomeWallet += royaltyIncome;
+    user.lifetimeRoyaltyIncome =
+      (user.lifetimeRoyaltyIncome || 0) + royaltyIncome;
+
+    user.lifetimeTotalIncome =
+      (user.lifetimeTotalIncome || 0) + royaltyIncome;
 
     user.lastRoyaltyMonth = currentMonth;
 

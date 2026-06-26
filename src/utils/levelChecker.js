@@ -25,6 +25,35 @@ module.exports = async function checkLevels(user) {
     user.currentRank = lvl.rank;
     user.levelAchievedAt = new Date();
 
+const reward = lvl.reward || 0;
+
+if (reward > 0) {
+
+  if (!user.rewardLevels) {
+    user.rewardLevels = [];
+  }
+
+  if (!user.rewardLevels.includes(lvl.level)) {
+
+    user.levelRewardIncome =
+      (user.levelRewardIncome || 0) + reward;
+
+    user.totalIncome =
+      (user.totalIncome || 0) + reward;
+
+    user.incomeWallet =
+      (user.incomeWallet || 0) + reward;
+
+    user.lifetimeLevelRewardIncome =
+      (user.lifetimeLevelRewardIncome || 0) + reward;
+
+    user.lifetimeTotalIncome =
+      (user.lifetimeTotalIncome || 0) + reward;
+
+    user.rewardLevels.push(lvl.level);
+  }
+}
+
     const royaltyKey = getRoyaltyKey(lvl.level);
 
     if (royaltyKey) {

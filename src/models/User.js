@@ -196,6 +196,40 @@ const userSchema = new mongoose.Schema({
 
   },
 
+    // Lifetime Income
+lifetimeWeeklyIncome: {
+  type: Number,
+  default: 0
+},
+
+lifetimeMonthlyIncome: {
+  type: Number,
+  default: 0
+},
+
+lifetimeRoyaltyIncome: {
+  type: Number,
+  default: 0
+},
+
+lifetimeThirdLegIncome: {
+  type: Number,
+  default: 0
+},
+
+lifetimeLevelRewardIncome: {
+  type: Number,
+  default: 0
+},
+
+lifetimeTotalIncome: {
+  type: Number,
+  default: 0
+},
+rewardLevels: {
+  type: [Number],
+  default: []
+},
   foundationBP: {
     type: Number,
     default: 0

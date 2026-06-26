@@ -18,7 +18,6 @@ function calculateStepPending(user) {
     let remainIncentiveBP = 0;
     let completed = false;
 
-    // ✅ Only first level pe actual deduction hoga
     if (!isFirstCompleteDone) {
 
       const usedLeft = Math.min(carryLeft, step.leftReq);
@@ -30,7 +29,6 @@ function calculateStepPending(user) {
       completed = (remainBonusBP === 0 && remainIncentiveBP === 0);
 
       if (completed) {
-        // ✅ Deduct ONLY ONCE
         carryLeft -= step.leftReq;
         carryRight -= step.rightReq;
 
@@ -51,7 +49,6 @@ function calculateStepPending(user) {
 
     } else {
 
-      // ✅ After first completion → same carry BP use for all
       remainBonusBP = step.leftReq - carryLeft;
       remainIncentiveBP = step.rightReq - carryRight;
 
