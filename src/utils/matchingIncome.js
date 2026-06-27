@@ -3,7 +3,7 @@ const Credit = require("../models/Credit");
 
 module.exports = async function matchingIncome(userId, session) {
 
-  const user = await User.findById(userId).session(session);
+  const user = await User.findById(userId);
   if (!user) return;
 
   const leftBP = user.weeklyLeftBP || 0;
@@ -11,13 +11,6 @@ module.exports = async function matchingIncome(userId, session) {
 
   const matchBP = Math.min(leftBP, rightBP);
   const pair = Math.floor(matchBP / 50);
-
-    console.log("👉 Matching Check:", {
-    user: user.uniqueId,
-    leftBP,
-    rightBP,
-    pair
-  });
 
   if (pair <= 0) return;
 
@@ -67,5 +60,5 @@ user.lifetimeTotalIncome =
 //   date: new Date()
 // }], { session });
 
-  await user.save({ session });
+  await user.save();
 };

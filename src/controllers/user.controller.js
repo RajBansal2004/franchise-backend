@@ -42,40 +42,43 @@ exports.purchaseProduct = async (req, res) => {
         parent.monthlyRightBP += totalBP;
         parent.repurchaseRightBP += totalBP;
       }
-   // ✅ THIRD LEG BP (Only 3rd Direct Member Purchase)
-const children = await User.find({
-  parentId: parent._id
-}).sort({ createdAt: 1 });
+      // ✅ THIRD LEG BP (Only 3rd Direct Member Purchase)
+      const children = await User.find({
+        parentId: parent._id
+      }).sort({ createdAt: 1 });
 
-if (children.length >= 3) {
+      if (children.length >= 3) {
 
-  const thirdUser = children[2];
+        const thirdUser = children[2];
 
-  if (thirdUser._id.toString() === user._id.toString()) {
+        if (thirdUser._id.toString() === user._id.toString()) {
 
-    parent.thirdLegBP = (parent.thirdLegBP || 0) + totalBP;
+          parent.thirdLegBP = (parent.thirdLegBP || 0) + totalBP;
 
-    await parent.save();
+          await parent.save();
 
-    await checkLevels(parent);
+          await checkLevels(parent);
+          await matchingIncome(parent._id);
+          await thirdLegIncome(parent._id);
 
-    await thirdLegIncome(parent._id);
+        } else {
 
-  } else {
+          await parent.save();
 
-    await parent.save();
+          await checkLevels(parent);
+          // Matching Income
+          await matchingIncome(parent._id);
+        }
 
-    await checkLevels(parent);
+      } else {
 
-  }
+        await parent.save();
 
-} else {
+        await checkLevels(parent);
+        // Matching Income
+await matchingIncome(parent._id);
 
-  await parent.save();
-
-  await checkLevels(parent);
-
-}
+      }
     }
 
     // 3. USER LEVEL
@@ -338,12 +341,12 @@ exports.getAccountSummary = async (req, res) => {
       rightTeam.length - incentiveActive;
 
     res.json({
- profile: {
-    fullName: user.fullName,
-    uniqueId: user.uniqueId,
-    currentRank: user.currentRank,
-    isActive: user.isActive,
-  },
+      profile: {
+        fullName: user.fullName,
+        uniqueId: user.uniqueId,
+        currentRank: user.currentRank,
+        isActive: user.isActive,
+      },
       income: {
 
         totalIncome:
