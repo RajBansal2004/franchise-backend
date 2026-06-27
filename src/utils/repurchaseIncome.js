@@ -1,63 +1,56 @@
 const User = require("../models/User");
 
-module.exports = async function repurchaseIncome(userId) {
+module.exports = async function repurchaseIncome(startUserId, totalBP) {
 
-    const user = await User.findById(userId);
+    let currentUser = await User.findById(startUserId);
 
-    if (!user) return;
+    while (currentUser) {
 
-    if (!user.isActive) return;
+        if (currentUser.isActive) {
 
-    const leftBP = user.repurchaseLeftBP || 0;
-    const rightBP = user.repurchaseRightBP || 0;
+            const income = totalBP * 5; // ₹5 per BP
 
-    const matchedBP = Math.min(leftBP, rightBP);
+            let cap = Infinity;
 
-    const pair = Math.floor(matchedBP / 50);
+            if (currentUser.activationBP === 51)
+                cap = 100000;
 
-    if (pair <= 0) return;
+            else if (currentUser.activationBP === 101)
+                cap = 150000;
 
-    let income = pair * 500;
+            let payableIncome = income;
 
-    let cap = 0;
+            if (currentUser.totalIncome >= cap) {
+                payableIncome = 0;
+            } else if (currentUser.totalIncome + income > cap) {
+                payableIncome = cap - currentUser.totalIncome;
+            }
 
-    if (user.activationBP === 51)
-        cap = 100000;
+            if (payableIncome > 0) {
 
-    else if (user.activationBP === 101)
-        cap = 150000;
+                currentUser.repurchaseIncome =
+                    (currentUser.repurchaseIncome || 0) + payableIncome;
 
-    if (cap && user.totalIncome >= cap)
-        return;
+                currentUser.lifetimeRepurchaseIncome =
+                    (currentUser.lifetimeRepurchaseIncome || 0) + payableIncome;
 
-    if (cap && user.totalIncome + income > cap) {
-        income = cap - user.totalIncome;
+                currentUser.totalIncome =
+                    (currentUser.totalIncome || 0) + payableIncome;
+
+                currentUser.lifetimeTotalIncome =
+                    (currentUser.lifetimeTotalIncome || 0) + payableIncome;
+
+                currentUser.incomeWallet =
+                    (currentUser.incomeWallet || 0) + payableIncome;
+
+                await currentUser.save();
+            }
+        }
+
+        if (!currentUser.parentId)
+            break;
+
+        currentUser = await User.findById(currentUser.parentId);
     }
-
-    if (income <= 0)
-        return;
-
-    const usedBP = pair * 50;
-
-    user.repurchaseIncome =
-        (user.repurchaseIncome || 0) + income;
-
-    user.lifetimeRepurchaseIncome =
-        (user.lifetimeRepurchaseIncome || 0) + income;
-
-    user.totalIncome += income;
-
-    user.lifetimeTotalIncome =
-        (user.lifetimeTotalIncome || 0) + income;
-
-    user.incomeWallet += income;
-
-    user.repurchaseLeftBP =
-        Math.max(0, user.repurchaseLeftBP - usedBP);
-
-    user.repurchaseRightBP =
-        Math.max(0, user.repurchaseRightBP - usedBP);
-
-    await user.save();
 
 };

@@ -14,7 +14,13 @@ const thirdLegIncome = require("../utils/thirdLegIncome");
 
 exports.purchaseProduct = async (req, res) => {
   try {
-    const user = req.user;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
     const { productId, quantity } = req.body;
 
     const product = await Product.findById(productId);
@@ -26,6 +32,7 @@ exports.purchaseProduct = async (req, res) => {
 
     // 🔹 SELF BP
     user.selfBP += totalBP;
+    await user.save();
 
     // 2. PARENT UPDATE
     if (user.parentId) {
@@ -76,22 +83,22 @@ exports.purchaseProduct = async (req, res) => {
 
         await checkLevels(parent);
         // Matching Income
-await matchingIncome(parent._id);
+        await matchingIncome(parent._id);
 
       }
     }
 
     // 3. USER LEVEL
     await checkLevels(user);
-    // REPURCHASE INCOME
-    await repurchaseIncome(user._id);
-    await user.save();
+    await repurchaseIncome(user._id, totalBP);
+
+    const updatedUser = await User.findById(user._id);
 
     res.json({
-      message: 'Purchase successful',
+      message: "Purchase successful",
       bpAdded: totalBP,
-      level: user.level,
-      rank: user.currentRank
+      level: updatedUser.level,
+      rank: updatedUser.currentRank
     });
 
   } catch (err) {
