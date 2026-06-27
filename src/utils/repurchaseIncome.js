@@ -1,20 +1,19 @@
 const User = require("../models/User");
 
-module.exports = async function repurchaseIncome(startUserId, totalBP) {
+module.exports = async function repurchaseIncome(startUserId, totalBP, session) {
 
-    let currentUser = await User.findById(startUserId);
+    let currentUser = await User.findById(startUserId).session(session);
 
     while (currentUser) {
 
         if (currentUser.isActive) {
 
-            const income = totalBP * 5; // ₹5 per BP
+            const income = totalBP * 5;
 
             let cap = Infinity;
 
             if (currentUser.activationBP === 51)
                 cap = 100000;
-
             else if (currentUser.activationBP === 101)
                 cap = 150000;
 
@@ -43,17 +42,13 @@ module.exports = async function repurchaseIncome(startUserId, totalBP) {
                 currentUser.incomeWallet =
                     (currentUser.incomeWallet || 0) + payableIncome;
 
-                await currentUser.save();
-                console.log("Saved Successfully");
-console.log(currentUser.repurchaseIncome);
-console.log(currentUser.totalIncome);
+                await currentUser.save({ session });
             }
         }
-        
+
         if (!currentUser.parentId)
             break;
 
-        currentUser = await User.findById(currentUser.parentId);
+        currentUser = await User.findById(currentUser.parentId).session(session);
     }
-
 };

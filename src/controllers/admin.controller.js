@@ -12,6 +12,7 @@ const FoundationHistory = require("../models/FoundationHistory");
 const Credit = require("../models/Credit");
 const Debit = require("../models/Debit");
 const matchingIncome = require('../utils/matchingIncome');
+const repurchaseIncome = require("../utils/repurchaseIncome");
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
 
@@ -903,6 +904,7 @@ exports.adminApproveOrder = async (req, res) => {
       await distributeBP(user, usableBP, session);
 
       await matchingIncome(user._id, session);
+      await repurchaseIncome(user._id, usableBP,session);
     }
 
     // ================= FRANCHISE ORDER =================
