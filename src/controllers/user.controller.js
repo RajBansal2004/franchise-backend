@@ -67,6 +67,7 @@ exports.purchaseProduct = async (req, res) => {
           await checkLevels(parent);
           await matchingIncome(parent._id);
           await thirdLegIncome(parent._id);
+          
 
         } else {
 
@@ -90,6 +91,9 @@ exports.purchaseProduct = async (req, res) => {
 
     // 3. USER LEVEL
     await checkLevels(user);
+    console.log("Calling repurchaseIncome");
+console.log("BP =", totalBP);
+console.log("User =", user.uniqueId);
     await repurchaseIncome(user._id, totalBP);
 
     const updatedUser = await User.findById(user._id);

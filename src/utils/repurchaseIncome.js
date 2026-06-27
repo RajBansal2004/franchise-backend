@@ -44,9 +44,12 @@ module.exports = async function repurchaseIncome(startUserId, totalBP) {
                     (currentUser.incomeWallet || 0) + payableIncome;
 
                 await currentUser.save();
+                console.log("Saved Successfully");
+console.log(currentUser.repurchaseIncome);
+console.log(currentUser.totalIncome);
             }
         }
-
+        
         if (!currentUser.parentId)
             break;
 
