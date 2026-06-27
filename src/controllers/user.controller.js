@@ -338,7 +338,12 @@ exports.getAccountSummary = async (req, res) => {
       rightTeam.length - incentiveActive;
 
     res.json({
-
+ profile: {
+    fullName: user.fullName,
+    uniqueId: user.uniqueId,
+    currentRank: user.currentRank,
+    isActive: user.isActive,
+  },
       income: {
 
         totalIncome:
