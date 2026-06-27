@@ -1,23 +1,34 @@
-module.exports = function rewardEngine(user) {
-  const rewards = {
-    1: 'BIKE',
-    5: 'NEPAL TRIP',
-    9: 'MALAYSIA TRIP',
-    13: 'CAR FUND',
-    15: 'SWITZERLAND TRIP'
-  };
+const levels = require("../config/levels");
 
-  if (rewards[user.level]) {
-    const already = user.rewards.find(
-      r => r.level === user.level
+module.exports = function rewardEngine(user) {
+
+    const currentLevel = levels.find(
+        l => l.level === user.level
     );
 
-    if (!already) {
-      user.rewards.push({
-        level: user.level,
-        name: rewards[user.level],
+    if (!currentLevel) return;
+
+    if (!currentLevel.reward) return;
+
+    if (!user.rewards)
+        user.rewards = [];
+
+    const alreadyReward = user.rewards.find(
+        r => r.level === user.level
+    );
+
+    if (alreadyReward) return;
+
+    user.rewards.push({
+
+        level: currentLevel.level,
+
+        rank: currentLevel.rank,
+
+        name: currentLevel.reward,
+
         achievedAt: new Date()
-      });
-    }
-  }
+
+    });
+
 };

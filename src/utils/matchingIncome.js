@@ -42,7 +42,6 @@ module.exports = async function matchingIncome(userId, session) {
   user.weeklyIncome = (user.weeklyIncome || 0) + income;
   user.totalIncome = (user.totalIncome || 0) + income;
   user.incomeWallet = (user.incomeWallet || 0) + income;
-  user.walletBalance = (user.walletBalance || 0) + income;
   user.lifetimeWeeklyIncome =
     (user.lifetimeWeeklyIncome || 0) + income;
 

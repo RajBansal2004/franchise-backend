@@ -216,6 +216,10 @@ lifetimeThirdLegIncome: {
   type: Number,
   default: 0
 },
+thirdLegBP: {
+    type: Number,
+    default: 0
+},
 
 lifetimeLevelRewardIncome: {
   type: Number,
@@ -229,6 +233,69 @@ lifetimeTotalIncome: {
 rewardLevels: {
   type: [Number],
   default: []
+},
+associateBonusIncome: {
+  type: Number,
+  default: 0
+},
+lifetimeAssociateBonusIncome: {
+  type: Number,
+  default: 0
+},
+
+regionalDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+lifetimeRegionalDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+
+stateDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+lifetimeStateDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+
+nationalDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+lifetimeNationalDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+
+internationalDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+lifetimeInternationalDirectorBonusIncome: {
+  type: Number,
+  default: 0
+},
+repurchaseLeftBP: {
+    type: Number,
+    default: 0
+},
+
+repurchaseRightBP: {
+    type: Number,
+    default: 0
+},
+
+repurchaseIncome: {
+    type: Number,
+    default: 0
+},
+
+lifetimeRepurchaseIncome: {
+    type: Number,
+    default: 0
 },
   foundationBP: {
     type: Number,

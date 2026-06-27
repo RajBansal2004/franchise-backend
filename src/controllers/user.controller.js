@@ -8,6 +8,9 @@ const ROYALTY_CONFIG = require('../config/royalty.config');
 const { getAllDownline } = require('../utils/teamCounter');
 const matchingIncome = require('../utils/matchingIncome');
 const calculateMonthlyIncome = require('../utils/monthlyIncome');
+const repurchaseIncome = require("../utils/repurchaseIncome");
+const thirdLegIncome = require("../utils/thirdLegIncome");
+
 
 exports.purchaseProduct = async (req, res) => {
   try {
@@ -32,45 +35,53 @@ exports.purchaseProduct = async (req, res) => {
         parent.leftBP += totalBP;
         parent.weeklyLeftBP += totalBP;
         parent.monthlyLeftBP += totalBP;
+        parent.repurchaseLeftBP += totalBP;
       } else {
         parent.rightBP += totalBP;
         parent.weeklyRightBP += totalBP;
         parent.monthlyRightBP += totalBP;
+        parent.repurchaseRightBP += totalBP;
       }
+   // ✅ THIRD LEG BP (Only 3rd Direct Member Purchase)
+const children = await User.find({
+  parentId: parent._id
+}).sort({ createdAt: 1 });
 
-      await parent.save();
+if (children.length >= 3) {
 
-      // ✅ LEVEL
-      await checkLevels(parent);
+  const thirdUser = children[2];
 
-      // ✅ THIRD LEG
-      const children = await User.find({ parentId: parent._id }).sort({ createdAt: 1 });
+  if (thirdUser._id.toString() === user._id.toString()) {
 
-      if (children.length >= 3) {
-        const thirdUser = children[2];
+    parent.thirdLegBP = (parent.thirdLegBP || 0) + totalBP;
 
-        // ✅ Only give income on THIRD USER purchase
-        if (thirdUser._id.toString() === user._id.toString()) {
+    await parent.save();
 
-          const income = totalBP * 5;
+    await checkLevels(parent);
 
-          parent.thirdLegIncome += income;
-          parent.totalIncome += income;
-          parent.incomeWallet += income;
-          parent.lifetimeThirdLegIncome =
-            (parent.lifetimeThirdLegIncome || 0) + income;
+    await thirdLegIncome(parent._id);
 
-          parent.lifetimeTotalIncome =
-            (parent.lifetimeTotalIncome || 0) + income;
+  } else {
 
-          await parent.save();
-        }
-      }
+    await parent.save();
+
+    await checkLevels(parent);
+
+  }
+
+} else {
+
+  await parent.save();
+
+  await checkLevels(parent);
+
+}
     }
 
     // 3. USER LEVEL
     await checkLevels(user);
-
+    // REPURCHASE INCOME
+    await repurchaseIncome(user._id);
     await user.save();
 
     res.json({
@@ -252,7 +263,7 @@ exports.getUserDashboard = async (req, res) => {
         thirdLegIncome: user.thirdLegIncome || 0,
         royaltyIncome: user.royaltyIncome || 0,
         levelRewardIncome: user.levelRewardIncome || 0,
-        
+
 
         totalIncome: user.totalIncome || 0,
 
@@ -335,6 +346,7 @@ exports.getAccountSummary = async (req, res) => {
 
         weeklyIncome:
           user.lifetimeWeeklyIncome || 0,
+        repurchaseIncome: user.lifetimeRepurchaseIncome || 0,
 
         monthlyIncome:
           user.lifetimeMonthlyIncome || 0,
