@@ -118,18 +118,7 @@ exports.createBill = async (req, res) => {
     }
     // Activation ke liye total BP sirf 51 ya 101 hona chahiye
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-    if (!user.isActive) {
-      if (![51, 101].includes(totalBP)) {
-        return res.status(400).json({
-          message: "For new ID activation total BP must be exactly 51 or 101.",
-        });
-      }
-    }
+  
     const order = await Order.create({
       orderId: "ORD" + Date.now(),
       user: new mongoose.Types.ObjectId(userId),
