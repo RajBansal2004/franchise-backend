@@ -116,7 +116,20 @@ exports.createBill = async (req, res) => {
         bp,
       });
     }
-
+    // Activation ke liye total BP sirf 51 ya 101 hona chahiye
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+    if (!user.isActive) {
+      if (![51, 101].includes(totalBP)) {
+        return res.status(400).json({
+          message: "For new ID activation total BP must be exactly 51 or 101.",
+        });
+      }
+    }
     const order = await Order.create({
       orderId: "ORD" + Date.now(),
       user: new mongoose.Types.ObjectId(userId),
@@ -226,81 +239,142 @@ exports.activateUserId = async (req, res) => {
 
     if (![51, 101].includes(Number(activationBP))) {
       await session.abortTransaction();
+
       return res.status(400).json({
-        message: "Activation BP must be 51 or 100",
+        message: "Activation BP must be 51 or 101",
       });
     }
 
     const order = await Order.findOne({ orderId }).session(session);
+
     if (!order) {
       await session.abortTransaction();
-      return res.status(404).json({ message: "Order not found" });
+
+      return res.status(404).json({
+        message: "Order not found",
+      });
     }
 
     if (order.paymentStatus !== "paid") {
       await session.abortTransaction();
-      return res.status(400).json({ message: "Payment pending" });
+
+      return res.status(400).json({
+        message: "Payment pending",
+      });
     }
 
     if (order.isActivated) {
       await session.abortTransaction();
-      return res.status(400).json({ message: "Already activated" });
+
+      return res.status(400).json({
+        message: "Already activated",
+      });
+    }
+
+    const orderBP = Number(order.totalBP || 0);
+
+    // Order BP selected activation se kam nahi hona chahiye
+    if (orderBP < Number(activationBP)) {
+      await session.abortTransaction();
+
+      return res.status(400).json({
+        message: `Minimum ${activationBP} BP required.`,
+      });
     }
 
     const user = await User.findById(order.user).session(session);
+
     if (!user) {
       await session.abortTransaction();
-      return res.status(404).json({ message: "User not found" });
+
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    // 🔥 if already active → block
     if (user.isActive) {
       await session.abortTransaction();
+
       return res.status(400).json({
         message: "User already active. Use repurchase.",
       });
     }
 
-    // ✅ ONLY ACTIVATE (NO BP ADD)
-    await User.updateOne(
-      { _id: user._id },
-      {
-        $set: {
-          isActive: true,
-          activatedBy: franchiseId,
-          activatedAt: new Date(),
-        },
-      },
-      { session }
-    );
+    let usableBP = orderBP;
+    let foundationBP = 0;
 
-    // ✅ mark order activated
-    await Order.updateOne(
-      { orderId },
-      {
-        $set: {
-          isActivated: true,
-          activationBP: Number(activationBP),
-          activatedAt: new Date(),
+    if (Number(activationBP) === 51) {
+      usableBP = 50;
+      foundationBP = orderBP - 50;
+    }
+
+    if (Number(activationBP) === 101) {
+      usableBP = 100;
+      foundationBP = orderBP - 100;
+    }
+
+    if (foundationBP < 0) foundationBP = 0;
+
+    user.isActive = true;
+    user.activatedBy = franchiseId;
+    user.activatedAt = new Date();
+
+    user.selfBP = (user.selfBP || 0) + usableBP;
+    user.foundationBP = (user.foundationBP || 0) + foundationBP;
+
+    await user.save({ session });
+
+   const alreadyExists = await FoundationHistory.findOne({
+    userId: user._id,
+    orderId: order._id
+}).session(session);
+
+if (!alreadyExists && foundationBP > 0) {
+    await FoundationHistory.create([
+        {
+            userId: user._id,
+            orderId: order._id,
+            fullName: user.fullName,
+            uniqueId: user.uniqueId,
+            mobile: user.mobile,
+            bp: foundationBP,
         },
-      },
-      { session }
-    );
+    ], { session });
+}
+
+    await distributeBP(user, usableBP, session);
+
+    await matchingIncome(user._id, session);
+
+    await repurchaseIncome(user._id, usableBP, session);
+
+    order.isActivated = true;
+    order.activationBP = Number(activationBP);
+    order.status = "paid";
+    order.activatedAt = new Date();
+
+    await order.save({ session });
 
     await session.commitTransaction();
     session.endSession();
 
-    res.json({
+    return res.json({
       success: true,
+      usableBP,
+      foundationBP,
       message: "User ID activated successfully",
     });
-
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
-    res.status(500).json({ message: err.message });
+
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
+
+
 
 exports.getFranchiseStock = async (req, res) => {
   try {
