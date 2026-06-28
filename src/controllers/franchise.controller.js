@@ -329,7 +329,7 @@ exports.getFranchiseStock = async (req, res) => {
         gst,
         availableQty: qty,
         bpPoint: bp,
-        totalValue: price * qty,
+        totalValue: dp * qty,
         totalBP: bp * qty
       };
 
