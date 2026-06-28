@@ -224,7 +224,7 @@ exports.activateUserId = async (req, res) => {
     const franchiseId = req.user.id;
     const { orderId, activationBP } = req.body;
 
-    if (![51, 100].includes(Number(activationBP))) {
+    if (![51, 101].includes(Number(activationBP))) {
       await session.abortTransaction();
       return res.status(400).json({
         message: "Activation BP must be 51 or 100",
