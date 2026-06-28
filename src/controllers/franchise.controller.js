@@ -154,11 +154,10 @@ exports.completePaymentOnly = async (req, res) => {
     const user = await User.findById(order.user).session(session);
     if (!user) throw new Error("User not found");
 
-    // ✅ ALWAYS FIRST deduct franchise stock
-    await deductFranchiseStock(order, order.franchiseId, session);
 
     if (user.isActive) {
       // 🔥 REPURCHASE
+    await deductFranchiseStock(order, order.franchiseId, session);
 
       await addBP(user._id, Number(order.totalBP || 0), session);
 
@@ -206,7 +205,7 @@ exports.completePaymentOnly = async (req, res) => {
     return res.json({
       success: true,
       mode: "ACTIVATION_REQUIRED",
-      activationOptions: [51, 100],
+      activationOptions: [51, 101],
       message: "Payment successful. Please select activation BP.",
     });
 
@@ -336,7 +335,7 @@ if (!alreadyExists && foundationBP > 0) {
     await matchingIncome(user._id, session);
 
     await repurchaseIncome(user._id, usableBP, session);
-
+await deductFranchiseStock(order, order.franchiseId, session);
     order.isActivated = true;
     order.activationBP = Number(activationBP);
     order.status = "paid";
@@ -467,6 +466,7 @@ exports.getFranchiseDashboard = async (req, res) => {
     // ✅ total orders
     const totalOrders = await Order.countDocuments({
       franchiseId: objectFranchiseId,
+      orderFrom: "FRANCHISE",
       paymentStatus: "paid",
     });
 
