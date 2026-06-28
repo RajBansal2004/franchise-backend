@@ -193,7 +193,12 @@ exports.completePaymentOnly = async (req, res) => {
       await deductFranchiseStock(order, order.franchiseId, session);
 
       await addBP(user._id, Number(order.totalBP || 0), session);
-
+      // ✅ REPURCHASE INCOME ONLY HERE
+      await repurchaseIncome(
+        user._id,
+        Number(order.totalBP || 0),
+        session
+      );
       await Order.updateOne(
         { orderId },
         {
@@ -366,12 +371,12 @@ exports.activateUserId = async (req, res) => {
     await distributeBP(user, usableBP, session);
 
     await matchingIncome(user._id, session);
-
-    await repurchaseIncome(user._id, usableBP, session);
     await deductFranchiseStock(order, order.franchiseId, session);
     order.isActivated = true;
     order.activationBP = Number(activationBP);
-    order.status = "paid";
+    order.paymentStatus = "paid";
+    // Order completed after activation
+    order.status = "approved";
     order.activatedAt = new Date();
 
     await order.save({ session });
