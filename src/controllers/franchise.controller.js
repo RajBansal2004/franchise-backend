@@ -404,6 +404,7 @@ exports.getFranchiseDashboard = async (req, res) => {
     // ✅ total orders
     const totalOrders = await Order.countDocuments({
       franchiseId: objectFranchiseId,
+      paymentStatus: "paid",
     });
 
     // ✅ active ids
