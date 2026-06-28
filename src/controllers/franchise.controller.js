@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const addBP = require("../utils/addBP");
 const FranchiseStock = require("../models/FranchiseStock");
+const FoundationHistory = require("../models/FoundationHistory");
 const mongoose = require('mongoose');
 
 // ================= STOCK DEDUCT HELPER (FIXED) =================
