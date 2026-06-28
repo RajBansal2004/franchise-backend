@@ -93,16 +93,26 @@ exports.createBill = async (req, res) => {
         });
       }
 
-      const price = Number(product.mrp || product.price || 0);
-      const bp = Number(product.bp) || 0;
+      const dp = Number(product.dp || 0);
+      const gst = Number(product.gst || 0);
+      const bp = Number(product.bp || 0);
 
-      totalAmount += price * qty;
+      const taxable = gst > 0
+        ? dp / (1 + gst / 100)
+        : dp;
+
+      const gstAmount = dp - taxable;
+
+      totalAmount += dp * qty;
       totalBP += bp * qty;
 
       formattedItems.push({
         product: product._id,
         qty,
-        price,
+        dp,
+        gst,
+        taxable,
+        gstAmount,
         bp,
       });
     }
@@ -307,14 +317,16 @@ exports.getFranchiseStock = async (req, res) => {
 
       const product = s.product || {};
 
-      const price = Number(product.mrp || 0);
+      const dp = Number(product.dp || 0);
+      const gst = Number(product.gst || 0);
       const bp = Number(product.bp || 0);
       const qty = Number(s.quantity || 0);
 
       return {
         productId: product._id,
         productName: product.title,
-        price: price,
+        dp,
+        gst,
         availableQty: qty,
         bpPoint: bp,
         totalValue: price * qty,

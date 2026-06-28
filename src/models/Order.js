@@ -27,6 +27,10 @@ const orderSchema = new mongoose.Schema({
     hsnCode: String,
     qty: Number,
     price: Number,
+    dp: Number,
+    gst: Number,
+    taxable: Number,
+    gstAmount: Number,
     bp: Number
   }],
 
