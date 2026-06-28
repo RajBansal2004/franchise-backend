@@ -5,8 +5,39 @@ const Order = require('../models/Order');
 const addBP = require("../utils/addBP");
 const FranchiseStock = require("../models/FranchiseStock");
 const FoundationHistory = require("../models/FoundationHistory");
-const mongoose = require('mongoose');
+const matchingIncome = require("../utils/matchingIncome");
+const repurchaseIncome = require("../utils/repurchaseIncome");
+const checkLevels = require('../utils/levelChecker');
 
+const mongoose = require('mongoose');
+const distributeBP = async (user, bp, session) => {
+  let currentUser = user;
+
+  const direction = user.rootPosition || user.position;
+
+  while (currentUser.parentId) {
+    const parent = await User.findById(currentUser.parentId).session(session);
+
+    if (!parent) break;
+
+    if (direction === "LEFT") {
+      parent.leftBP = (parent.leftBP || 0) + bp;
+      parent.weeklyLeftBP = (parent.weeklyLeftBP || 0) + bp;
+      parent.monthlyLeftBP = (parent.monthlyLeftBP || 0) + bp;
+    } else {
+      parent.rightBP = (parent.rightBP || 0) + bp;
+      parent.weeklyRightBP = (parent.weeklyRightBP || 0) + bp;
+      parent.monthlyRightBP = (parent.monthlyRightBP || 0) + bp;
+    }
+
+    await parent.save({ session });
+
+    await matchingIncome(parent._id, session);
+    await checkLevels(parent, session);
+
+    currentUser = parent;
+  }
+};
 // ================= STOCK DEDUCT HELPER (FIXED) =================
 const deductFranchiseStock = async (order, franchiseId, session) => {
   for (const item of order.items) {
@@ -119,12 +150,13 @@ exports.createBill = async (req, res) => {
     }
     // Activation ke liye total BP sirf 51 ya 101 hona chahiye
     const user = await User.findById(userId);
-  
+
     const order = await Order.create({
       orderId: "ORD" + Date.now(),
       user: new mongoose.Types.ObjectId(userId),
       franchiseId: new mongoose.Types.ObjectId(franchiseId),
       orderFrom: "FRANCHISE",
+
       items: formattedItems,
       totalAmount,
       totalBP,
@@ -158,7 +190,7 @@ exports.completePaymentOnly = async (req, res) => {
 
     if (user.isActive) {
       // 🔥 REPURCHASE
-    await deductFranchiseStock(order, order.franchiseId, session);
+      await deductFranchiseStock(order, order.franchiseId, session);
 
       await addBP(user._id, Number(order.totalBP || 0), session);
 
@@ -313,30 +345,30 @@ exports.activateUserId = async (req, res) => {
 
     await user.save({ session });
 
-   const alreadyExists = await FoundationHistory.findOne({
-    userId: user._id,
-    orderId: order._id
-}).session(session);
+    const alreadyExists = await FoundationHistory.findOne({
+      userId: user._id,
+      orderId: order._id
+    }).session(session);
 
-if (!alreadyExists && foundationBP > 0) {
-    await FoundationHistory.create([
+    if (!alreadyExists && foundationBP > 0) {
+      await FoundationHistory.create([
         {
-            userId: user._id,
-            orderId: order._id,
-            fullName: user.fullName,
-            uniqueId: user.uniqueId,
-            mobile: user.mobile,
-            bp: foundationBP,
+          userId: user._id,
+          orderId: order._id,
+          fullName: user.fullName,
+          uniqueId: user.uniqueId,
+          mobile: user.mobile,
+          bp: foundationBP,
         },
-    ], { session });
-}
+      ], { session });
+    }
 
     await distributeBP(user, usableBP, session);
 
     await matchingIncome(user._id, session);
 
     await repurchaseIncome(user._id, usableBP, session);
-await deductFranchiseStock(order, order.franchiseId, session);
+    await deductFranchiseStock(order, order.franchiseId, session);
     order.isActivated = true;
     order.activationBP = Number(activationBP);
     order.status = "paid";
@@ -464,12 +496,37 @@ exports.getFranchiseDashboard = async (req, res) => {
     const franchiseId = req.user.id;
     const objectFranchiseId = new mongoose.Types.ObjectId(franchiseId);
 
-    // ✅ total orders
-    const totalOrders = await Order.countDocuments({
-      franchiseId: objectFranchiseId,
-      orderFrom: "FRANCHISE",
-      paymentStatus: "paid",
-    });
+    // ✅ Only Admin → Franchise Purchase Orders
+    const totalOrdersData = await Order.aggregate([
+      {
+        $match: {
+          franchiseId: objectFranchiseId,
+          orderFrom: "FRANCHISE",
+          paymentStatus: "paid",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $match: {
+          "user.role": "FRANCHISE",
+        },
+      },
+      {
+        $count: "totalOrders",
+      },
+    ]);
+
+    const totalOrders = totalOrdersData[0]?.totalOrders || 0;
 
     // ✅ active ids
     const activeIds = await User.countDocuments({
