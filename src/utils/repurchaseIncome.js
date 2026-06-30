@@ -3,6 +3,7 @@ const User = require("../models/User");
 module.exports = async function repurchaseIncome(startUserId, totalBP, session) {
 
     let currentUser = await User.findById(startUserId).session(session);
+    let isSelf = true;
 
     while (currentUser) {
 
@@ -27,12 +28,16 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
             if (payableIncome > 0) {
 
-                currentUser.repurchaseIncome =
-                    (currentUser.repurchaseIncome || 0) + payableIncome;
+                // ✅ Only self gets repurchase income
+                if (isSelf) {
+                    currentUser.repurchaseIncome =
+                        (currentUser.repurchaseIncome || 0) + payableIncome;
 
-                currentUser.lifetimeRepurchaseIncome =
-                    (currentUser.lifetimeRepurchaseIncome || 0) + payableIncome;
+                    currentUser.lifetimeRepurchaseIncome =
+                        (currentUser.lifetimeRepurchaseIncome || 0) + payableIncome;
+                }
 
+                // ✅ Everyone (self + upline) gets total income / wallet
                 currentUser.totalIncome =
                     (currentUser.totalIncome || 0) + payableIncome;
 
@@ -45,6 +50,8 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
                 await currentUser.save({ session });
             }
         }
+
+        isSelf = false;
 
         if (!currentUser.parentId)
             break;

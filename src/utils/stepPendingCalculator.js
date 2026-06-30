@@ -1,85 +1,92 @@
-const steps = require('../config/royaltySteps');
+const steps = require("../config/royaltySteps");
 
 function calculateStepPending(user) {
 
-  const result = [];
+    let carryLeft = user.leftBP || 0;
+    let carryRight = user.rightBP || 0;
 
-  let leftBP = user.leftBP || 0;
-  let rightBP = user.rightBP || 0;
+    const result = [];
 
-  let carryLeft = leftBP;
-  let carryRight = rightBP;
+    let unlocked = true;
 
-  let isFirstCompleteDone = false;
+    for (const step of steps) {
 
-  for (const step of steps) {
+        // Agar previous step pending hai
+        if (!unlocked) {
 
-    let remainBonusBP = 0;
-    let remainIncentiveBP = 0;
-    let completed = false;
+            result.push({
+                step: step.step,
+                name: step.name,
 
-    if (!isFirstCompleteDone) {
+                totalBonusBP: step.leftReq,
+                totalIncentiveBP: step.rightReq,
 
-      const usedLeft = Math.min(carryLeft, step.leftReq);
-      const usedRight = Math.min(carryRight, step.rightReq);
+                userLeftBP: 0,
+                userRightBP: 0,
 
-      remainBonusBP = step.leftReq - usedLeft;
-      remainIncentiveBP = step.rightReq - usedRight;
+                remainBonusBP: step.leftReq,
+                remainIncentiveBP: step.rightReq,
 
-      completed = (remainBonusBP === 0 && remainIncentiveBP === 0);
+                status: "Locked"
+            });
 
-      if (completed) {
-        carryLeft -= step.leftReq;
-        carryRight -= step.rightReq;
+            continue;
+        }
 
-        isFirstCompleteDone = true;
-      }
+        const usedLeft = Math.min(carryLeft, step.leftReq);
+        const usedRight = Math.min(carryRight, step.rightReq);
 
-      result.push({
-        step: step.step,
-        name: step.name,
-        totalBonusBP: step.leftReq,
-        totalIncentiveBP: step.rightReq,
-        userLeftBP: carryLeft,
-        userRightBP: carryRight,
-        remainBonusBP,
-        remainIncentiveBP,
-        status: completed ? 'Completed' : 'Pending'
-      });
+        const remainBonusBP = step.leftReq - usedLeft;
+        const remainIncentiveBP = step.rightReq - usedRight;
 
-    } else {
+        const completed =
+            remainBonusBP === 0 &&
+            remainIncentiveBP === 0;
 
-      remainBonusBP = step.leftReq - carryLeft;
-      remainIncentiveBP = step.rightReq - carryRight;
+        result.push({
+            step: step.step,
+            name: step.name,
 
-      if (remainBonusBP < 0) remainBonusBP = 0;
-      if (remainIncentiveBP < 0) remainIncentiveBP = 0;
+            totalBonusBP: step.leftReq,
+            totalIncentiveBP: step.rightReq,
 
-      completed = (remainBonusBP === 0 && remainIncentiveBP === 0);
+            userLeftBP: carryLeft,
+            userRightBP: carryRight,
 
-      result.push({
-        step: step.step,
-        name: step.name,
-        totalBonusBP: step.leftReq,
-        totalIncentiveBP: step.rightReq,
-        userLeftBP: carryLeft,
-        userRightBP: carryRight,
-        remainBonusBP,
-        remainIncentiveBP,
-        status: completed ? 'Completed' : 'Pending'
-      });
+            remainBonusBP,
+            remainIncentiveBP,
+
+            status: completed ? "Completed" : "Pending"
+        });
+
+        if (completed) {
+
+            carryLeft -= step.leftReq;
+            carryRight -= step.rightReq;
+
+        } else {
+
+            // Yahi sabse important hai
+            // Ab agla level lock ho jayega
+            unlocked = false;
+        }
     }
-  }
 
-  const completedSteps = result.filter(r => r.status === 'Completed').length;
+    const completedSteps =
+        result.filter(x => x.status === "Completed").length;
 
-  return {
-    totalLevel: steps.length,
-    completed: completedSteps,
-    pending: steps.length - completedSteps,
-    currentLevel: completedSteps,
-    steps: result
-  };
+    return {
+
+        totalLevel: steps.length,
+
+        completed: completedSteps,
+
+        pending: steps.length - completedSteps,
+
+        currentLevel: completedSteps + 1,
+
+        steps: result
+    };
 }
 
 module.exports = calculateStepPending;
