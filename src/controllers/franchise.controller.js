@@ -273,6 +273,29 @@ exports.completePaymentOnly = async (req, res) => {
         ],
         { session }
       );
+
+        await Debit.create(
+          [
+            {
+              type: "USER",
+              subType: "REPURCHASE",
+
+              name: user.fullName,
+              loginId: user.uniqueId,
+              mobile: user.mobile,
+
+              amount: Number(order.totalAmount),
+
+              minusTds: 0,
+              minusMaintenance: 0,
+              finalAmount: Number(order.totalAmount),
+
+              date: new Date()
+            }
+          ],
+          { session }
+        );
+      
       await session.commitTransaction();
       session.endSession();
 
@@ -488,6 +511,28 @@ exports.activateUserId = async (req, res) => {
       franchiseId: order.franchiseId,
       date: new Date()
     }], { session });
+
+    await Debit.create(
+      [
+        {
+          type: "USER",
+          subType: "ACTIVATION",
+
+          name: user.fullName,
+          loginId: user.uniqueId,
+          mobile: user.mobile,
+
+          amount: Number(order.totalAmount),
+
+          minusTds: 0,
+          minusMaintenance: 0,
+          finalAmount: Number(order.totalAmount),
+
+          date: new Date()
+        }
+      ],
+      { session }
+    );
     order.isActivated = true;
     order.activationBP = Number(activationBP);
     order.paymentStatus = "paid";

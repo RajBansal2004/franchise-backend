@@ -16,7 +16,9 @@ const debitSchema = new mongoose.Schema({
       "OFFER",
       "MANAGEMENT",
       "FOUNDATION",
-      "FOUNDER"
+      "FOUNDER",
+      "ACTIVATION",
+      "REPURCHASE"
     ]
   },
 
@@ -35,19 +37,19 @@ const debitSchema = new mongoose.Schema({
   beneficiaryAccount: String,
   description: String,
   minusTds: {
-  type: Number,
-  default: 0
-},
+    type: Number,
+    default: 0
+  },
 
-minusMaintenance: {
-  type: Number,
-  default: 0
-},
+  minusMaintenance: {
+    type: Number,
+    default: 0
+  },
 
-finalAmount: {
-  type: Number,
-  default: 0
-}
+  finalAmount: {
+    type: Number,
+    default: 0
+  }
 
 }, { timestamps: true });
 
