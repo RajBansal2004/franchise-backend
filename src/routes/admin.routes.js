@@ -48,6 +48,7 @@ router.post("/debit",auth, ctrl.addDebit);
 router.get("/debit",auth, ctrl.getDebits);
 router.post("/credit",auth, ctrl.addCredit);
 router.get("/credit",auth, ctrl.getCredits);
+router.put("/debit/:id", ctrl.updateDebit);
 router.put(
   "/user/:id",
   auth,

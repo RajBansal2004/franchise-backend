@@ -247,7 +247,30 @@ exports.completePaymentOnly = async (req, res) => {
         },
         { session }
       );
+      await Credit.create(
+        [
+          {
+            type: "USER",
+            incomeType: "REPURCHASE",
 
+            userId: user._id,
+
+            name: user.fullName,
+            loginId: user.uniqueId,
+            mobile: user.mobile,
+
+            amount: order.totalAmount,
+            bp: order.totalBP,
+
+            orderId: order.orderId,
+
+            franchiseId: order.franchiseId,
+
+            date: new Date(),
+          },
+        ],
+        { session }
+      );
       await session.commitTransaction();
       session.endSession();
 
@@ -449,6 +472,20 @@ exports.activateUserId = async (req, res) => {
     ) {
       await deductFranchiseStock(order, order.franchiseId, session);
     }
+
+    await Credit.create([{
+      type: "USER",
+      incomeType: "FRANCHISE_SALE",
+      userId: user._id,
+      name: user.fullName,
+      loginId: user.uniqueId,
+      mobile: user.mobile,
+      amount: Number(order.totalAmount),
+      bp: Number(order.totalBP),
+      orderId: order.orderId,
+      franchiseId: order.franchiseId,
+      date: new Date()
+    }], { session });
     order.isActivated = true;
     order.activationBP = Number(activationBP);
     order.paymentStatus = "paid";

@@ -1154,55 +1154,148 @@ exports.getCredits = async (req, res) => {
 };
 
 
-// ➕ ADD DEBIT
 exports.addDebit = async (req, res) => {
   try {
-    const {
-      amount,
-      minusTds = 0,
-      minusMaintenance = 0
-    } = req.body;
+    const amount = Number(req.body.amount || 0);
+    const minusTds = Number(req.body.minusTds || 0);
+    const minusMaintenance = Number(req.body.minusMaintenance || 0);
 
     const finalAmount =
-      Number(amount)
-      - Number(minusTds)
-      - Number(minusMaintenance);
+      amount -
+      minusTds -
+      minusMaintenance;
 
     const debit = await Debit.create({
       ...req.body,
+      amount,
+      minusTds,
+      minusMaintenance,
       finalAmount
     });
-    res.json({ success: true, debit });
+
+    res.json({
+      success: true,
+      debit
+    });
+
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      message: err.message
+    });
   }
 };
 
-// 📄 GET DEBIT
 exports.getDebits = async (req, res) => {
+
   try {
-    const { type, subType, fromDate, toDate } = req.query;
+
+    const {
+      type,
+      subType,
+      fromDate,
+      toDate
+    } = req.query;
 
     let filter = {};
-    if (type) filter.type = type;
-    if (subType) filter.subType = subType;
+
+    if (type)
+      filter.type = type;
+
+    if (subType)
+      filter.subType = subType;
 
     if (fromDate || toDate) {
+
       filter.date = {};
-      if (fromDate) filter.date.$gte = new Date(fromDate);
-      if (toDate) filter.date.$lte = new Date(toDate + "T23:59:59");
+
+      if (fromDate)
+        filter.date.$gte = new Date(fromDate);
+
+      if (toDate)
+        filter.date.$lte = new Date(toDate + "T23:59:59");
+
     }
 
-    const data = await Debit.find(filter).sort({ date: -1 });
+    const debits = await Debit
+      .find(filter)
+      .sort({ date: -1 });
 
-    res.json(data);
+    res.json(debits);
+
   } catch (err) {
-    res.status(500).json({ message: err.message });
+
+    res.status(500).json({
+      message: err.message
+    });
+
+  }
+
+};
+exports.updateDebit = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const debit = await Debit.findById(id);
+
+    if (!debit) {
+      return res.status(404).json({
+        success: false,
+        message: "Debit not found",
+      });
+    }
+
+    // Update values first
+    if (req.body.minusTds !== undefined) {
+      debit.minusTds = Number(req.body.minusTds);
+    }
+
+    if (req.body.minusMaintenance !== undefined) {
+      debit.minusMaintenance = Number(req.body.minusMaintenance);
+    }
+
+    // Validation
+    if (debit.minusTds > debit.amount) {
+      return res.status(400).json({
+        success: false,
+        message: "TDS cannot exceed amount",
+      });
+    }
+
+    if (debit.minusMaintenance > debit.amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Maintenance cannot exceed amount",
+      });
+    }
+
+    const totalDeduction =
+      Number(debit.minusTds) + Number(debit.minusMaintenance);
+
+    if (totalDeduction > debit.amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Total deductions cannot exceed amount",
+      });
+    }
+
+    debit.finalAmount =
+      Number(debit.amount) -
+      Number(debit.minusTds) -
+      Number(debit.minusMaintenance);
+
+    await debit.save();
+
+    res.json({
+      success: true,
+      debit,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
-
-
-
 
 // ✅ ASSIGN WORK (MAIN API)
 exports.assignWorkToSubAdmin = async (req, res) => {
