@@ -8,8 +8,10 @@ const FoundationHistory = require("../models/FoundationHistory");
 const matchingIncome = require("../utils/matchingIncome");
 const repurchaseIncome = require("../utils/repurchaseIncome");
 const checkLevels = require('../utils/levelChecker');
-
+const Credit = require("../models/Credit");
+const Debit = require("../models/Debit");
 const mongoose = require('mongoose');
+
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
 
@@ -246,6 +248,13 @@ exports.completePaymentOnly = async (req, res) => {
           },
         },
         { session }
+      );
+      // Deduct stock immediately after payment
+
+      await deductFranchiseStock(
+        order,
+        order.franchiseId,
+        session
       );
       await Credit.create(
         [
