@@ -249,13 +249,6 @@ exports.completePaymentOnly = async (req, res) => {
         },
         { session }
       );
-      // Deduct stock immediately after payment
-
-      await deductFranchiseStock(
-        order,
-        order.franchiseId,
-        session
-      );
       await Credit.create(
         [
           {
