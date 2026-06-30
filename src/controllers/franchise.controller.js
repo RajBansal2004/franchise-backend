@@ -271,7 +271,7 @@ exports.completePaymentOnly = async (req, res) => {
             amount: order.totalAmount,
             bp: order.totalBP,
 
-            orderId: order.orderId,
+            orderId: order._id,
 
             franchiseId: order.franchiseId,
 
@@ -491,7 +491,7 @@ exports.activateUserId = async (req, res) => {
       mobile: user.mobile,
       amount: Number(order.totalAmount),
       bp: Number(order.totalBP),
-      orderId: order.orderId,
+      orderId: order._id,
       franchiseId: order.franchiseId,
       date: new Date()
     }], { session });
@@ -630,7 +630,7 @@ exports.getFranchiseIncome = async (req, res) => {
 
       return {
         _id: order._id,
-        orderId: order.orderId,
+        orderId: order._id,
         date: order.approvedAt,
         amount: income,
         bp,
