@@ -547,59 +547,63 @@ exports.getFranchiseIncome = async (req, res) => {
     const franchiseId = req.user.id;
     const { from, to } = req.query;
 
-    if (!from || !to) {
-      return res.status(400).json({
-        message: "From and To date required",
-      });
-    }
-
-    const fromDate = new Date(from);
-    fromDate.setHours(0, 0, 0, 0);
-
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
-
-    const orders = await Order.find({
+    const query = {
       franchiseId,
       saleType: "FRANCHISE_SALE",
       paymentStatus: "paid",
       status: "approved",
-      approvedAt: {
+    };
+
+    // Date filter sirf tab lage jab dono date aaye
+    if (from && to) {
+      const fromDate = new Date(from);
+      fromDate.setHours(0, 0, 0, 0);
+
+      const toDate = new Date(to);
+      toDate.setHours(23, 59, 59, 999);
+
+      query.approvedAt = {
         $gte: fromDate,
         $lte: toDate,
-      },
-    })
+      };
+    }
+
+    const orders = await Order.find(query)
       .populate("user", "fullName uniqueId")
       .sort({ approvedAt: -1 });
 
     let totalIncome = 0;
     let totalBP = 0;
 
-    const records = orders.map((o) => {
-      totalIncome += Number(o.retailProfit || 0);
-      totalBP += Number(o.totalBP || 0);
+    const records = orders.map((order) => {
+      const income = Number(order.retailProfit || 0);
+      const bp = Number(order.totalBP || 0);
+
+      totalIncome += income;
+      totalBP += bp;
 
       return {
-        _id: o._id,
-        date: o.approvedAt,
-        amount: o.retailProfit,
-        bp: o.totalBP,
-        customer: o.user?.fullName || "",
-        uniqueId: o.user?.uniqueId || "",
-        orderId: o.orderId,
+        _id: order._id,
+        orderId: order.orderId,
+        date: order.approvedAt,
+        amount: income,
+        bp,
+        customer: order.user?.fullName || "",
+        uniqueId: order.user?.uniqueId || "",
       };
     });
 
-    res.json({
+    return res.status(200).json({
       success: true,
       totalIncome,
       totalBP,
       records,
     });
-
   } catch (err) {
-    console.log(err);
-    res.status(500).json({
+    console.error("Franchise Income Error:", err);
+
+    return res.status(500).json({
+      success: false,
       message: err.message,
     });
   }
