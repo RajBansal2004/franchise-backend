@@ -156,7 +156,7 @@ exports.createBill = async (req, res) => {
       user: new mongoose.Types.ObjectId(userId),
       franchiseId: new mongoose.Types.ObjectId(franchiseId),
       orderFrom: "FRANCHISE",
-
+      saleType: "FRANCHISE_SALE",
       items: formattedItems,
       totalAmount,
       totalBP,
