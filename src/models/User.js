@@ -116,6 +116,16 @@ const userSchema = new mongoose.Schema({
   lastRoyaltyMonth: { type: Number, default: 0 },
   levelRewardIncome: { type: Number, default: 0 },
   totalIncome: { type: Number, default: 0 },
+  
+retailProfitIncome: {
+  type: Number,
+  default: 0,
+},
+
+lifetimeRetailProfitIncome: {
+  type: Number,
+  default: 0,
+},
   /* ================= RANK & LEVEL ================= */
   currentRank: { type: String, default: 'DIRECT_SELLER' },
   rankAchievedAt: Date,
@@ -144,6 +154,7 @@ const userSchema = new mongoose.Schema({
     village: String,
     pincode: String
   },
+  
      allowedWorkTypes: {
       type: [String],
       default: [],

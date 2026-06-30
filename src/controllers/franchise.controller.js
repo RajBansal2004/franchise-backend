@@ -199,15 +199,50 @@ exports.completePaymentOnly = async (req, res) => {
         Number(order.totalBP || 0),
         session
       );
+      // ==========================================
+      // Franchise Retail Profit (5%)
+      // ==========================================
+      if (
+        order.saleType === "FRANCHISE_SALE" &&
+        order.franchiseId &&
+        order.retailProfit === 0
+      ) {
+        const retailProfit = Number(order.totalAmount) * 0.05;
+
+        order.retailProfit = retailProfit;
+
+        const franchise = await User.findById(order.franchiseId).session(session);
+
+        if (franchise) {
+          franchise.retailProfitIncome =
+            (franchise.retailProfitIncome || 0) + retailProfit;
+
+          franchise.lifetimeRetailProfitIncome =
+            (franchise.lifetimeRetailProfitIncome || 0) + retailProfit;
+
+          franchise.totalIncome =
+            (franchise.totalIncome || 0) + retailProfit;
+
+          franchise.lifetimeTotalIncome =
+            (franchise.lifetimeTotalIncome || 0) + retailProfit;
+
+          franchise.incomeWallet =
+            (franchise.incomeWallet || 0) + retailProfit;
+
+          await franchise.save({ session });
+        }
+      }
       await Order.updateOne(
         { orderId },
         {
           $set: {
             paymentStatus: "paid",
-            status: "paid",
+            status: "approved",
             paidAt: new Date(),
+            approvedAt: new Date(),
             isRepurchase: true,
             repurchaseAt: new Date(),
+            retailProfit: order.retailProfit
           },
         },
         { session }
@@ -230,8 +265,12 @@ exports.completePaymentOnly = async (req, res) => {
       {
         $set: {
           paymentStatus: "paid",
-          status: "paid",
+          status: "approved",
           paidAt: new Date(),
+          approvedAt: new Date(),
+          isRepurchase: true,
+          repurchaseAt: new Date(),
+          retailProfit: order.retailProfit
         },
       },
       { session }
@@ -372,14 +411,35 @@ exports.activateUserId = async (req, res) => {
 
     await matchingIncome(user._id, session);
 
-    // ==========================================
-    // Franchise Retail Profit (5% of DP Amount)
-    // ==========================================
+
     if (
       order.saleType === "FRANCHISE_SALE" &&
       order.franchiseId
     ) {
-      order.retailProfit = Number(order.totalAmount) * 0.05;
+      const retailProfit = Number(order.totalAmount) * 0.05;
+
+      order.retailProfit = retailProfit;
+
+      const franchise = await User.findById(order.franchiseId).session(session);
+
+      if (franchise) {
+        franchise.retailProfitIncome =
+          (franchise.retailProfitIncome || 0) + retailProfit;
+
+        franchise.lifetimeRetailProfitIncome =
+          (franchise.lifetimeRetailProfitIncome || 0) + retailProfit;
+
+        franchise.totalIncome =
+          (franchise.totalIncome || 0) + retailProfit;
+
+        franchise.lifetimeTotalIncome =
+          (franchise.lifetimeTotalIncome || 0) + retailProfit;
+
+        franchise.incomeWallet =
+          (franchise.incomeWallet || 0) + retailProfit;
+
+        await franchise.save({ session });
+      }
     }
 
     // Deduct stock only for franchise sale
@@ -392,9 +452,9 @@ exports.activateUserId = async (req, res) => {
     order.isActivated = true;
     order.activationBP = Number(activationBP);
     order.paymentStatus = "paid";
-    // Order completed after activation
     order.status = "approved";
     order.activatedAt = new Date();
+    order.approvedAt = new Date();
 
     await order.save({ session });
 
@@ -581,6 +641,7 @@ exports.getFranchiseDashboard = async (req, res) => {
           franchiseId: objectFranchiseId,
           saleType: "FRANCHISE_SALE",
           status: "approved",
+          paymentStatus: "paid",
           approvedAt: { $gte: startOfMonth },
         },
       },
