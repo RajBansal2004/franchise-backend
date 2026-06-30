@@ -43,7 +43,14 @@ const orderSchema = new mongoose.Schema({
     enum: ['pending', 'paid', 'failed'],
     default: 'pending'
   },
-
+saleType: {
+    type: String,
+    enum: [
+        "COMPANY_ORDER",
+        "FRANCHISE_STOCK",
+        "FRANCHISE_SALE"
+    ]
+},
   status: {
     type: String,
     enum: ['pending', 'approved', 'cancelled'],

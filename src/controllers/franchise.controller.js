@@ -371,7 +371,24 @@ exports.activateUserId = async (req, res) => {
     await distributeBP(user, usableBP, session);
 
     await matchingIncome(user._id, session);
-    await deductFranchiseStock(order, order.franchiseId, session);
+
+    // ==========================================
+    // Franchise Retail Profit (5% of DP Amount)
+    // ==========================================
+    if (
+      order.saleType === "FRANCHISE_SALE" &&
+      order.franchiseId
+    ) {
+      order.retailProfit = Number(order.totalAmount) * 0.05;
+    }
+
+    // Deduct stock only for franchise sale
+    if (
+      order.saleType === "FRANCHISE_SALE" &&
+      order.franchiseId
+    ) {
+      await deductFranchiseStock(order, order.franchiseId, session);
+    }
     order.isActivated = true;
     order.activationBP = Number(activationBP);
     order.paymentStatus = "paid";
@@ -552,11 +569,38 @@ exports.getFranchiseDashboard = async (req, res) => {
 
     const totalStock = stockAgg[0]?.total || 0;
 
+    const startOfMonth = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1
+    );
+
+    const incomeAgg = await Order.aggregate([
+      {
+        $match: {
+          franchiseId: objectFranchiseId,
+          saleType: "FRANCHISE_SALE",
+          status: "approved",
+          approvedAt: { $gte: startOfMonth },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          income: {
+            $sum: "$retailProfit",
+          },
+        },
+      },
+    ]);
+
+    const monthlyIncome = incomeAgg[0]?.income || 0;
+
     res.json({
       totalOrders,
       activeIds,
       stockItems: totalStock, // ✅ fixed
-      monthlyIncome: 0,
+      monthlyIncome
     });
 
   } catch (err) {

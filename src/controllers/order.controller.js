@@ -23,7 +23,7 @@ exports.createOrder = async (req, res) => {
   try {
 
     const loginUserId = req.user.id;
-    let { items } = req.body; // ❌ franchiseId हटाया
+    let { items , franchiseId} = req.body; // ❌ franchiseId हटाया
 
     // ✅ Parse items
     if (typeof items === "string") {
@@ -45,13 +45,46 @@ exports.createOrder = async (req, res) => {
     }
 
     // ✅ FINAL DECISION (FIXED)
-    let orderFrom = "USER";
-    let finalFranchiseId = null;
+    // let orderFrom = "USER";
+    // let finalFranchiseId = null;
 
-    if (loginUser.role === "FRANCHISE") {
-      orderFrom = "FRANCHISE";
-      finalFranchiseId = loginUser._id;
-    }
+    // if (loginUser.role === "FRANCHISE") {
+    //   orderFrom = "FRANCHISE";
+    //   finalFranchiseId = loginUser._id;
+    // }
+
+    // =============================
+// FINAL ORDER TYPE
+// =============================
+
+let orderFrom = "USER";
+let saleType = "COMPANY_ORDER";
+let finalFranchiseId = null;
+
+// Franchise stock purchase
+if (loginUser.role === "FRANCHISE") {
+
+    orderFrom = "FRANCHISE";
+    saleType = "FRANCHISE_STOCK";
+    finalFranchiseId = loginUser._id;
+
+}
+
+// User purchasing from franchise
+else if (franchiseId) {
+
+    orderFrom = "USER";
+    saleType = "FRANCHISE_SALE";
+    finalFranchiseId = franchiseId;
+
+}
+
+// User purchasing directly from company
+else {
+
+    orderFrom = "USER";
+    saleType = "COMPANY_ORDER";
+}
 
     let totalAmount = 0;
     let totalBP = 0;
@@ -96,6 +129,7 @@ exports.createOrder = async (req, res) => {
       orderId: "ORD" + Date.now(),
       user: loginUserId,
       orderFrom,
+      saleType,
       franchiseId: finalFranchiseId, // ✅ USER = null रहेगा
       items: orderItems,
       totalAmount,
