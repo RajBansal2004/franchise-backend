@@ -542,7 +542,68 @@ exports.getFranchises = async (req, res) => {
     res.json(fs);
   } catch (err) { res.status(400).json({ error: err.message }); }
 };
+exports.getFranchiseIncome = async (req, res) => {
+  try {
+    const franchiseId = req.user.id;
+    const { from, to } = req.query;
 
+    if (!from || !to) {
+      return res.status(400).json({
+        message: "From and To date required",
+      });
+    }
+
+    const fromDate = new Date(from);
+    fromDate.setHours(0, 0, 0, 0);
+
+    const toDate = new Date(to);
+    toDate.setHours(23, 59, 59, 999);
+
+    const orders = await Order.find({
+      franchiseId,
+      saleType: "FRANCHISE_SALE",
+      paymentStatus: "paid",
+      status: "approved",
+      approvedAt: {
+        $gte: fromDate,
+        $lte: toDate,
+      },
+    })
+      .populate("user", "fullName uniqueId")
+      .sort({ approvedAt: -1 });
+
+    let totalIncome = 0;
+    let totalBP = 0;
+
+    const records = orders.map((o) => {
+      totalIncome += Number(o.retailProfit || 0);
+      totalBP += Number(o.totalBP || 0);
+
+      return {
+        _id: o._id,
+        date: o.approvedAt,
+        amount: o.retailProfit,
+        bp: o.totalBP,
+        customer: o.user?.fullName || "",
+        uniqueId: o.user?.uniqueId || "",
+        orderId: o.orderId,
+      };
+    });
+
+    res.json({
+      success: true,
+      totalIncome,
+      totalBP,
+      records,
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+};
 exports.updateFranchise = async (req, res) => {
   try {
     const f = await Franchise.findByIdAndUpdate(req.params.id, req.body, { new: true });

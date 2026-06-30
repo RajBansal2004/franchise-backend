@@ -15,9 +15,5 @@ router.get('/my-stock', auth, permit('FRANCHISE'), ctrl.getMyStock);
 router.post('/create-bill', auth, permit('FRANCHISE'), ctrl.createBill);
 router.post("/activate-id", auth, permit("FRANCHISE"), ctrl.completePaymentOnly);
 router.post("/final-activate", auth, permit("FRANCHISE"), ctrl.activateUserId);
-
-
-
-
-
+router.get("/income", auth, permit("FRANCHISE"), ctrl.getFranchiseIncome);
 module.exports = router;
