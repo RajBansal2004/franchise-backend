@@ -1349,7 +1349,7 @@ exports.weeklyClosing = async (req, res) => {
       }
     );
 
-    await Setting.updateOne(
+    await Settings.updateOne(
       {},
       {
         lastWeeklyClosing: new Date()
@@ -1390,7 +1390,7 @@ exports.monthlyClosing = async (req, res) => {
       }
     );
 
-    await Setting.updateOne(
+    await Settings.updateOne(
       {},
       {
         lastMonthlyClosing: new Date()
