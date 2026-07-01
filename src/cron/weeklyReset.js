@@ -3,7 +3,7 @@ const User = require("../models/User");
 const Settings = require("../models/Settings");
 
 cron.schedule(
-  "0 0 * * 3",
+  "* * * * *",
   async () => {
     try {
       let settings = await Settings.findOne();
@@ -12,18 +12,26 @@ cron.schedule(
         settings = await Settings.create({});
       }
 
-      if (settings.weeklyClosingMode !== "AUTO") {
-        console.log("⏸ Weekly Closing skipped (MANUAL mode)");
-        return;
-      }
+      if (settings.weeklyClosingMode !== "AUTO") return;
 
-      const today = new Date();
+      const now = new Date();
 
+      // Day check
+      const currentDay = now.getDay(); // Sunday=0
+
+      if (currentDay !== settings.weeklyClosingDay) return;
+
+      // Time check
+      const currentTime =
+        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      if (currentTime !== settings.weeklyClosingTime) return;
+
+      // Already executed today
       if (
         settings.lastWeeklyClosing &&
-        settings.lastWeeklyClosing.toDateString() === today.toDateString()
+        settings.lastWeeklyClosing.toDateString() === now.toDateString()
       ) {
-        console.log("⚠ Weekly Closing already executed.");
         return;
       }
 
@@ -40,13 +48,13 @@ cron.schedule(
         }
       );
 
-      settings.lastWeeklyClosing = new Date();
+      settings.lastWeeklyClosing = now;
 
       await settings.save();
 
       console.log("✅ Weekly Closing Completed");
     } catch (err) {
-      console.error("❌ Weekly Closing Error:", err);
+      console.error(err);
     }
   },
   {

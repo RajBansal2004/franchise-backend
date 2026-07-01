@@ -4,35 +4,53 @@ const Settings = require("../models/Settings");
 const calculateMonthlyIncome = require("../utils/monthlyIncome");
 
 cron.schedule(
-  "59 23 28-31 * *",
+  "* * * * *",
   async () => {
     try {
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate() + 1);
-
-      // Only last day of month
-      if (tomorrow.getMonth() === today.getMonth()) {
-        return;
-      }
-
       let settings = await Settings.findOne();
 
       if (!settings) {
         settings = await Settings.create({});
       }
 
-      if (settings.monthlyClosingMode !== "AUTO") {
-        console.log("⏸ Monthly Closing skipped (MANUAL mode)");
-        return;
+      if (settings.monthlyClosingMode !== "AUTO") return;
+
+      const now = new Date();
+
+      // Current Time
+      const currentTime =
+        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      if (currentTime !== settings.monthlyClosingTime) return;
+
+      let allowClosing = false;
+
+      // Last Day option
+      if (settings.monthlyClosingDate === "LAST") {
+
+        const tomorrow = new Date(now);
+
+        tomorrow.setDate(now.getDate() + 1);
+
+        if (tomorrow.getMonth() !== now.getMonth()) {
+          allowClosing = true;
+        }
+
+      } else {
+
+        if (Number(settings.monthlyClosingDate) === now.getDate()) {
+          allowClosing = true;
+        }
+
       }
+
+      if (!allowClosing) return;
 
       // Already executed today
       if (
         settings.lastMonthlyClosing &&
-        settings.lastMonthlyClosing.toDateString() === today.toDateString()
+        settings.lastMonthlyClosing.toDateString() === now.toDateString()
       ) {
-        console.log("⚠ Monthly Closing already executed.");
         return;
       }
 
@@ -51,12 +69,13 @@ cron.schedule(
         }
       );
 
-      settings.lastMonthlyClosing = new Date();
+      settings.lastMonthlyClosing = now;
+
       await settings.save();
 
       console.log("✅ Monthly Closing Completed");
     } catch (err) {
-      console.error("❌ Monthly Closing Error:", err);
+      console.error(err);
     }
   },
   {

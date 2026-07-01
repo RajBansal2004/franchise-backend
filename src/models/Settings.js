@@ -98,6 +98,27 @@ lastMonthlyClosing: {
   type: Date,
   default: null,
 },
+// Weekly
+weeklyClosingDay: {
+  type: Number,
+  default: 3, // Wednesday
+},
+
+weeklyClosingTime: {
+  type: String,
+  default: "00:00", // HH:mm (24-hour)
+},
+
+// Monthly
+monthlyClosingDate: {
+  type: String,
+  default: "LAST", // LAST or 1-31
+},
+
+monthlyClosingTime: {
+  type: String,
+  default: "23:59",
+},
 });
 
 module.exports = mongoose.model("Settings", SettingsSchema);
