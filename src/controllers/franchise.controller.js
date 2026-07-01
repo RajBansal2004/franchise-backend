@@ -684,7 +684,7 @@ exports.getFranchiseDashboard = async (req, res) => {
     const franchiseId = req.user.id;
     const objectFranchiseId = new mongoose.Types.ObjectId(franchiseId);
 
-    // ✅ Only Admin → Franchise Purchase Orders
+    // Total Orders
     const totalOrdersData = await Order.aggregate([
       {
         $match: {
@@ -716,63 +716,96 @@ exports.getFranchiseDashboard = async (req, res) => {
 
     const totalOrders = totalOrdersData[0]?.totalOrders || 0;
 
-    // ✅ active ids
+    // Active IDs
     const activeIds = await User.countDocuments({
       isActive: true,
       activatedBy: objectFranchiseId,
     });
 
-    // ✅ 🔥 TOTAL STOCK (CORRECT WAY)
+    // Total Stock
     const stockAgg = await FranchiseStock.aggregate([
-      { $match: { franchise: objectFranchiseId } },
+      {
+        $match: {
+          franchise: objectFranchiseId,
+        },
+      },
       {
         $group: {
           _id: null,
-          total: { $sum: "$quantity" },
+          total: {
+            $sum: "$quantity",
+          },
         },
       },
     ]);
 
     const totalStock = stockAgg[0]?.total || 0;
 
+    // Dashboard Income (Wallet me credit ho chuki income)
+    const franchise = await User.findById(objectFranchiseId)
+      .select("retailProfitIncome");
+
+    const monthlyIncome = franchise?.retailProfitIncome || 0;
+    const now = new Date();
+    // Income History (Current Month ki sari retail profit)
     const startOfMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
+      now.getFullYear(),
+      now.getMonth(),
       1
     );
 
-    const incomeAgg = await Order.aggregate([
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1
+    );
+
+    const incomeHistoryAgg = await Order.aggregate([
       {
         $match: {
           franchiseId: objectFranchiseId,
           saleType: "FRANCHISE_SALE",
-          status: "approved",
           paymentStatus: "paid",
-          approvedAt: { $gte: startOfMonth },
+          status: "approved",
+          approvedAt: {
+            $gte: startOfMonth,
+            $lt: endOfMonth,
+          },
         },
       },
       {
         $group: {
           _id: null,
-          income: {
+          totalRetailProfit: {
             $sum: "$retailProfit",
+          },
+          totalOrders: {
+            $sum: 1,
           },
         },
       },
     ]);
 
-    const monthlyIncome = incomeAgg[0]?.income || 0;
+    const historyIncome =
+      incomeHistoryAgg[0]?.totalRetailProfit || 0;
 
     res.json({
       totalOrders,
       activeIds,
-      stockItems: totalStock, // ✅ fixed
-      monthlyIncome
+      stockItems: totalStock,
+
+      // Dashboard
+      monthlyIncome,
+
+      // Income History
+      historyIncome,
     });
 
   } catch (err) {
-    console.error("Dashboard error:", err);
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
 

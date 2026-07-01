@@ -14,6 +14,7 @@ const Debit = require("../models/Debit");
 const matchingIncome = require('../utils/matchingIncome');
 const repurchaseIncome = require("../utils/repurchaseIncome");
 const Settings = require("../models/Settings");
+const calculateMonthlyIncome = require("../utils/monthlyIncome");
 
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
