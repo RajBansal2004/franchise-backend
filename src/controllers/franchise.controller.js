@@ -212,27 +212,6 @@ exports.completePaymentOnly = async (req, res) => {
         const retailProfit = Number(order.totalAmount) * 0.05;
 
         order.retailProfit = retailProfit;
-
-        const franchise = await User.findById(order.franchiseId).session(session);
-
-        if (franchise) {
-          franchise.retailProfitIncome =
-            (franchise.retailProfitIncome || 0) + retailProfit;
-
-          franchise.lifetimeRetailProfitIncome =
-            (franchise.lifetimeRetailProfitIncome || 0) + retailProfit;
-
-          franchise.totalIncome =
-            (franchise.totalIncome || 0) + retailProfit;
-
-          franchise.lifetimeTotalIncome =
-            (franchise.lifetimeTotalIncome || 0) + retailProfit;
-
-          franchise.incomeWallet =
-            (franchise.incomeWallet || 0) + retailProfit;
-
-          await franchise.save({ session });
-        }
       }
       await Order.updateOne(
         { orderId },
@@ -274,28 +253,28 @@ exports.completePaymentOnly = async (req, res) => {
         { session }
       );
 
-        await Debit.create(
-          [
-            {
-              type: "USER",
-              subType: "REPURCHASE",
+      await Debit.create(
+        [
+          {
+            type: "USER",
+            subType: "REPURCHASE",
 
-              name: user.fullName,
-              loginId: user.uniqueId,
-              mobile: user.mobile,
+            name: user.fullName,
+            loginId: user.uniqueId,
+            mobile: user.mobile,
 
-              amount: Number(order.totalAmount),
+            amount: Number(order.totalAmount),
 
-              minusTds: 0,
-              minusMaintenance: 0,
-              finalAmount: Number(order.totalAmount),
+            minusTds: 0,
+            minusMaintenance: 0,
+            finalAmount: Number(order.totalAmount),
 
-              date: new Date()
-            }
-          ],
-          { session }
-        );
-      
+            date: new Date()
+          }
+        ],
+        { session }
+      );
+
       await session.commitTransaction();
       session.endSession();
 
@@ -467,27 +446,6 @@ exports.activateUserId = async (req, res) => {
       const retailProfit = Number(order.totalAmount) * 0.05;
 
       order.retailProfit = retailProfit;
-
-      const franchise = await User.findById(order.franchiseId).session(session);
-
-      if (franchise) {
-        franchise.retailProfitIncome =
-          (franchise.retailProfitIncome || 0) + retailProfit;
-
-        franchise.lifetimeRetailProfitIncome =
-          (franchise.lifetimeRetailProfitIncome || 0) + retailProfit;
-
-        franchise.totalIncome =
-          (franchise.totalIncome || 0) + retailProfit;
-
-        franchise.lifetimeTotalIncome =
-          (franchise.lifetimeTotalIncome || 0) + retailProfit;
-
-        franchise.incomeWallet =
-          (franchise.incomeWallet || 0) + retailProfit;
-
-        await franchise.save({ session });
-      }
     }
 
     // Deduct stock only for franchise sale
@@ -539,7 +497,6 @@ exports.activateUserId = async (req, res) => {
     order.status = "approved";
     order.activatedAt = new Date();
     order.approvedAt = new Date();
-
     await order.save({ session });
 
     await session.commitTransaction();

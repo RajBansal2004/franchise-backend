@@ -37,7 +37,19 @@ const orderSchema = new mongoose.Schema({
   totalAmount: Number,
 
   totalBP: Number,
+monthlyClosingDone: {
+  type: Boolean,
+  default: false,
+},
 
+monthlyClosingDate: {
+  type: Date,
+  default: null,
+},
+lastMonthlyClosing: {
+    type: Date,
+    default: null
+},
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'failed'],

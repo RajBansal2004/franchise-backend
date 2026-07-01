@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const levels = require("../config/levels");
-
+const Order = require("../models/Order");
+const Debit = require("../models/Debit");
 module.exports = async function calculateMonthlyIncome() {
 
     const users = await User.find();
@@ -37,8 +38,6 @@ module.exports = async function calculateMonthlyIncome() {
         user.lifetimeTotalIncome =
             (user.lifetimeTotalIncome || 0) + income;
 
-        // Associate Bonus
-
         if (user.level >= 1 && user.level <= 4) {
 
             user.associateBonusIncome =
@@ -48,8 +47,6 @@ module.exports = async function calculateMonthlyIncome() {
                 (user.lifetimeAssociateBonusIncome || 0) + income;
 
         }
-
-        // Regional Bonus
 
         else if (user.level >= 5 && user.level <= 8) {
 
@@ -61,8 +58,6 @@ module.exports = async function calculateMonthlyIncome() {
 
         }
 
-        // State Bonus
-
         else if (user.level >= 9 && user.level <= 12) {
 
             user.stateDirectorBonusIncome =
@@ -72,8 +67,6 @@ module.exports = async function calculateMonthlyIncome() {
                 (user.lifetimeStateDirectorBonusIncome || 0) + income;
 
         }
-
-        // National Bonus
 
         else if (user.level >= 13 && user.level <= 14) {
 
@@ -85,8 +78,6 @@ module.exports = async function calculateMonthlyIncome() {
 
         }
 
-        // International Bonus
-
         else if (user.level === 15) {
 
             user.internationalDirectorBonusIncome =
@@ -97,10 +88,100 @@ module.exports = async function calculateMonthlyIncome() {
 
         }
 
+
+        if (user.role === "FRANCHISE") {
+
+            const startDate = user.lastMonthlyClosing || new Date(0);
+
+            const result = await Order.aggregate([
+                {
+                    $match: {
+                        franchiseId: user._id,
+                        paymentStatus: "paid",
+                        status: "approved",
+                        saleType: "FRANCHISE_SALE",
+                        monthlyClosingDone: false,
+                        approvedAt: {
+                            $gt: startDate,
+                            $lte: now
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        retailProfit: {
+                            $sum: "$retailProfit"
+                        }
+                    }
+                }
+            ]);
+
+            const retailProfit = result[0]?.retailProfit || 0;
+
+            if (retailProfit > 0) {
+
+                user.retailProfitIncome =
+                    (user.retailProfitIncome || 0) + retailProfit;
+
+                user.lifetimeRetailProfitIncome =
+                    (user.lifetimeRetailProfitIncome || 0) + retailProfit;
+
+                user.monthlyIncome =
+                    (user.monthlyIncome || 0) + retailProfit;
+
+                user.totalIncome =
+                    (user.totalIncome || 0) + retailProfit;
+
+                user.lifetimeTotalIncome =
+                    (user.lifetimeTotalIncome || 0) + retailProfit;
+
+                user.incomeWallet =
+                    (user.incomeWallet || 0) + retailProfit;
+                     await Debit.create({
+                type: "FRANCHISE",
+                subType: "MONTHLY_RETAIL_PROFIT",
+
+                name: user.fullName,
+                loginId: user.uniqueId,
+                mobile: user.mobile,
+
+                amount: retailProfit,
+
+                minusTds: 0,
+                minusMaintenance: 0,
+                finalAmount: retailProfit,
+
+                date: now
+            });
+             await Order.updateMany(
+            {
+                franchiseId: user._id,
+                paymentStatus: "paid",
+                status: "approved",
+                saleType: "FRANCHISE_SALE",
+                monthlyClosingDone: false,
+                approvedAt: {
+                    $gt: startDate,
+                    $lte: now
+                }
+            },
+            {
+                $set: {
+                    monthlyClosingDone: true,
+                    monthlyClosingDate: now
+                }
+            }
+        );
+                    user.lastMonthlyClosing = now;
+
+            }
+
+           
+        }
+       
         user.lastMonthlyPaidAt = now;
 
         await user.save();
-
     }
-
 }
