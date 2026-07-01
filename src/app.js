@@ -25,6 +25,7 @@ require('./cron');
 require('./cron/bpReset');
 require('./cron/incomeReset');
 require('./cron/monthlyReset');
+require('./cron/weeklyReset');
 
 const app = express();
 app.use(express.json());

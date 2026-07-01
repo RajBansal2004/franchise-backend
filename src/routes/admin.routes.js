@@ -74,6 +74,9 @@ router.post(
   permit("ADMIN"),
   ctrl.monthlyClosing
 );
+router.get("/closing-setting", auth, permit("ADMIN"), ctrl.getClosingSetting);
+
+router.post("/closing-setting", auth, permit("ADMIN"), ctrl.updateClosingSetting);
 // ✅ KYC UPDATE ROUTE
 router.put("/user/:id/kyc", auth, ctrl.updateKycStatus);
 

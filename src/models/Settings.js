@@ -75,16 +75,29 @@ const SettingsSchema = new mongoose.Schema({
       },
     },
   ],
-  // Manual Controls
-  weeklyClosingEnabled: {
-    type: Boolean,
-    default: true,
-  },
+  // Closing Settings
 
-  monthlyClosingEnabled: {
-    type: Boolean,
-    default: true,
-  },
+weeklyClosingMode: {
+  type: String,
+  enum: ["AUTO", "MANUAL"],
+  default: "AUTO",
+},
+
+monthlyClosingMode: {
+  type: String,
+  enum: ["AUTO", "MANUAL"],
+  default: "AUTO",
+},
+
+lastWeeklyClosing: {
+  type: Date,
+  default: null,
+},
+
+lastMonthlyClosing: {
+  type: Date,
+  default: null,
+},
 });
 
 module.exports = mongoose.model("Settings", SettingsSchema);

@@ -13,6 +13,8 @@ const Credit = require("../models/Credit");
 const Debit = require("../models/Debit");
 const matchingIncome = require('../utils/matchingIncome');
 const repurchaseIncome = require("../utils/repurchaseIncome");
+const Setting = require("../models/Settings");
+
 const distributeBP = async (user, bp, session) => {
   let currentUser = user;
 
@@ -1332,8 +1334,8 @@ exports.assignWorkToSubAdmin = async (req, res) => {
   }
 };
 
-// ================= WEEKLY CLOSING =================
 exports.weeklyClosing = async (req, res) => {
+
   try {
 
     await User.updateMany(
@@ -1347,22 +1349,35 @@ exports.weeklyClosing = async (req, res) => {
       }
     );
 
+    await Setting.updateOne(
+      {},
+      {
+        lastWeeklyClosing: new Date()
+      }
+    );
+
     res.json({
       success: true,
-      message: "Weekly Closing Done Successfully"
+      message: "Weekly Closing Completed"
     });
 
   } catch (err) {
+
     res.status(500).json({
       message: err.message
     });
+
   }
+
 };
 
 
 // ================= MONTHLY CLOSING =================
 exports.monthlyClosing = async (req, res) => {
+
   try {
+
+    await calculateMonthlyIncome();
 
     await User.updateMany(
       {},
@@ -1375,14 +1390,94 @@ exports.monthlyClosing = async (req, res) => {
       }
     );
 
+    await Setting.updateOne(
+      {},
+      {
+        lastMonthlyClosing: new Date()
+      }
+    );
+
     res.json({
       success: true,
-      message: "Monthly Closing Done Successfully"
+      message: "Monthly Closing Completed"
     });
 
   } catch (err) {
+
     res.status(500).json({
       message: err.message
     });
+
   }
+
+};
+
+exports.getClosingSetting = async (req, res) => {
+  try {
+
+    let settings = await Settings.findOne();
+
+    if (!settings) {
+      settings = await Settings.create({});
+    }
+
+    res.json({
+      success: true,
+      weeklyClosingMode: settings.weeklyClosingMode,
+      monthlyClosingMode: settings.monthlyClosingMode,
+      lastWeeklyClosing: settings.lastWeeklyClosing,
+      lastMonthlyClosing: settings.lastMonthlyClosing,
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
+
+
+exports.updateClosingSetting = async (req, res) => {
+
+  try {
+
+    const {
+      weeklyClosingMode,
+      monthlyClosingMode
+    } = req.body;
+
+    let settings = await Settings.findOne();
+
+    if (!settings) {
+      settings = await Settings.create({});
+    }
+
+    if (weeklyClosingMode) {
+      settings.weeklyClosingMode = weeklyClosingMode;
+    }
+
+    if (monthlyClosingMode) {
+      settings.monthlyClosingMode = monthlyClosingMode;
+    }
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      message: "Closing Settings Updated",
+      settings
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+
 };
