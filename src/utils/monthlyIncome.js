@@ -97,89 +97,86 @@ module.exports = async function calculateMonthlyIncome() {
                 {
                     $match: {
                         franchiseId: user._id,
+                        saleType: "FRANCHISE_SALE",
                         paymentStatus: "paid",
                         status: "approved",
-                        saleType: "FRANCHISE_SALE",
                         monthlyClosingDone: false,
                         approvedAt: {
                             $gt: startDate,
-                            $lte: now
-                        }
-                    }
+                            $lte: now,
+                        },
+                    },
                 },
                 {
                     $group: {
                         _id: null,
                         retailProfit: {
-                            $sum: "$retailProfit"
-                        }
-                    }
-                }
+                            $sum: "$retailProfit",
+                        },
+                    },
+                },
             ]);
 
             const retailProfit = result[0]?.retailProfit || 0;
 
             if (retailProfit > 0) {
 
-                user.retailProfitIncome =
-                    (user.retailProfitIncome || 0) + retailProfit;
+                user.retailProfitIncome += retailProfit;
+                user.lifetimeRetailProfitIncome += retailProfit;
 
-                user.lifetimeRetailProfitIncome =
-                    (user.lifetimeRetailProfitIncome || 0) + retailProfit;
+                user.monthlyIncome += retailProfit;
+                user.totalIncome += retailProfit;
+                user.lifetimeTotalIncome += retailProfit;
 
-                user.monthlyIncome =
-                    (user.monthlyIncome || 0) + retailProfit;
+                user.incomeWallet += retailProfit;
 
-                user.totalIncome =
-                    (user.totalIncome || 0) + retailProfit;
+                await Debit.create({
+                    type: "FRANCHISE",
+                    subType: "MONTHLY_RETAIL_PROFIT",
 
-                user.lifetimeTotalIncome =
-                    (user.lifetimeTotalIncome || 0) + retailProfit;
+                    name: user.fullName,
+                    loginId: user.uniqueId,
+                    mobile: user.mobile,
 
-                user.incomeWallet =
-                    (user.incomeWallet || 0) + retailProfit;
-                     await Debit.create({
-                type: "FRANCHISE",
-                subType: "MONTHLY_RETAIL_PROFIT",
+                    amount: retailProfit,
 
-                name: user.fullName,
-                loginId: user.uniqueId,
-                mobile: user.mobile,
+                    minusTds: 0,
+                    minusMaintenance: 0,
+                    finalAmount: retailProfit,
 
-                amount: retailProfit,
+                    description: `Monthly Retail Profit - ${now.toLocaleString("default", {
+                        month: "long",
+                    })} ${now.getFullYear()}`,
 
-                minusTds: 0,
-                minusMaintenance: 0,
-                finalAmount: retailProfit,
+                    date: now,
+                });
 
-                date: now
-            });
-             await Order.updateMany(
-            {
-                franchiseId: user._id,
-                paymentStatus: "paid",
-                status: "approved",
-                saleType: "FRANCHISE_SALE",
-                monthlyClosingDone: false,
-                approvedAt: {
-                    $gt: startDate,
-                    $lte: now
-                }
-            },
-            {
-                $set: {
-                    monthlyClosingDone: true,
-                    monthlyClosingDate: now
-                }
-            }
-        );
-                    user.lastMonthlyClosing = now;
-
+                await Order.updateMany(
+                    {
+                        franchiseId: user._id,
+                        saleType: "FRANCHISE_SALE",
+                        paymentStatus: "paid",
+                        status: "approved",
+                        monthlyClosingDone: false,
+                        approvedAt: {
+                            $gt: startDate,
+                            $lte: now,
+                        },
+                    },
+                    {
+                        $set: {
+                            monthlyClosingDone: true,
+                            monthlyClosingDate: now,
+                        },
+                    }
+                );
             }
 
-           
+            user.lastMonthlyClosing = now;
+
+
         }
-       
+
         user.lastMonthlyPaidAt = now;
 
         await user.save();

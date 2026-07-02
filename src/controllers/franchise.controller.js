@@ -684,7 +684,24 @@ exports.getFranchiseDashboard = async (req, res) => {
     const franchiseId = req.user.id;
     const objectFranchiseId = new mongoose.Types.ObjectId(franchiseId);
 
+    // Current Month Dates
+    const now = new Date();
+
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    );
+
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1
+    );
+
+    // ==========================
     // Total Orders
+    // ==========================
     const totalOrdersData = await Order.aggregate([
       {
         $match: {
@@ -716,13 +733,17 @@ exports.getFranchiseDashboard = async (req, res) => {
 
     const totalOrders = totalOrdersData[0]?.totalOrders || 0;
 
+    // ==========================
     // Active IDs
+    // ==========================
     const activeIds = await User.countDocuments({
       isActive: true,
       activatedBy: objectFranchiseId,
     });
 
-    // Total Stock
+    // ==========================
+    // Stock
+    // ==========================
     const stockAgg = await FranchiseStock.aggregate([
       {
         $match: {
@@ -741,25 +762,42 @@ exports.getFranchiseDashboard = async (req, res) => {
 
     const totalStock = stockAgg[0]?.total || 0;
 
-    // Dashboard Income (Wallet me credit ho chuki income)
-    const franchise = await User.findById(objectFranchiseId)
-      .select("retailProfitIncome");
-
-    const monthlyIncome = franchise?.retailProfitIncome || 0;
-    const now = new Date();
-    // Income History (Current Month ki sari retail profit)
-    const startOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1
+    // ==========================
+    // Dashboard Monthly Income
+    // (Only Closing Generated Income)
+    // ==========================
+    const franchise = await User.findById(objectFranchiseId).select(
+      "uniqueId"
     );
 
-    const endOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1
-    );
+    const monthlyIncomeAgg = await Debit.aggregate([
+      {
+        $match: {
+          loginId: franchise.uniqueId,
+          type: "FRANCHISE",
+          subType: "MONTHLY_RETAIL_PROFIT",
+          date: {
+            $gte: startOfMonth,
+            $lt: endOfMonth,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: {
+            $sum: "$amount",
+          },
+        },
+      },
+    ]);
 
+    const monthlyIncome = monthlyIncomeAgg[0]?.total || 0;
+
+    // ==========================
+    // Income History
+    // (Whole Month Retail Profit)
+    // ==========================
     const incomeHistoryAgg = await Order.aggregate([
       {
         $match: {
@@ -779,9 +817,6 @@ exports.getFranchiseDashboard = async (req, res) => {
           totalRetailProfit: {
             $sum: "$retailProfit",
           },
-          totalOrders: {
-            $sum: 1,
-          },
         },
       },
     ]);
@@ -793,11 +828,7 @@ exports.getFranchiseDashboard = async (req, res) => {
       totalOrders,
       activeIds,
       stockItems: totalStock,
-
-      // Dashboard
       monthlyIncome,
-
-      // Income History
       historyIncome,
     });
 
