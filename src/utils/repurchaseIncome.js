@@ -2,60 +2,86 @@ const User = require("../models/User");
 
 module.exports = async function repurchaseIncome(startUserId, totalBP, session) {
 
-    let currentUser = await User.findById(startUserId).session(session);
-    let isSelf = true;
+    const user = await User.findById(startUserId).session(session);
 
-    while (currentUser) {
+    if (!user || !user.isActive) return;
 
-        if (currentUser.isActive) {
+    //---------------------------------------
+    // SELF REPURCHASE INCOME
+    //---------------------------------------
 
-            const income = totalBP * 5;
+    const income = totalBP * 5;
 
-            let cap = Infinity;
+    let cap = Infinity;
 
-            if (currentUser.activationBP === 51)
-                cap = 100000;
-            else if (currentUser.activationBP === 101)
-                cap = 150000;
+    if (user.activationBP === 51)
+        cap = 100000;
 
-            let payableIncome = income;
+    else if (user.activationBP === 101)
+        cap = 150000;
 
-            if (currentUser.totalIncome >= cap) {
-                payableIncome = 0;
-            } else if (currentUser.totalIncome + income > cap) {
-                payableIncome = cap - currentUser.totalIncome;
-            }
+    let payableIncome = income;
 
-            if (payableIncome > 0) {
+    if (user.totalIncome >= cap) {
 
-                // ✅ Only self gets repurchase income
-                if (isSelf) {
-                    currentUser.repurchaseIncome =
-                        (currentUser.repurchaseIncome || 0) + payableIncome;
+        payableIncome = 0;
 
-                    currentUser.lifetimeRepurchaseIncome =
-                        (currentUser.lifetimeRepurchaseIncome || 0) + payableIncome;
-                }
+    } else if (user.totalIncome + income > cap) {
 
-                // ✅ Everyone (self + upline) gets total income / wallet
-                currentUser.totalIncome =
-                    (currentUser.totalIncome || 0) + payableIncome;
+        payableIncome = cap - user.totalIncome;
 
-                currentUser.lifetimeTotalIncome =
-                    (currentUser.lifetimeTotalIncome || 0) + payableIncome;
+    }
 
-                currentUser.incomeWallet =
-                    (currentUser.incomeWallet || 0) + payableIncome;
+    if (payableIncome > 0) {
 
-                await currentUser.save({ session });
-            }
+        user.repurchaseIncome =
+            (user.repurchaseIncome || 0) + payableIncome;
+
+        user.lifetimeRepurchaseIncome =
+            (user.lifetimeRepurchaseIncome || 0) + payableIncome;
+
+        user.totalIncome =
+            (user.totalIncome || 0) + payableIncome;
+
+        user.lifetimeTotalIncome =
+            (user.lifetimeTotalIncome || 0) + payableIncome;
+
+        user.incomeWallet =
+            (user.incomeWallet || 0) + payableIncome;
+
+        await user.save({ session });
+
+    }
+
+    //---------------------------------------
+    // REPURCHASE BP PROPAGATION
+    //---------------------------------------
+
+    let parentId = user.parentId;
+
+    const direction = user.rootPosition || user.position;
+
+    while (parentId) {
+
+        const parent = await User.findById(parentId).session(session);
+
+        if (!parent) break;
+
+        if (direction === "LEFT") {
+
+            parent.repurchaseLeftBP =
+                (parent.repurchaseLeftBP || 0) + totalBP;
+
+        } else {
+
+            parent.repurchaseRightBP =
+                (parent.repurchaseRightBP || 0) + totalBP;
+
         }
 
-        isSelf = false;
+        await parent.save({ session });
 
-        if (!currentUser.parentId)
-            break;
-
-        currentUser = await User.findById(currentUser.parentId).session(session);
+        parentId = parent.parentId;
     }
+
 };

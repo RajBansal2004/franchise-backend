@@ -44,19 +44,6 @@ exports.createOrder = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // ✅ FINAL DECISION (FIXED)
-    // let orderFrom = "USER";
-    // let finalFranchiseId = null;
-
-    // if (loginUser.role === "FRANCHISE") {
-    //   orderFrom = "FRANCHISE";
-    //   finalFranchiseId = loginUser._id;
-    // }
-
-    // =============================
-// FINAL ORDER TYPE
-// =============================
-
 let orderFrom = "USER";
 let saleType = "COMPANY_ORDER";
 let finalFranchiseId = null;
@@ -133,6 +120,7 @@ else {
       franchiseId: finalFranchiseId, // ✅ USER = null रहेगा
       items: orderItems,
       totalAmount,
+      
       totalBP,
       paymentScreenshot: screenshot,
       paymentStatus: screenshot ? "paid" : "pending",

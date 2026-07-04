@@ -34,7 +34,7 @@ const distributeBP = async (user, bp, session) => {
 
     await parent.save({ session });
 
-    await matchingIncome(parent._id, session);
+    // await matchingIncome(parent._id, session);
     await checkLevels(parent, session);
 
     currentUser = parent;
@@ -209,9 +209,8 @@ exports.completePaymentOnly = async (req, res) => {
         order.franchiseId &&
         order.retailProfit === 0
       ) {
-        const retailProfit = Number(order.totalAmount) * 0.05;
-
-        order.retailProfit = retailProfit;
+        order.retailProfit = Number(order.totalAmount || 0) * 0.05;
+         await order.save({ session });
       }
       await Order.updateOne(
         { orderId },
@@ -436,16 +435,14 @@ exports.activateUserId = async (req, res) => {
 
     await distributeBP(user, usableBP, session);
 
-    await matchingIncome(user._id, session);
+    // await matchingIncome(user._id, session);
 
 
     if (
       order.saleType === "FRANCHISE_SALE" &&
       order.franchiseId
     ) {
-      const retailProfit = Number(order.totalAmount) * 0.05;
-
-      order.retailProfit = retailProfit;
+      order.retailProfit = Number(order.totalAmount || 0) * 0.05;
     }
 
     // Deduct stock only for franchise sale

@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const User = require("../models/User");
 const Settings = require("../models/Settings");
-
+const weeklyClosing = require("../utils/weeklyClosing");
 cron.schedule(
   "* * * * *",
   async () => {
@@ -36,17 +36,8 @@ cron.schedule(
       }
 
       console.log("🚀 Weekly Closing Started");
-
-      await User.updateMany(
-        {},
-        {
-          $set: {
-            weeklyLeftBP: 0,
-            weeklyRightBP: 0,
-            weeklyIncome: 0,
-          },
-        }
-      );
+      // STEP 1
+      await weeklyClosing();
 
       settings.lastWeeklyClosing = now;
 

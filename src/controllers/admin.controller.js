@@ -1234,6 +1234,7 @@ exports.getDebits = async (req, res) => {
   }
 
 };
+
 exports.updateDebit = async (req, res) => {
   try {
     const { id } = req.params;

@@ -126,6 +126,30 @@ lifetimeRetailProfitIncome: {
   type: Number,
   default: 0,
 },
+lastRepurchaseAt: {
+    type: Date,
+    default: null
+},
+
+missedRepurchaseMonths: {
+    type: Number,
+    default: 0
+},
+
+isIncomeFrozen: {
+    type: Boolean,
+    default: false
+},
+
+pendingWeeklyIncome: {
+    type: Number,
+    default: 0
+},
+
+pendingMonthlyIncome: {
+    type: Number,
+    default: 0
+},
   /* ================= RANK & LEVEL ================= */
   currentRank: { type: String, default: 'DIRECT_SELLER' },
   rankAchievedAt: Date,

@@ -19,7 +19,9 @@ const debitSchema = new mongoose.Schema({
       "FOUNDER",
       "ACTIVATION",
       "REPURCHASE", 
-      "MONTHLY_RETAIL_PROFIT"
+      "MONTHLY_RETAIL_PROFIT",
+      "WEEKLY_MATCHING",
+      "MONTHLY_BONUS",
 
     ]
   },

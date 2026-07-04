@@ -2,6 +2,8 @@ const User = require("../models/User");
 const levels = require("../config/levels");
 const Order = require("../models/Order");
 const Debit = require("../models/Debit");
+const applyIncome = require("./applyIncome");
+
 module.exports = async function calculateMonthlyIncome() {
 
     const users = await User.find();
@@ -10,6 +12,7 @@ module.exports = async function calculateMonthlyIncome() {
 
     for (const user of users) {
 
+        // Prevent duplicate monthly closing
         if (
             user.lastMonthlyPaidAt &&
             new Date(user.lastMonthlyPaidAt).getMonth() === now.getMonth() &&
@@ -18,167 +21,250 @@ module.exports = async function calculateMonthlyIncome() {
             continue;
         }
 
+        // ============================================
+        // Monthly Level Bonus
+        // ============================================
+
         const currentLevel = levels.find(
-            l => l.level === user.level
+            level => level.level === user.level
         );
 
-        if (!currentLevel) continue;
+        if (currentLevel) {
 
-        const income = currentLevel.monthlyBonus;
+            const payableMonthlyIncome = applyIncome(
 
-        user.monthlyIncome =
-            (user.monthlyIncome || 0) + income;
-        user.totalIncome += income;
+                user,
 
-        user.incomeWallet += income;
+                currentLevel.monthlyBonus,
 
-        user.lifetimeMonthlyIncome =
-            (user.lifetimeMonthlyIncome || 0) + income;
+                "monthlyIncome",
 
-        user.lifetimeTotalIncome =
-            (user.lifetimeTotalIncome || 0) + income;
+                "lifetimeMonthlyIncome"
 
-        if (user.level >= 1 && user.level <= 4) {
+            );
 
-            user.associateBonusIncome =
-                (user.associateBonusIncome || 0) + income;
+            if (payableMonthlyIncome > 0) {
 
-            user.lifetimeAssociateBonusIncome =
-                (user.lifetimeAssociateBonusIncome || 0) + income;
+                // Director Bonus Category
+
+                if (user.level >= 1 && user.level <= 4) {
+
+                    user.associateBonusIncome += payableMonthlyIncome;
+                    user.lifetimeAssociateBonusIncome += payableMonthlyIncome;
+
+                }
+
+                else if (user.level >= 5 && user.level <= 8) {
+
+                    user.regionalDirectorBonusIncome += payableMonthlyIncome;
+                    user.lifetimeRegionalDirectorBonusIncome += payableMonthlyIncome;
+
+                }
+
+                else if (user.level >= 9 && user.level <= 12) {
+
+                    user.stateDirectorBonusIncome += payableMonthlyIncome;
+                    user.lifetimeStateDirectorBonusIncome += payableMonthlyIncome;
+
+                }
+
+                else if (user.level >= 13 && user.level <= 14) {
+
+                    user.nationalDirectorBonusIncome += payableMonthlyIncome;
+                    user.lifetimeNationalDirectorBonusIncome += payableMonthlyIncome;
+
+                }
+
+                else if (user.level === 15) {
+
+                    user.internationalDirectorBonusIncome += payableMonthlyIncome;
+                    user.lifetimeInternationalDirectorBonusIncome += payableMonthlyIncome;
+
+                }
+
+                // Debit Entry
+
+                await Debit.create({
+
+                    type: "USER",
+
+                    subType: "MONTHLY_BONUS",
+
+                    name: user.fullName,
+
+                    loginId: user.uniqueId,
+
+                    mobile: user.mobile,
+
+                    amount: payableMonthlyIncome,
+
+                    minusTds: 0,
+
+                    minusMaintenance: 0,
+
+                    finalAmount: payableMonthlyIncome,
+
+                    description: `Monthly Bonus Level ${user.level}`,
+
+                    date: now
+
+                });
+
+            }
 
         }
 
-        else if (user.level >= 5 && user.level <= 8) {
-
-            user.regionalDirectorBonusIncome =
-                (user.regionalDirectorBonusIncome || 0) + income;
-
-            user.lifetimeRegionalDirectorBonusIncome =
-                (user.lifetimeRegionalDirectorBonusIncome || 0) + income;
-
-        }
-
-        else if (user.level >= 9 && user.level <= 12) {
-
-            user.stateDirectorBonusIncome =
-                (user.stateDirectorBonusIncome || 0) + income;
-
-            user.lifetimeStateDirectorBonusIncome =
-                (user.lifetimeStateDirectorBonusIncome || 0) + income;
-
-        }
-
-        else if (user.level >= 13 && user.level <= 14) {
-
-            user.nationalDirectorBonusIncome =
-                (user.nationalDirectorBonusIncome || 0) + income;
-
-            user.lifetimeNationalDirectorBonusIncome =
-                (user.lifetimeNationalDirectorBonusIncome || 0) + income;
-
-        }
-
-        else if (user.level === 15) {
-
-            user.internationalDirectorBonusIncome =
-                (user.internationalDirectorBonusIncome || 0) + income;
-
-            user.lifetimeInternationalDirectorBonusIncome =
-                (user.lifetimeInternationalDirectorBonusIncome || 0) + income;
-
-        }
-
+        // ============================================
+        // Franchise Retail Profit
+        // ============================================
 
         if (user.role === "FRANCHISE") {
 
             const startDate = user.lastMonthlyClosing || new Date(0);
+                        const result = await Order.aggregate([
 
-            const result = await Order.aggregate([
                 {
                     $match: {
+
                         franchiseId: user._id,
+
                         saleType: "FRANCHISE_SALE",
+
                         paymentStatus: "paid",
+
                         status: "approved",
+
                         monthlyClosingDone: false,
+
                         approvedAt: {
+
                             $gt: startDate,
-                            $lte: now,
-                        },
-                    },
+
+                            $lte: now
+
+                        }
+
+                    }
+
                 },
+
                 {
                     $group: {
+
                         _id: null,
+
                         retailProfit: {
-                            $sum: "$retailProfit",
-                        },
-                    },
-                },
+
+                            $sum: "$retailProfit"
+
+                        }
+
+                    }
+
+                }
+
             ]);
 
             const retailProfit = result[0]?.retailProfit || 0;
 
             if (retailProfit > 0) {
 
-                user.retailProfitIncome += retailProfit;
-                user.lifetimeRetailProfitIncome += retailProfit;
+                const payableRetailProfit = applyIncome(
 
-                user.monthlyIncome += retailProfit;
-                user.totalIncome += retailProfit;
-                user.lifetimeTotalIncome += retailProfit;
+                    user,
 
-                user.incomeWallet += retailProfit;
+                    retailProfit,
 
-                await Debit.create({
-                    type: "FRANCHISE",
-                    subType: "MONTHLY_RETAIL_PROFIT",
+                    "retailProfitIncome",
 
-                    name: user.fullName,
-                    loginId: user.uniqueId,
-                    mobile: user.mobile,
+                    "lifetimeRetailProfitIncome"
 
-                    amount: retailProfit,
-
-                    minusTds: 0,
-                    minusMaintenance: 0,
-                    finalAmount: retailProfit,
-
-                    description: `Monthly Retail Profit - ${now.toLocaleString("default", {
-                        month: "long",
-                    })} ${now.getFullYear()}`,
-
-                    date: now,
-                });
-
-                await Order.updateMany(
-                    {
-                        franchiseId: user._id,
-                        saleType: "FRANCHISE_SALE",
-                        paymentStatus: "paid",
-                        status: "approved",
-                        monthlyClosingDone: false,
-                        approvedAt: {
-                            $gt: startDate,
-                            $lte: now,
-                        },
-                    },
-                    {
-                        $set: {
-                            monthlyClosingDone: true,
-                            monthlyClosingDate: now,
-                        },
-                    }
                 );
+
+                if (payableRetailProfit > 0) {
+
+                    await Debit.create({
+
+                        type: "FRANCHISE",
+
+                        subType: "MONTHLY_RETAIL_PROFIT",
+
+                        name: user.fullName,
+
+                        loginId: user.uniqueId,
+
+                        mobile: user.mobile,
+
+                        amount: payableRetailProfit,
+
+                        minusTds: 0,
+
+                        minusMaintenance: 0,
+
+                        finalAmount: payableRetailProfit,
+
+                        description: `Monthly Retail Profit - ${now.toLocaleString(
+                            "default",
+                            {
+                                month: "long"
+                            }
+                        )} ${now.getFullYear()}`,
+
+                        date: now
+
+                    });
+
+                }
+
+                // Mark all orders as processed
+                await Order.updateMany(
+
+                    {
+
+                        franchiseId: user._id,
+
+                        saleType: "FRANCHISE_SALE",
+
+                        paymentStatus: "paid",
+
+                        status: "approved",
+
+                        monthlyClosingDone: false,
+
+                        approvedAt: {
+
+                            $gt: startDate,
+
+                            $lte: now
+
+                        }
+
+                    },
+
+                    {
+
+                        $set: {
+
+                            monthlyClosingDone: true,
+
+                            monthlyClosingDate: now
+
+                        }
+
+                    }
+
+                );
+
             }
 
             user.lastMonthlyClosing = now;
-
 
         }
 
         user.lastMonthlyPaidAt = now;
 
         await user.save();
+
     }
-}
+
+};
