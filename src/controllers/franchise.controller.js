@@ -13,32 +13,38 @@ const Debit = require("../models/Debit");
 const mongoose = require('mongoose');
 
 const distributeBP = async (user, bp, session) => {
+
   let currentUser = user;
 
-  const direction = user.rootPosition || user.position;
-
   while (currentUser.parentId) {
+
     const parent = await User.findById(currentUser.parentId).session(session);
 
     if (!parent) break;
 
-    if (direction === "LEFT") {
-      parent.leftBP = (parent.leftBP || 0) + bp;
-      parent.weeklyLeftBP = (parent.weeklyLeftBP || 0) + bp;
-      parent.monthlyLeftBP = (parent.monthlyLeftBP || 0) + bp;
+    // Current child ki position use hogi
+    if (currentUser.position === "LEFT") {
+
+      parent.leftBP += bp;
+      parent.weeklyLeftBP += bp;
+      parent.monthlyLeftBP += bp;
+
     } else {
-      parent.rightBP = (parent.rightBP || 0) + bp;
-      parent.weeklyRightBP = (parent.weeklyRightBP || 0) + bp;
-      parent.monthlyRightBP = (parent.monthlyRightBP || 0) + bp;
+
+      parent.rightBP += bp;
+      parent.weeklyRightBP += bp;
+      parent.monthlyRightBP += bp;
+
     }
 
     await parent.save({ session });
 
-    // await matchingIncome(parent._id, session);
-    await checkLevels(parent, session);
+    await matchingIncome(parent._id, session);
+    await checkLevels(parent);
 
     currentUser = parent;
   }
+
 };
 // ================= STOCK DEDUCT HELPER (FIXED) =================
 const deductFranchiseStock = async (order, franchiseId, session) => {
