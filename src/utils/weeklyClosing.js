@@ -64,32 +64,52 @@ module.exports = async function weeklyClosing() {
             user.lifetimeWeeklyIncome += income;
 
             user.lifetimeTotalIncome += income;
+            console.log("--------------------------------");
+            console.log("User :", user.uniqueId);
+            console.log("Left :", left);
+            console.log("Right :", right);
+            console.log("Matched :", matchedBP);
+            console.log("Pair :", pair);
+            console.log("Income :", income);
+            console.log("Cap :", cap);
+            console.log("Total Income :", user.totalIncome);
+            console.log("--------------------------------");
 
-            await Debit.create({
+            try {
 
-                type: "USER",
+                const debit = await Debit.create({
 
-                subType: "WEEKLY_MATCHING",
+                    type: "USER",
 
-                name: user.fullName,
+                    subType: "WEEKLY_MATCHING",
 
-                loginId: user.uniqueId,
+                    name: user.fullName,
 
-                mobile: user.mobile,
+                    loginId: user.uniqueId,
 
-                amount: income,
+                    mobile: user.mobile,
 
-                minusTds: 0,
+                    amount: income,
 
-                minusMaintenance: 0,
+                    minusTds: 0,
 
-                finalAmount: income,
+                    minusMaintenance: 0,
 
-                description: `Weekly Matching Income (${pair} Pair)`,
+                    finalAmount: income,
 
-                date: now
+                    description: `Weekly Matching Income (${pair} Pair)`,
 
-            });
+                    date: now
+
+                });
+
+                console.log("Debit Created :", debit._id);
+
+            } catch (err) {
+
+                console.log("Debit Error :", err);
+
+            }
 
         }
 
