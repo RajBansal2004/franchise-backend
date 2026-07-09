@@ -9,28 +9,44 @@ function getRoyaltyKey(level) {
   return null;
 }
 
-module.exports = async function checkLevels(user) {
+module.exports = async function checkLevels(user, session = null) {
 
-  let updated = false;
-  for (const lvl of levels) {
+    let updated = false;
 
-    if (user.level >= lvl.level) continue;
+    for (const lvl of levels) {
 
-    const leftOK = user.leftBP >= (lvl.leftBP || 0);
-    const rightOK = user.rightBP >= (lvl.rightBP || 0);
+        if (user.level >= lvl.level)
+            continue;
 
-    if (!leftOK || !rightOK) break;
+        const leftOK = user.leftBP >= (lvl.leftBP || 0);
+        const rightOK = user.rightBP >= (lvl.rightBP || 0);
 
-    user.level = lvl.level;
-    user.currentRank = lvl.rank;
-    user.levelAchievedAt = new Date();
-    rewardEngine(user);
-    const royaltyKey = getRoyaltyKey(lvl.level);
+        if (!leftOK || !rightOK)
+            break;
 
-    if (royaltyKey) {
-      user.royaltyEligible[royaltyKey] = true;
+        user.level = lvl.level;
+        user.currentRank = lvl.rank;
+        user.levelAchievedAt = new Date();
+
+        rewardEngine(user);
+
+        const royaltyKey = getRoyaltyKey(lvl.level);
+
+        if (royaltyKey) {
+            user.royaltyEligible[royaltyKey] = true;
+        }
+
+        updated = true;
     }
 
-    updated = true;
-  }
+    if (updated) {
+
+        if (session) {
+            await user.save({ session });
+        } else {
+            await user.save();
+        }
+
+    }
+
 };

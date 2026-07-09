@@ -26,26 +26,29 @@ const distributeBP = async (user, bp, session) => {
 
     if (!parent) break;
 
-    // Current child ki position use hogi
-    if (currentUser.position === "LEFT") {
+    // Root Position use karo, agar nahi hai to current position
+    const direction = currentUser.rootPosition || currentUser.position;
 
-      parent.leftBP += bp;
-      parent.weeklyLeftBP += bp;
-      parent.monthlyLeftBP += bp;
+    if (direction === "LEFT") {
+
+      parent.leftBP = (parent.leftBP || 0) + bp;
+      parent.weeklyLeftBP = (parent.weeklyLeftBP || 0) + bp;
+      parent.monthlyLeftBP = (parent.monthlyLeftBP || 0) + bp;
 
     } else {
 
-      parent.rightBP += bp;
-      parent.weeklyRightBP += bp;
-      parent.monthlyRightBP += bp;
+      parent.rightBP = (parent.rightBP || 0) + bp;
+      parent.weeklyRightBP = (parent.weeklyRightBP || 0) + bp;
+      parent.monthlyRightBP = (parent.monthlyRightBP || 0) + bp;
 
     }
 
     await parent.save({ session });
 
     await matchingIncome(parent._id, session);
-    await checkLevels(parent);
+    await checkLevels(parent, session);
 
+    // Upline ki taraf move
     currentUser = parent;
   }
 
