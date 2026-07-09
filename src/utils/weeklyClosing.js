@@ -3,9 +3,12 @@ const Debit = require("../models/Debit");
 
 module.exports = async function weeklyClosing() {
 
-    const users = await User.find({
-        isActive: true
-    });
+   const users = await User.find({
+    isActive: true,
+    role: {
+        $ne: "ADMIN"
+    }
+});
 
     const now = new Date();
 

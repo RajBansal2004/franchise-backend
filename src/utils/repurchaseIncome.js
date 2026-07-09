@@ -5,6 +5,7 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
     const user = await User.findById(startUserId).session(session);
 
     if (!user || !user.isActive) return;
+    if (user.role === "ADMIN") return;
 
     //---------------------------------------
     // SELF REPURCHASE INCOME

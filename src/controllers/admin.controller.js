@@ -26,6 +26,11 @@ const distributeBP = async (user, bp, session) => {
 
     if (!parent) break;
 
+   if (parent.role === "ADMIN") {
+    break;
+}
+
+
     // Root Position use karo, agar nahi hai to current position
     const direction = currentUser.rootPosition || currentUser.position;
 
@@ -916,7 +921,7 @@ exports.adminApproveOrder = async (req, res) => {
       await distributeBP(user, usableBP, session);
 
       await matchingIncome(user._id, session);
-      await repurchaseIncome(user._id, usableBP,session);
+      await repurchaseIncome(user._id, usableBP, session);
     }
 
     // ================= FRANCHISE ORDER =================

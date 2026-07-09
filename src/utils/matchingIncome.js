@@ -5,7 +5,7 @@ module.exports = async function matchingIncome(userId, session) {
 
   const user = await User.findById(userId);
   if (!user) return;
-
+if (user.role === "ADMIN") return;
   const leftBP = user.weeklyLeftBP || 0;
   const rightBP = user.weeklyRightBP || 0;
 
