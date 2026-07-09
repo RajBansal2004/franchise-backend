@@ -129,13 +129,13 @@ exports.registerDS = async (req, res) => {
     /* ================= KYC VALIDATION ================= */
     let kycDocs = {};
 
-  if (aadhaarNumber && aadhaarFront) {
-  kycDocs.aadhaar = {
-    number: aadhaarNumber,
-    frontImage: `/uploads/kyc/${aadhaarFront}`,
-    backImage: aadhaarBack ? `/uploads/kyc/${aadhaarBack}` : ""
-  };
-}
+    if (aadhaarNumber && aadhaarFront) {
+      kycDocs.aadhaar = {
+        number: aadhaarNumber,
+        frontImage: `/uploads/kyc/${aadhaarFront}`,
+        backImage: aadhaarBack ? `/uploads/kyc/${aadhaarBack}` : ""
+      };
+    }
 
     if (panNumber && panImage) {
       kycDocs.pan = {
@@ -193,17 +193,25 @@ exports.registerDS = async (req, res) => {
     const uniqueId = generateDSId(fullName, mobile);
     const password = generatePassword();
 
-let rootPosition = null;
+    let path = "";
 
-if (parentUser) {
-  if (!parentUser.parentId) {
-    // Direct child of root user
-    rootPosition = position;
-  } else {
-    // Parent ka rootPosition inherit karega
-    rootPosition = parentUser.rootPosition;
-  }
-}
+    // First user under ADMIN
+    if (parentUser.role === "ADMIN") {
+
+      path = position === "LEFT"
+        ? "L"
+        : "R";
+
+    } else {
+
+      path =
+        parentUser.path +
+        (position === "LEFT" ? "L" : "R");
+
+    }
+
+
+
     const user = await User.create({
       fullName,
       fatherName,
@@ -218,7 +226,7 @@ if (parentUser) {
       referralId,
       parentId: parentUser ? parentUser._id : null,
       position: parentUser ? position : null,
-      rootPosition,
+      path,
       level: parentUser ? parentUser.level + 1 : 0,
       location: parsedLocation,
       kycDocs,

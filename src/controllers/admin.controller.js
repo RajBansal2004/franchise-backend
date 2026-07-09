@@ -16,46 +16,71 @@ const repurchaseIncome = require("../utils/repurchaseIncome");
 const Settings = require("../models/Settings");
 const calculateMonthlyIncome = require("../utils/monthlyIncome");
 
-const distributeBP = async (user, bp, session) => {
+const getDirectionForAncestor = (ancestorPath, userPath) => {
 
-  let currentUser = user;
-
-  while (currentUser.parentId) {
-
-    const parent = await User.findById(currentUser.parentId).session(session);
-
-    if (!parent) break;
-
-   if (parent.role === "ADMIN") {
-    break;
-}
-
-
-    // Root Position use karo, agar nahi hai to current position
-    const direction = currentUser.rootPosition || currentUser.position;
-
-    if (direction === "LEFT") {
-
-      parent.leftBP = (parent.leftBP || 0) + bp;
-      parent.weeklyLeftBP = (parent.weeklyLeftBP || 0) + bp;
-      parent.monthlyLeftBP = (parent.monthlyLeftBP || 0) + bp;
-
-    } else {
-
-      parent.rightBP = (parent.rightBP || 0) + bp;
-      parent.weeklyRightBP = (parent.weeklyRightBP || 0) + bp;
-      parent.monthlyRightBP = (parent.monthlyRightBP || 0) + bp;
-
+    if (!userPath.startsWith(ancestorPath)) {
+        return null;
     }
 
-    await parent.save({ session });
+    const remaining = userPath.slice(ancestorPath.length);
 
-    await matchingIncome(parent._id, session);
-    await checkLevels(parent, session);
+    if (!remaining.length) {
+        return null;
+    }
 
-    // Upline ki taraf move
-    currentUser = parent;
-  }
+    return remaining[0] === "L"
+        ? "LEFT"
+        : "RIGHT";
+};
+
+const distributeBP = async (user, bp, session) => {
+
+    let currentUser = user;
+
+    while (currentUser.parentId) {
+
+        const parent = await User.findById(currentUser.parentId)
+            .session(session);
+
+        if (!parent) break;
+
+        if (parent.role === "ADMIN") break;
+
+        const direction = getDirectionForAncestor(
+            parent.path,
+            user.path
+        );
+
+        if (!direction) {
+
+            currentUser = parent;
+            continue;
+
+        }
+
+        if (direction === "LEFT") {
+
+            parent.leftBP += bp;
+            parent.weeklyLeftBP += bp;
+            parent.monthlyLeftBP += bp;
+
+        } else {
+
+            parent.rightBP += bp;
+            parent.weeklyRightBP += bp;
+            parent.monthlyRightBP += bp;
+
+        }
+
+        await parent.save({ session });
+
+        await matchingIncome(parent._id, session);
+
+        await checkLevels(parent, session);
+
+        currentUser = parent;
+
+    }
 
 };
 

@@ -75,6 +75,11 @@ const userSchema = new mongoose.Schema({
   enum: ['LEFT', 'RIGHT'],
   required: false
 },
+path: {
+    type: String,
+    default: "",
+    index: true
+},
 
   leftChildren: [
     { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
