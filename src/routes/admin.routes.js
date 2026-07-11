@@ -83,6 +83,46 @@ router.post("/closing-setting", auth, permit("ADMIN"), ctrl.updateClosingSetting
 // ✅ KYC UPDATE ROUTE
 router.put("/user/:id/kyc", auth, ctrl.updateKycStatus);
 
+router.post(
+  "/run-weekly-closing",
+  auth,
+  permit("ADMIN"),
+  async (req, res) => {
+    try {
+      const settings = await Settings.findOne();
+
+      if (!settings) {
+        return res.status(404).json({
+          success: false,
+          message: "Settings not found",
+        });
+      }
+
+      console.log("🚀 MANUAL WEEKLY CLOSING STARTED");
+
+      await weeklyClosing();
+
+      settings.lastWeeklyClosing = new Date();
+      await settings.save();
+
+      console.log("✅ MANUAL WEEKLY CLOSING COMPLETED");
+
+      res.json({
+        success: true,
+        message: "Weekly Closing Completed Successfully",
+      });
+
+    } catch (err) {
+      console.log(err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
 
 
 module.exports = router;
