@@ -20,16 +20,18 @@ module.exports = async function weeklyClosing() {
             const matchedBP = Math.min(left, right);
 
             if (matchedBP < 50) {
-
-                user.weeklyIncome = 0;
-                await user.save();
                 continue;
             }
 
             const pair = Math.floor(matchedBP / 50);
 
             let income = pair * 500;
-
+            console.log({
+                pair,
+                income,
+                totalIncome: user.totalIncome,
+                activationBP: user.activationBP
+            });
             let cap = Infinity;
 
             if (user.activationBP === 51)
@@ -59,42 +61,31 @@ module.exports = async function weeklyClosing() {
                 user.incomeWallet += income;
                 user.lifetimeWeeklyIncome += income;
                 user.lifetimeTotalIncome += income;
+                console.log("========== USER ==========");
+                console.log("User :", user.uniqueId);
+                console.log("Left BP :", left);
+                console.log("Right BP :", right);
+                console.log("Matched BP :", matchedBP);
+                console.log("Pair :", pair);
+                console.log("Income :", income);
 
-                const alreadyExists = await Debit.findOne({
 
-                    loginId: user.uniqueId,
+                try {
+                    console.log("Creating Debit...");
 
-                    subType: "WEEKLY_MATCHING",
-
-                    description: `Weekly Matching Income (${pair} Pair)`,
-
-                    createdAt: {
-                        $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-                        $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-                    }
-
-                });
-
-                if (!alreadyExists) {
-
-                    await Debit.create({
+                    const debit = await Debit.create({
 
                         type: "USER",
-
                         subType: "WEEKLY_MATCHING",
 
                         name: user.fullName,
-
                         loginId: user.uniqueId,
-
                         mobile: user.mobile,
 
                         amount: income,
 
                         minusTds: 0,
-
                         minusMaintenance: 0,
-
                         finalAmount: income,
 
                         description: `Weekly Matching Income (${pair} Pair)`,
@@ -103,10 +94,17 @@ module.exports = async function weeklyClosing() {
 
                     });
 
+                    console.log("✅ Debit Saved :", debit._id);
+
+                } catch (err) {
+
+                    console.error("❌ Debit Create Error:", err);
+
                 }
 
             }
 
+            console.log("Debit Created Successfully :", user.uniqueId);
             user.lastWeeklyPaidAt = now;
 
             await user.save();
