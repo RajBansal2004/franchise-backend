@@ -1,54 +1,121 @@
 const cron = require("node-cron");
-const User = require("../models/User");
+
 const Settings = require("../models/Settings");
+
 const weeklyClosing = require("../utils/weeklyClosing");
-cron.schedule(
-  "* * * * *",
-  async () => {
+const monthlyClosing = require("../utils/monthlyClosing");
+
+cron.schedule("* * * * *", async () => {
+
     try {
-      let settings = await Settings.findOne();
 
-      if (!settings) {
-        settings = await Settings.create({});
-      }
+        const settings = await Settings.findOne();
 
-      if (settings.weeklyClosingMode !== "AUTO") return;
+        if (!settings) return;
 
-      const now = new Date();
+        const now = new Date();
 
-      // Day check
-      const currentDay = now.getDay(); // Sunday=0
+        const currentTime =
+            `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
-      if (currentDay !== settings.weeklyClosingDay) return;
+        const currentDay = now.getDay();
 
-      // Time check
-      const currentTime =
-        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        /* ===========================
+                WEEKLY AUTO
+        ============================ */
 
-      if (currentTime !== settings.weeklyClosingTime) return;
+        if (
+            settings.weeklyClosingEnabled &&
+            settings.weeklyClosingMode === "AUTO"
+        ) {
 
-      // Already executed today
-      if (
-        settings.lastWeeklyClosing &&
-        settings.lastWeeklyClosing.toDateString() === now.toDateString()
-      ) {
-        return;
-      }
+            const alreadyExecuted =
+                settings.lastWeeklyClosing &&
+                settings.lastWeeklyClosing.toDateString() === now.toDateString();
 
-      console.log("🚀 Weekly Closing Started");
-      // STEP 1
-      await weeklyClosing();
+            if (
+                !alreadyExecuted &&
+                currentDay === settings.weeklyClosingDay &&
+                currentTime === settings.weeklyClosingTime
+            ) {
 
-      settings.lastWeeklyClosing = now;
+                console.log("🚀 AUTO WEEKLY CLOSING STARTED");
 
-      await settings.save();
+                await weeklyClosing();
 
-      console.log("✅ Weekly Closing Completed");
-    } catch (err) {
-      console.error(err);
+                settings.lastWeeklyClosing = new Date();
+
+                await settings.save();
+
+                console.log("✅ AUTO WEEKLY CLOSING COMPLETED");
+
+            }
+
+        }
+
+        /* ===========================
+                MONTHLY AUTO
+        ============================ */
+
+        if (
+            settings.monthlyClosingEnabled &&
+            settings.monthlyClosingMode === "AUTO"
+        ) {
+
+            let execute = false;
+
+            if (settings.monthlyClosingDate === "LAST") {
+
+                const tomorrow = new Date(now);
+
+                tomorrow.setDate(now.getDate() + 1);
+
+                if (tomorrow.getMonth() !== now.getMonth()) {
+                    execute = true;
+                }
+
+            }
+
+            else {
+
+                execute =
+                    Number(settings.monthlyClosingDate) === now.getDate();
+
+            }
+
+            const alreadyExecuted =
+                settings.lastMonthlyClosing &&
+                settings.lastMonthlyClosing.toDateString() === now.toDateString();
+
+            if (
+                execute &&
+                !alreadyExecuted &&
+                currentTime === settings.monthlyClosingTime
+            ) {
+
+                console.log("🚀 AUTO MONTHLY CLOSING STARTED");
+
+                await monthlyClosing();
+
+                settings.lastMonthlyClosing = new Date();
+
+                await settings.save();
+
+                console.log("✅ AUTO MONTHLY CLOSING COMPLETED");
+
+            }
+
+        }
+
     }
-  },
-  {
-    timezone: "Asia/Kolkata",
-  }
-);
+
+    catch (err) {
+
+        console.error("CRON ERROR :", err);
+
+    }
+
+},
+{
+    timezone: "Asia/Kolkata"
+});

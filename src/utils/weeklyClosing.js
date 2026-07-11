@@ -70,44 +70,37 @@ module.exports = async function weeklyClosing() {
                 console.log("Income :", income);
 
 
-                try {
-                    console.log("Creating Debit...");
+                console.log("Creating Debit...");
 
-                    const debit = await Debit.create({
+                const debit = new Debit({
+                    type: "USER",
+                    subType: "WEEKLY_MATCHING",
 
-                        type: "USER",
-                        subType: "WEEKLY_MATCHING",
+                    name: user.fullName,
+                    loginId: user.uniqueId,
+                    mobile: user.mobile,
 
-                        name: user.fullName,
-                        loginId: user.uniqueId,
-                        mobile: user.mobile,
+                    amount: income,
 
-                        amount: income,
+                    minusTds: 0,
+                    minusMaintenance: 0,
+                    finalAmount: income,
 
-                        minusTds: 0,
-                        minusMaintenance: 0,
-                        finalAmount: income,
+                    description: `Weekly Matching Income (${pair} Pair)`,
 
-                        description: `Weekly Matching Income (${pair} Pair)`,
+                    date: now
+                });
 
-                        date: now
+                await debit.save();
 
-                    });
-
-                    console.log("✅ Debit Saved :", debit._id);
-
-                } catch (err) {
-
-                    console.error("❌ Debit Create Error:", err);
-
-                }
+                console.log("✅ Debit Saved :", debit._id);
 
             }
 
             console.log("Debit Created Successfully :", user.uniqueId);
             user.lastWeeklyPaidAt = now;
 
-            await user.save();
+            await user.save({ validateBeforeSave: false });
 
             console.log(
                 `${user.uniqueId} | Pair=${pair} | Income=${income}`

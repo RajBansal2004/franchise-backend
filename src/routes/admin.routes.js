@@ -3,6 +3,9 @@ const ctrl = require('../controllers/admin.controller');
 const auth = require('../middlewares/auth.middleware');
 const permit = require('../middlewares/role.middleware');
 const upload = require("../middlewares/uploadCloudinary");
+const Settings = require("../models/Settings");
+const weeklyClosing = require("../utils/weeklyClosing");
+const monthlyClosing = require("../utils/monthlyClosing");
 
 router.get('/dashboard', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getDashboardStats);
 router.put('/user/:userId/activate', auth, permit('ADMIN', 'SUBADMIN'),  ctrl.toggleActiveStatus);
@@ -79,6 +82,7 @@ router.get("/closing-setting", auth, permit("ADMIN"), ctrl.getClosingSetting);
 router.post("/closing-setting", auth, permit("ADMIN"), ctrl.updateClosingSetting);
 // ✅ KYC UPDATE ROUTE
 router.put("/user/:id/kyc", auth, ctrl.updateKycStatus);
+
 
 
 module.exports = router;

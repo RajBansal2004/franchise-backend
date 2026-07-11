@@ -15,6 +15,8 @@ const matchingIncome = require('../utils/matchingIncome');
 const repurchaseIncome = require("../utils/repurchaseIncome");
 const Settings = require("../models/Settings");
 const calculateMonthlyIncome = require("../utils/monthlyIncome");
+const weeklyClosingService = require("../utils/weeklyClosing");
+const monthlyClosingService = require("../utils/monthlyClosing");
 
 const getDirectionForAncestor = (ancestorPath, userPath) => {
 
@@ -1376,101 +1378,42 @@ exports.assignWorkToSubAdmin = async (req, res) => {
 };
 
 exports.weeklyClosing = async (req, res) => {
-
   try {
 
-    await User.updateMany(
-      {},
-      {
-        $set: {
-          weeklyLeftBP: 0,
-          weeklyRightBP: 0,
-          weeklyIncome: 0
-        }
-      }
-    );
-
-    await Settings.updateOne(
-      {},
-      {
-        lastWeeklyClosing: new Date()
-      }
-    );
-
-    res.json({
-      success: true,
-      message: "Weekly Closing Completed"
-    });
-
-  } catch (err) {
-
-    res.status(500).json({
-      message: err.message
-    });
-
-  }
-
-};
-
-
-// ================= MONTHLY CLOSING =================
-exports.monthlyClosing = async (req, res) => {
-
-  try {
-
-    await calculateMonthlyIncome();
-
-    await User.updateMany(
-      {},
-      {
-        $set: {
-          monthlyLeftBP: 0,
-          monthlyRightBP: 0,
-          monthlyIncome: 0
-        }
-      }
-    );
-
-    await Settings.updateOne(
-      {},
-      {
-        lastMonthlyClosing: new Date()
-      }
-    );
-
-    res.json({
-      success: true,
-      message: "Monthly Closing Completed"
-    });
-
-  } catch (err) {
-
-    res.status(500).json({
-      message: err.message
-    });
-
-  }
-
-};
-
-exports.getClosingSetting = async (req, res) => {
-  try {
-
-    let settings = await Settings.findOne();
+    const settings = await Settings.findOne();
 
     if (!settings) {
-      settings = await Settings.create({});
+      return res.status(404).json({
+        success: false,
+        message: "Closing settings not found"
+      });
     }
+
+    if (!settings.weeklyClosingEnabled) {
+      return res.status(400).json({
+        success: false,
+        message: "Weekly Closing Disabled"
+      });
+    }
+
+    console.log("🚀 MANUAL WEEKLY CLOSING STARTED");
+
+    await weeklyClosingService();
+
+    settings.lastWeeklyClosing = new Date();
+
+    await settings.save();
+
+    console.log("✅ MANUAL WEEKLY CLOSING COMPLETED");
 
     res.json({
       success: true,
-      weeklyClosingMode: settings.weeklyClosingMode,
-      monthlyClosingMode: settings.monthlyClosingMode,
-      lastWeeklyClosing: settings.lastWeeklyClosing,
-      lastMonthlyClosing: settings.lastMonthlyClosing,
+      message: "Weekly Closing Completed Successfully"
     });
 
   } catch (err) {
+
+    console.error(err);
 
     res.status(500).json({
       success: false,
@@ -1481,14 +1424,56 @@ exports.getClosingSetting = async (req, res) => {
 };
 
 
-exports.updateClosingSetting = async (req, res) => {
-
+// ================= MONTHLY CLOSING =================
+exports.monthlyClosing = async (req, res) => {
   try {
 
-    const {
-      weeklyClosingMode,
-      monthlyClosingMode
-    } = req.body;
+    const settings = await Settings.findOne();
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Closing settings not found"
+      });
+    }
+
+    if (!settings.monthlyClosingEnabled) {
+      return res.status(400).json({
+        success: false,
+        message: "Monthly Closing Disabled"
+      });
+    }
+
+    console.log("🚀 MANUAL MONTHLY CLOSING STARTED");
+
+    await monthlyClosingService();
+
+    settings.lastMonthlyClosing = new Date();
+
+    await settings.save();
+
+    console.log("✅ MANUAL MONTHLY CLOSING COMPLETED");
+
+    res.json({
+      success: true,
+      message: "Monthly Closing Completed Successfully"
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
+
+exports.getClosingSetting = async (req, res) => {
+
+  try {
 
     let settings = await Settings.findOne();
 
@@ -1496,20 +1481,41 @@ exports.updateClosingSetting = async (req, res) => {
       settings = await Settings.create({});
     }
 
-    if (weeklyClosingMode) {
-      settings.weeklyClosingMode = weeklyClosingMode;
+    res.json({
+      success: true,
+      data: settings
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+
+};
+
+
+exports.updateClosingSetting = async (req, res) => {
+
+  try {
+
+    let settings = await Settings.findOne();
+
+    if (!settings) {
+      settings = new Settings();
     }
 
-    if (monthlyClosingMode) {
-      settings.monthlyClosingMode = monthlyClosingMode;
-    }
+    Object.assign(settings, req.body);
 
     await settings.save();
 
     res.json({
       success: true,
-      message: "Closing Settings Updated",
-      settings
+      message: "Closing Settings Updated Successfully",
+      data: settings
     });
 
   } catch (err) {
