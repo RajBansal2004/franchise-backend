@@ -3,127 +3,127 @@ const Debit = require("../models/Debit");
 
 module.exports = async function weeklyClosing() {
 
-   const users = await User.find({
-    isActive: true,
-    role: {
-        $ne: "ADMIN"
-    }
-});
+    const users = await User.find({
+        isActive: true,
+        role: { $ne: "ADMIN" }
+    });
 
     const now = new Date();
 
     for (const user of users) {
 
-        const left = user.weeklyLeftBP || 0;
-        const right = user.weeklyRightBP || 0;
+        try {
 
-        const matchedBP = Math.min(left, right);
+            const left = user.weeklyLeftBP || 0;
+            const right = user.weeklyRightBP || 0;
 
-        if (matchedBP < 50) {
+            const matchedBP = Math.min(left, right);
 
-            user.weeklyIncome = 0;
+            if (matchedBP < 50) {
 
-            continue;
-        }
+                user.weeklyIncome = 0;
+                await user.save();
+                continue;
+            }
 
-        const pair = Math.floor(matchedBP / 50);
+            const pair = Math.floor(matchedBP / 50);
 
-        let income = pair * 500;
+            let income = pair * 500;
 
-        let cap = Infinity;
+            let cap = Infinity;
 
-        if (user.activationBP === 51)
-            cap = 100000;
+            if (user.activationBP === 51)
+                cap = 100000;
 
-        if (user.activationBP === 101)
-            cap = 150000;
+            if (user.activationBP === 101)
+                cap = 150000;
 
-        if (user.totalIncome >= cap) {
+            if (user.totalIncome >= cap) {
+                income = 0;
+            } else if (user.totalIncome + income > cap) {
+                income = cap - user.totalIncome;
+            }
 
-            income = 0;
+            const usedBP = pair * 50;
 
-        }
+            user.weeklyLeftBP -= usedBP;
+            user.weeklyRightBP -= usedBP;
 
-        else if (user.totalIncome + income > cap) {
+            if (user.weeklyLeftBP < 0) user.weeklyLeftBP = 0;
+            if (user.weeklyRightBP < 0) user.weeklyRightBP = 0;
 
-            income = cap - user.totalIncome;
+            if (income > 0) {
 
-        }
+                user.weeklyIncome += income;
+                user.totalIncome += income;
+                user.incomeWallet += income;
+                user.lifetimeWeeklyIncome += income;
+                user.lifetimeTotalIncome += income;
 
-        const usedBP = pair * 50;
-
-        const leftBalance = left - usedBP;
-
-        const rightBalance = right - usedBP;
-
-        if (income > 0) {
-
-            user.weeklyIncome += income;
-
-            user.totalIncome += income;
-
-            user.incomeWallet += income;
-
-            user.lifetimeWeeklyIncome += income;
-
-            user.lifetimeTotalIncome += income;
-            console.log("--------------------------------");
-            console.log("User :", user.uniqueId);
-            console.log("Left :", left);
-            console.log("Right :", right);
-            console.log("Matched :", matchedBP);
-            console.log("Pair :", pair);
-            console.log("Income :", income);
-            console.log("Cap :", cap);
-            console.log("Total Income :", user.totalIncome);
-            console.log("--------------------------------");
-
-            try {
-
-                const debit = await Debit.create({
-
-                    type: "USER",
-
-                    subType: "WEEKLY_MATCHING",
-
-                    name: user.fullName,
+                const alreadyExists = await Debit.findOne({
 
                     loginId: user.uniqueId,
 
-                    mobile: user.mobile,
-
-                    amount: income,
-
-                    minusTds: 0,
-
-                    minusMaintenance: 0,
-
-                    finalAmount: income,
+                    subType: "WEEKLY_MATCHING",
 
                     description: `Weekly Matching Income (${pair} Pair)`,
 
-                    date: now
+                    createdAt: {
+                        $gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+                        $lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+                    }
 
                 });
 
-                console.log("Debit Created :", debit._id);
+                if (!alreadyExists) {
 
-            } catch (err) {
+                    await Debit.create({
 
-                console.log("Debit Error :", err);
+                        type: "USER",
+
+                        subType: "WEEKLY_MATCHING",
+
+                        name: user.fullName,
+
+                        loginId: user.uniqueId,
+
+                        mobile: user.mobile,
+
+                        amount: income,
+
+                        minusTds: 0,
+
+                        minusMaintenance: 0,
+
+                        finalAmount: income,
+
+                        description: `Weekly Matching Income (${pair} Pair)`,
+
+                        date: now
+
+                    });
+
+                }
 
             }
 
+            user.lastWeeklyPaidAt = now;
+
+            await user.save();
+
+            console.log(
+                `${user.uniqueId} | Pair=${pair} | Income=${income}`
+            );
+
         }
+        catch (err) {
 
-        user.weeklyLeftBP = leftBalance;
+            console.log(err);
 
-        user.weeklyRightBP = rightBalance;
-
-        user.lastWeeklyPaidAt = now;
-
-        await user.save();
+        }
 
     }
 
-}
+    console.log("Weekly Closing Completed");
+
+};

@@ -3,49 +3,49 @@ const Credit = require("../models/Credit");
 
 module.exports = async function matchingIncome(userId, session) {
 
-  const user = await User.findById(userId);
-  if (!user) return;
-if (user.role === "ADMIN") return;
-  const leftBP = user.weeklyLeftBP || 0;
-  const rightBP = user.weeklyRightBP || 0;
+  // const user = await User.findById(userId);
+  // if (!user) return;
+  // if (user.role === "ADMIN") return;
+  // const leftBP = user.weeklyLeftBP || 0;
+  // const rightBP = user.weeklyRightBP || 0;
 
-  const matchBP = Math.min(leftBP, rightBP);
-  const pair = Math.floor(matchBP / 50);
+  // const matchBP = Math.min(leftBP, rightBP);
+  // const pair = Math.floor(matchBP / 50);
 
-  if (pair <= 0) return;
+  // if (pair <= 0) return;
 
-  let income = pair * 50 * 10;
+  // let income = pair * 50 * 10;
 
-  let cap = 0;
-  if (user.activationBP === 51) cap = 100000;
-  else if (user.activationBP === 101) cap = 150000;
+  // let cap = 0;
+  // if (user.activationBP === 51) cap = 100000;
+  // else if (user.activationBP === 101) cap = 150000;
 
-  // ✅ CAP SAFETY
-  if (cap && user.totalIncome >= cap) return;
+  // // ✅ CAP SAFETY
+  // if (cap && user.totalIncome >= cap) return;
 
-  if (cap && user.totalIncome + income > cap) {
-    income = cap - user.totalIncome;
-  }
+  // if (cap && user.totalIncome + income > cap) {
+  //   income = cap - user.totalIncome;
+  // }
 
-  if (income <= 0) return;
+  // if (income <= 0) return;
 
-  const usedBP = pair * 50;
+  // const usedBP = pair * 50;
 
-  // ✅ UPDATE USER
-  user.weeklyIncome = (user.weeklyIncome || 0) + income;
-  user.totalIncome = (user.totalIncome || 0) + income;
-  user.incomeWallet = (user.incomeWallet || 0) + income;
-  user.lifetimeWeeklyIncome =
-    (user.lifetimeWeeklyIncome || 0) + income;
+  // // ✅ UPDATE USER
+  // user.weeklyIncome = (user.weeklyIncome || 0) + income;
+  // user.totalIncome = (user.totalIncome || 0) + income;
+  // user.incomeWallet = (user.incomeWallet || 0) + income;
+  // user.lifetimeWeeklyIncome =
+  //   (user.lifetimeWeeklyIncome || 0) + income;
 
-user.lifetimeTotalIncome =
-    (user.lifetimeTotalIncome || 0) + income;
+  // user.lifetimeTotalIncome =
+  //   (user.lifetimeTotalIncome || 0) + income;
 
-  // ✅ SAFE BP DEDUCTION
-  user.weeklyLeftBP = Math.max(0, user.weeklyLeftBP - usedBP);
-  user.weeklyRightBP = Math.max(0, user.weeklyRightBP - usedBP);
+  // // ✅ SAFE BP DEDUCTION
+  // user.weeklyLeftBP = Math.max(0, user.weeklyLeftBP - usedBP);
+  // user.weeklyRightBP = Math.max(0, user.weeklyRightBP - usedBP);
 
-  user.lastWeeklyPaidAt = new Date();
+  // user.lastWeeklyPaidAt = new Date();
 
-  await user.save();
+  // await user.save();
 };
