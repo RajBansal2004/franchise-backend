@@ -1481,10 +1481,20 @@ exports.getClosingSetting = async (req, res) => {
       settings = await Settings.create({});
     }
 
-    res.json({
-      success: true,
-      data: settings
-    });
+  res.json({
+  success: true,
+
+  weeklyClosingMode: settings.weeklyClosingMode,
+  weeklyClosingDay: settings.weeklyClosingDay,
+  weeklyClosingTime: settings.weeklyClosingTime,
+
+  monthlyClosingMode: settings.monthlyClosingMode,
+  monthlyClosingDate: settings.monthlyClosingDate,
+  monthlyClosingTime: settings.monthlyClosingTime,
+
+  lastWeeklyClosing: settings.lastWeeklyClosing,
+  lastMonthlyClosing: settings.lastMonthlyClosing,
+});
 
   } catch (err) {
 
@@ -1508,14 +1518,49 @@ exports.updateClosingSetting = async (req, res) => {
       settings = new Settings();
     }
 
-    Object.assign(settings, req.body);
+    const {
+      weeklyClosingMode,
+      weeklyClosingDay,
+      weeklyClosingTime,
+
+      monthlyClosingMode,
+      monthlyClosingDate,
+      monthlyClosingTime,
+
+      weeklyClosingEnabled,
+      monthlyClosingEnabled
+    } = req.body;
+
+    if (weeklyClosingMode !== undefined)
+      settings.weeklyClosingMode = weeklyClosingMode;
+
+    if (weeklyClosingDay !== undefined)
+      settings.weeklyClosingDay = weeklyClosingDay;
+
+    if (weeklyClosingTime !== undefined)
+      settings.weeklyClosingTime = weeklyClosingTime;
+
+    if (monthlyClosingMode !== undefined)
+      settings.monthlyClosingMode = monthlyClosingMode;
+
+    if (monthlyClosingDate !== undefined)
+      settings.monthlyClosingDate = monthlyClosingDate;
+
+    if (monthlyClosingTime !== undefined)
+      settings.monthlyClosingTime = monthlyClosingTime;
+
+    if (weeklyClosingEnabled !== undefined)
+      settings.weeklyClosingEnabled = weeklyClosingEnabled;
+
+    if (monthlyClosingEnabled !== undefined)
+      settings.monthlyClosingEnabled = monthlyClosingEnabled;
 
     await settings.save();
 
     res.json({
       success: true,
       message: "Closing Settings Updated Successfully",
-      data: settings
+      settings
     });
 
   } catch (err) {
