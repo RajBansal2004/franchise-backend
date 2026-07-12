@@ -1,45 +1,49 @@
-const User = require('../models/User');
-const levels = require('../config/levels');
-const rewardEngine = require('./rewardEngine');
+const levelSteps = require("../config/levelSteps");
+const rewardEngine = require("./rewardEngine");
+
 function getRoyaltyKey(level) {
-  if (level >= 5 && level <= 8) return 'regional';
-  if (level >= 9 && level <= 12) return 'state';
-  if (level >= 13 && level <= 14) return 'national';
-  if (level === 15) return 'international';
-  return null;
+
+    if (level >= 5 && level <= 8) return "regional";
+    if (level >= 9 && level <= 12) return "state";
+    if (level >= 13 && level <= 14) return "national";
+    if (level === 15) return "international";
+
+    return null;
 }
 
 module.exports = async function checkLevels(user, session = null) {
 
-    let updated = false;
+    let newLevel = 0;
+    let newRank = "DIRECT_SELLER";
 
-    for (const lvl of levels) {
+    for (const lvl of levelSteps) {
 
-        if (user.level >= lvl.level)
-            continue;
+        if (
+            user.leftBP >= lvl.leftReq &&
+            user.rightBP >= lvl.rightReq
+        ) {
 
-        const leftOK = user.leftBP >= (lvl.leftBP || 0);
-        const rightOK = user.rightBP >= (lvl.rightBP || 0);
+            newLevel = lvl.step;
+            newRank = lvl.name;
 
-        if (!leftOK || !rightOK)
-            break;
+        }
 
-        user.level = lvl.level;
-        user.currentRank = lvl.rank;
+    }
+
+    // Agar level change hua tabhi update karo
+    if (newLevel !== user.level) {
+
+        user.level = newLevel;
+        user.currentRank = newRank;
         user.levelAchievedAt = new Date();
 
-        rewardEngine(user);
-
-        const royaltyKey = getRoyaltyKey(lvl.level);
+        const royaltyKey = getRoyaltyKey(newLevel);
 
         if (royaltyKey) {
             user.royaltyEligible[royaltyKey] = true;
         }
 
-        updated = true;
-    }
-
-    if (updated) {
+        rewardEngine(user);
 
         if (session) {
             await user.save({ session });
@@ -47,6 +51,16 @@ module.exports = async function checkLevels(user, session = null) {
             await user.save();
         }
 
+    } else if (user.currentRank !== newRank) {
+
+        // Agar level same hai par rank mismatch hai to rank bhi fix kar do
+        user.currentRank = newRank;
+
+        if (session) {
+            await user.save({ session });
+        } else {
+            await user.save();
+        }
     }
 
 };

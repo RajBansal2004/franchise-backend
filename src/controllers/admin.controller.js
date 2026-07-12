@@ -21,69 +21,69 @@ const checkRepurchaseEligibility = require('../utils/checkRepurchaseEligibility'
 
 const getDirectionForAncestor = (ancestorPath, userPath) => {
 
-    if (!userPath.startsWith(ancestorPath)) {
-        return null;
-    }
+  if (!userPath.startsWith(ancestorPath)) {
+    return null;
+  }
 
-    const remaining = userPath.slice(ancestorPath.length);
+  const remaining = userPath.slice(ancestorPath.length);
 
-    if (!remaining.length) {
-        return null;
-    }
+  if (!remaining.length) {
+    return null;
+  }
 
-    return remaining[0] === "L"
-        ? "LEFT"
-        : "RIGHT";
+  return remaining[0] === "L"
+    ? "LEFT"
+    : "RIGHT";
 };
 
 const distributeBP = async (user, bp, session) => {
 
-    let currentUser = user;
+  let currentUser = user;
 
-    while (currentUser.parentId) {
+  while (currentUser.parentId) {
 
-        const parent = await User.findById(currentUser.parentId)
-            .session(session);
+    const parent = await User.findById(currentUser.parentId)
+      .session(session);
 
-        if (!parent) break;
+    if (!parent) break;
 
-        if (parent.role === "ADMIN") break;
+    if (parent.role === "ADMIN") break;
 
-        const direction = getDirectionForAncestor(
-            parent.path,
-            user.path
-        );
+    const direction = getDirectionForAncestor(
+      parent.path,
+      user.path
+    );
 
-        if (!direction) {
+    if (!direction) {
 
-            currentUser = parent;
-            continue;
-
-        }
-
-        if (direction === "LEFT") {
-
-            parent.leftBP += bp;
-            parent.weeklyLeftBP += bp;
-            parent.monthlyLeftBP += bp;
-
-        } else {
-
-            parent.rightBP += bp;
-            parent.weeklyRightBP += bp;
-            parent.monthlyRightBP += bp;
-
-        }
-
-        await parent.save({ session });
-
-        await matchingIncome(parent._id, session);
-
-        await checkLevels(parent, session);
-
-        currentUser = parent;
+      currentUser = parent;
+      continue;
 
     }
+
+    if (direction === "LEFT") {
+
+      parent.leftBP += bp;
+      parent.weeklyLeftBP += bp;
+      parent.monthlyLeftBP += bp;
+
+    } else {
+
+      parent.rightBP += bp;
+      parent.weeklyRightBP += bp;
+      parent.monthlyRightBP += bp;
+
+    }
+
+    await parent.save({ session });
+
+    await matchingIncome(parent._id, session);
+
+    await checkLevels(parent, session);
+
+    currentUser = parent;
+
+  }
 
 };
 
@@ -947,58 +947,62 @@ exports.adminApproveOrder = async (req, res) => {
 
       // ✅ DISTRIBUTE ONLY USABLE BP
       await distributeBP(user, usableBP, session);
+      // Latest BP
+      user = await User.findById(user._id).session(session);
 
+      // Promotion check
+      await checkLevels(user, session);
       await matchingIncome(user._id, session);
       await repurchaseIncome(user._id, usableBP, session);
       //----------------------------------------------------
-// RELEASE PENDING INCOME AFTER REPURCHASE
-//----------------------------------------------------
+      // RELEASE PENDING INCOME AFTER REPURCHASE
+      //----------------------------------------------------
 
-await checkRepurchaseEligibility(user);
+      await checkRepurchaseEligibility(user);
 
-if (!user.isIncomeFrozen) {
+      if (!user.isIncomeFrozen) {
 
-    let releasedAmount = 0;
+        let releasedAmount = 0;
 
-    if (user.pendingWeeklyIncome > 0) {
+        if (user.pendingWeeklyIncome > 0) {
 
-        user.weeklyIncome += user.pendingWeeklyIncome;
+          user.weeklyIncome += user.pendingWeeklyIncome;
 
-        user.lifetimeWeeklyIncome += user.pendingWeeklyIncome;
+          user.lifetimeWeeklyIncome += user.pendingWeeklyIncome;
 
-        user.totalIncome += user.pendingWeeklyIncome;
+          user.totalIncome += user.pendingWeeklyIncome;
 
-        user.lifetimeTotalIncome += user.pendingWeeklyIncome;
+          user.lifetimeTotalIncome += user.pendingWeeklyIncome;
 
-        user.incomeWallet += user.pendingWeeklyIncome;
+          user.incomeWallet += user.pendingWeeklyIncome;
 
-        releasedAmount += user.pendingWeeklyIncome;
+          releasedAmount += user.pendingWeeklyIncome;
 
-        user.pendingWeeklyIncome = 0;
+          user.pendingWeeklyIncome = 0;
 
-    }
+        }
 
-    if (user.pendingMonthlyIncome > 0) {
+        if (user.pendingMonthlyIncome > 0) {
 
-        user.monthlyIncome += user.pendingMonthlyIncome;
+          user.monthlyIncome += user.pendingMonthlyIncome;
 
-        user.lifetimeMonthlyIncome += user.pendingMonthlyIncome;
+          user.lifetimeMonthlyIncome += user.pendingMonthlyIncome;
 
-        user.totalIncome += user.pendingMonthlyIncome;
+          user.totalIncome += user.pendingMonthlyIncome;
 
-        user.lifetimeTotalIncome += user.pendingMonthlyIncome;
+          user.lifetimeTotalIncome += user.pendingMonthlyIncome;
 
-        user.incomeWallet += user.pendingMonthlyIncome;
+          user.incomeWallet += user.pendingMonthlyIncome;
 
-        releasedAmount += user.pendingMonthlyIncome;
+          releasedAmount += user.pendingMonthlyIncome;
 
-        user.pendingMonthlyIncome = 0;
+          user.pendingMonthlyIncome = 0;
 
-    }
+        }
 
-    if (releasedAmount > 0) {
+        if (releasedAmount > 0) {
 
-        await Debit.create([{
+          await Debit.create([{
 
             type: "USER",
 
@@ -1022,13 +1026,13 @@ if (!user.isIncomeFrozen) {
 
             date: new Date()
 
-        }], { session });
+          }], { session });
 
-    }
+        }
 
-    await user.save({ session });
+        await user.save({ session });
 
-}
+      }
     }
 
     // ================= FRANCHISE ORDER =================
@@ -1561,20 +1565,20 @@ exports.getClosingSetting = async (req, res) => {
       settings = await Settings.create({});
     }
 
-  res.json({
-  success: true,
+    res.json({
+      success: true,
 
-  weeklyClosingMode: settings.weeklyClosingMode,
-  weeklyClosingDay: settings.weeklyClosingDay,
-  weeklyClosingTime: settings.weeklyClosingTime,
+      weeklyClosingMode: settings.weeklyClosingMode,
+      weeklyClosingDay: settings.weeklyClosingDay,
+      weeklyClosingTime: settings.weeklyClosingTime,
 
-  monthlyClosingMode: settings.monthlyClosingMode,
-  monthlyClosingDate: settings.monthlyClosingDate,
-  monthlyClosingTime: settings.monthlyClosingTime,
+      monthlyClosingMode: settings.monthlyClosingMode,
+      monthlyClosingDate: settings.monthlyClosingDate,
+      monthlyClosingTime: settings.monthlyClosingTime,
 
-  lastWeeklyClosing: settings.lastWeeklyClosing,
-  lastMonthlyClosing: settings.lastMonthlyClosing,
-});
+      lastWeeklyClosing: settings.lastWeeklyClosing,
+      lastMonthlyClosing: settings.lastMonthlyClosing,
+    });
 
   } catch (err) {
 

@@ -14,7 +14,6 @@ module.exports = async function monthlyClosing() {
             $set: {
                 monthlyLeftBP: 0,
                 monthlyRightBP: 0,
-                monthlyIncome: 0
             }
         }
     );

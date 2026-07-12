@@ -11,7 +11,7 @@ module.exports = async function calculateMonthlyIncome() {
     const now = new Date();
 
     for (const user of users) {
-
+        let monthlyProcessed = false;
         // Prevent duplicate monthly closing
         if (
             user.lastMonthlyPaidAt &&
@@ -28,9 +28,25 @@ module.exports = async function calculateMonthlyIncome() {
         const currentLevel = levels.find(
             level => level.level === user.level
         );
+
         await checkRepurchaseEligibility(user);
+        let alreadyPaid = null;
 
         if (currentLevel) {
+
+            alreadyPaid = await Debit.findOne({
+
+                loginId: user.uniqueId,
+
+                subType: "LEVEL_BONUS",
+
+                level: currentLevel.level
+
+            });
+
+        }
+
+        if (currentLevel && !alreadyPaid) {
 
             const payableMonthlyIncome = applyIncome(
 
@@ -45,9 +61,15 @@ module.exports = async function calculateMonthlyIncome() {
 
                     console.log(`🔒 Monthly Income Frozen : ${user.uniqueId}`);
 
-                    user.pendingMonthlyIncome += payableMonthlyIncome;
+                    // Pending sirf ek baar add hoga
+                    if (user.pendingMonthlyIncome <= 0) {
 
-                } else {
+                        user.pendingMonthlyIncome = payableMonthlyIncome;
+
+                    }
+
+                }
+                else {
 
                     // Director Bonus Category
 
@@ -99,27 +121,23 @@ module.exports = async function calculateMonthlyIncome() {
 
                         type: "USER",
 
-                        subType: "MONTHLY_BONUS",
+                        subType: "LEVEL_BONUS",
+
+                        level: currentLevel.level,
 
                         name: user.fullName,
-
                         loginId: user.uniqueId,
-
                         mobile: user.mobile,
-
                         amount: payableMonthlyIncome,
-
                         minusTds: 0,
-
                         minusMaintenance: 0,
-
                         finalAmount: payableMonthlyIncome,
-
-                        description: `Monthly Bonus Level ${user.level}`,
+                        description: `${currentLevel.rank} Level Bonus`,
 
                         date: now
 
                     });
+                    monthlyProcessed = true;
 
                 }
 
@@ -222,6 +240,7 @@ module.exports = async function calculateMonthlyIncome() {
                         date: now
 
                     });
+                    monthlyProcessed = true;
 
                 }
 
@@ -270,8 +289,10 @@ module.exports = async function calculateMonthlyIncome() {
 
         }
 
-        user.lastMonthlyPaidAt = now;
+        if (monthlyProcessed) {
 
+            user.lastMonthlyPaidAt = now;
+        }
         await user.save();
 
     }

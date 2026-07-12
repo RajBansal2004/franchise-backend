@@ -6,7 +6,10 @@ const debitSchema = new mongoose.Schema({
     enum: ["USER", "FRANCHISE", "SUBADMIN", "COMPANY"],
     required: true
   },
-
+level: {
+    type: Number,
+    default: null
+},
   subType: {
     type: String,
     enum: [
@@ -22,6 +25,7 @@ const debitSchema = new mongoose.Schema({
       "MONTHLY_RETAIL_PROFIT",
       "WEEKLY_MATCHING",
       "MONTHLY_BONUS",
+      "LEVEL_BONUS"
 
     ]
   },
