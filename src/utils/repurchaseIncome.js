@@ -7,9 +7,11 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
     if (!user || !user.isActive) return;
     if (user.role === "ADMIN") return;
 
-    //---------------------------------------
-    // SELF REPURCHASE INCOME
-    //---------------------------------------
+   //---------------------------------------
+// SELF REPURCHASE INCOME
+//---------------------------------------
+
+if (user.level >= 1 && user.level <= 4) {
 
     const income = totalBP * 5;
 
@@ -35,24 +37,21 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
     if (payableIncome > 0) {
 
-        user.repurchaseIncome =
-            (user.repurchaseIncome || 0) + payableIncome;
+        user.repurchaseIncome += payableIncome;
 
-        user.lifetimeRepurchaseIncome =
-            (user.lifetimeRepurchaseIncome || 0) + payableIncome;
+        user.lifetimeRepurchaseIncome += payableIncome;
 
-        user.totalIncome =
-            (user.totalIncome || 0) + payableIncome;
+        user.totalIncome += payableIncome;
 
-        user.lifetimeTotalIncome =
-            (user.lifetimeTotalIncome || 0) + payableIncome;
+        user.lifetimeTotalIncome += payableIncome;
 
-        user.incomeWallet =
-            (user.incomeWallet || 0) + payableIncome;
+        user.incomeWallet += payableIncome;
 
         await user.save({ session });
 
     }
+
+}
 
     //---------------------------------------
     // REPURCHASE BP PROPAGATION

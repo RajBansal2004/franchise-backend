@@ -1,4 +1,4 @@
-module.exports = function applyIncome(user, amount, incomeField, lifetimeField) {
+module.exports = function applyIncome(user, amount) {
 
     if (amount <= 0) {
         return 0;
@@ -6,13 +6,11 @@ module.exports = function applyIncome(user, amount, incomeField, lifetimeField) 
 
     let cap = Infinity;
 
-    if (user.activationBP === 51) {
+    if (user.activationBP === 51)
         cap = 100000;
-    }
 
-    if (user.activationBP === 101) {
+    if (user.activationBP === 101)
         cap = 150000;
-    }
 
     let payable = amount;
 
@@ -20,28 +18,16 @@ module.exports = function applyIncome(user, amount, incomeField, lifetimeField) 
 
         payable = 0;
 
-    } else if (user.totalIncome + payable > cap) {
+    }
+    else if (user.totalIncome + payable > cap) {
 
         payable = cap - user.totalIncome;
 
     }
 
-    if (payable <= 0) {
-        return 0;
-    }
-
-    user[incomeField] =
-        (user[incomeField] || 0) + payable;
-
-    user[lifetimeField] =
-        (user[lifetimeField] || 0) + payable;
-
-    user.totalIncome += payable;
-
-    user.lifetimeTotalIncome += payable;
-
-    user.incomeWallet += payable;
+    if (payable < 0)
+        payable = 0;
 
     return payable;
 
-}
+};

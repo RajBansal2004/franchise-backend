@@ -17,6 +17,7 @@ const Settings = require("../models/Settings");
 const calculateMonthlyIncome = require("../utils/monthlyIncome");
 const weeklyClosingService = require("../utils/weeklyClosing");
 const monthlyClosingService = require("../utils/monthlyClosing");
+const checkRepurchaseEligibility = require('../utils/checkRepurchaseEligibility');
 
 const getDirectionForAncestor = (ancestorPath, userPath) => {
 
@@ -949,6 +950,85 @@ exports.adminApproveOrder = async (req, res) => {
 
       await matchingIncome(user._id, session);
       await repurchaseIncome(user._id, usableBP, session);
+      //----------------------------------------------------
+// RELEASE PENDING INCOME AFTER REPURCHASE
+//----------------------------------------------------
+
+await checkRepurchaseEligibility(user);
+
+if (!user.isIncomeFrozen) {
+
+    let releasedAmount = 0;
+
+    if (user.pendingWeeklyIncome > 0) {
+
+        user.weeklyIncome += user.pendingWeeklyIncome;
+
+        user.lifetimeWeeklyIncome += user.pendingWeeklyIncome;
+
+        user.totalIncome += user.pendingWeeklyIncome;
+
+        user.lifetimeTotalIncome += user.pendingWeeklyIncome;
+
+        user.incomeWallet += user.pendingWeeklyIncome;
+
+        releasedAmount += user.pendingWeeklyIncome;
+
+        user.pendingWeeklyIncome = 0;
+
+    }
+
+    if (user.pendingMonthlyIncome > 0) {
+
+        user.monthlyIncome += user.pendingMonthlyIncome;
+
+        user.lifetimeMonthlyIncome += user.pendingMonthlyIncome;
+
+        user.totalIncome += user.pendingMonthlyIncome;
+
+        user.lifetimeTotalIncome += user.pendingMonthlyIncome;
+
+        user.incomeWallet += user.pendingMonthlyIncome;
+
+        releasedAmount += user.pendingMonthlyIncome;
+
+        user.pendingMonthlyIncome = 0;
+
+    }
+
+    if (releasedAmount > 0) {
+
+        await Debit.create([{
+
+            type: "USER",
+
+            subType: "REPURCHASE",
+
+            name: user.fullName,
+
+            loginId: user.uniqueId,
+
+            mobile: user.mobile,
+
+            amount: releasedAmount,
+
+            minusTds: 0,
+
+            minusMaintenance: 0,
+
+            finalAmount: releasedAmount,
+
+            description: "Released Pending Income After Repurchase",
+
+            date: new Date()
+
+        }], { session });
+
+    }
+
+    await user.save({ session });
+
+}
     }
 
     // ================= FRANCHISE ORDER =================

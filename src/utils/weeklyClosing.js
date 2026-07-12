@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const Debit = require("../models/Debit");
-
+const checkRepurchaseEligibility = require("./checkRepurchaseEligibility");
 module.exports = async function weeklyClosing() {
 
     const users = await User.find({
@@ -26,12 +26,7 @@ module.exports = async function weeklyClosing() {
             const pair = Math.floor(matchedBP / 50);
 
             let income = pair * 500;
-            console.log({
-                pair,
-                income,
-                totalIncome: user.totalIncome,
-                activationBP: user.activationBP
-            });
+
             let cap = Infinity;
 
             if (user.activationBP === 51)
@@ -56,44 +51,46 @@ module.exports = async function weeklyClosing() {
 
             if (income > 0) {
 
-                user.weeklyIncome += income;
-                user.totalIncome += income;
-                user.incomeWallet += income;
-                user.lifetimeWeeklyIncome += income;
-                user.lifetimeTotalIncome += income;
-                console.log("========== USER ==========");
-                console.log("User :", user.uniqueId);
-                console.log("Left BP :", left);
-                console.log("Right BP :", right);
-                console.log("Matched BP :", matchedBP);
-                console.log("Pair :", pair);
-                console.log("Income :", income);
+                await checkRepurchaseEligibility(user);
 
+                if (user.isIncomeFrozen) {
 
-                console.log("Creating Debit...");
+                    console.log(`🔒 Income Frozen : ${user.uniqueId}`);
 
-                const debit = new Debit({
-                    type: "USER",
-                    subType: "WEEKLY_MATCHING",
+                    user.pendingWeeklyIncome += income;
 
-                    name: user.fullName,
-                    loginId: user.uniqueId,
-                    mobile: user.mobile,
+                } else {
 
-                    amount: income,
+                    user.weeklyIncome += income;
+                    user.totalIncome += income;
+                    user.incomeWallet += income;
+                    user.lifetimeWeeklyIncome += income;
+                    user.lifetimeTotalIncome += income;
 
-                    minusTds: 0,
-                    minusMaintenance: 0,
-                    finalAmount: income,
+                    const debit = new Debit({
 
-                    description: `Weekly Matching Income (${pair} Pair)`,
+                        type: "USER",
+                        subType: "WEEKLY_MATCHING",
 
-                    date: now
-                });
+                        name: user.fullName,
+                        loginId: user.uniqueId,
+                        mobile: user.mobile,
 
-                await debit.save();
+                        amount: income,
 
-                console.log("✅ Debit Saved :", debit._id);
+                        minusTds: 0,
+                        minusMaintenance: 0,
+                        finalAmount: income,
+
+                        description: `Weekly Matching Income (${pair} Pair)`,
+
+                        date: now
+
+                    });
+
+                    await debit.save();
+
+                }
 
             }
 

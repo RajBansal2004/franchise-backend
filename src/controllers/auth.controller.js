@@ -6,6 +6,7 @@ const { sendOTPEmail } = require('../utils/email');
 const { generateDSId, generatePassword } = require('../utils/credentials');
 const { sendCredentials } = require('../utils/notify');
 const { sendSMS } = require('../utils/sms');
+const checkRepurchaseEligibility = require('../utils/checkRepurchaseEligibility');
 exports.changePassword = async (req, res) => {
   try {
 
@@ -286,7 +287,7 @@ exports.login = async (req, res) => {
   if (!isMatch) {
     return res.status(400).json({ message: 'Invalid credentials' });
   }
-
+  await checkRepurchaseEligibility(user);
   const token = jwt.sign(
     { id: user._id, role: user.role },
     process.env.JWT_SECRET,
@@ -295,10 +296,25 @@ exports.login = async (req, res) => {
 
   res.json({
     token,
+
     user: {
+
       role: user.role,
       uniqueId: user.uniqueId,
-      kycStatus: user.kycStatus
+      kycStatus: user.kycStatus,
+
+      repurchaseNotification:
+        user.isIncomeFrozen
+          ? {
+            show: true,
+            message: `Your income is stopped. Please purchase ${user.requiredRepurchaseBP} BP this month.`,
+            requiredBP: user.requiredRepurchaseBP,
+            currentBP: user.lastRepurchaseBP
+          }
+          : {
+            show: false
+          }
+
     }
   });
 };

@@ -10,6 +10,7 @@ const matchingIncome = require('../utils/matchingIncome');
 const calculateMonthlyIncome = require('../utils/monthlyIncome');
 const repurchaseIncome = require("../utils/repurchaseIncome");
 const thirdLegIncome = require("../utils/thirdLegIncome");
+const checkRepurchaseEligibility = require('../utils/checkRepurchaseEligibility');
 
 
 exports.purchaseProduct = async (req, res) => {
@@ -67,7 +68,7 @@ exports.purchaseProduct = async (req, res) => {
           await checkLevels(parent);
           await matchingIncome(parent._id);
           await thirdLegIncome(parent._id);
-          
+
 
         } else {
 
@@ -92,8 +93,8 @@ exports.purchaseProduct = async (req, res) => {
     // 3. USER LEVEL
     await checkLevels(user);
     console.log("Calling repurchaseIncome");
-console.log("BP =", totalBP);
-console.log("User =", user.uniqueId);
+    console.log("BP =", totalBP);
+    console.log("User =", user.uniqueId);
     await repurchaseIncome(user._id, totalBP);
 
     const updatedUser = await User.findById(user._id);
@@ -188,6 +189,7 @@ exports.getUserDashboard = async (req, res) => {
   try {
 
     const userId = req.user._id;
+    await checkRepurchaseEligibility(user);
     let user = await User.findById(userId);
     const wallet = await Wallet.findOne({ user: userId });
 
@@ -222,6 +224,30 @@ exports.getUserDashboard = async (req, res) => {
     res.json({
 
       /* ===== PROFILE ===== */
+      notification: {
+
+        repurchase: {
+          show: user.isIncomeFrozen,
+
+          requiredBP: user.requiredRepurchaseBP,
+
+          currentBP: user.lastRepurchaseBP,
+
+          pendingBP:
+            Math.max(
+              user.requiredRepurchaseBP - user.lastRepurchaseBP,
+              0
+            ),
+
+          title: "Repurchase Required",
+
+          message: user.isIncomeFrozen
+            ? `Please complete ${user.requiredRepurchaseBP} BP repurchase to continue your income.`
+            : ""
+
+        }
+
+      },
 
       profile: {
         name: user.fullName,

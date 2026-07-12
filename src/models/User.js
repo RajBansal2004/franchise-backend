@@ -108,7 +108,20 @@ path: {
   selfBP: { type: Number, default: 0 },
   leftBP: { type: Number, default: 0 },
   rightBP: { type: Number, default: 0 },
+requiredRepurchaseBP: {
+    type: Number,
+    default: 0
+},
 
+lastRepurchaseBP: {
+    type: Number,
+    default: 0
+},
+
+pendingRepurchaseIncome: {
+    type: Number,
+    default: 0
+},
   /* ================= WALLET & INCOME ================= */
   incomeWallet: { type: Number, default: 0 },
   bpWallet: { type: Number, default: 0 },

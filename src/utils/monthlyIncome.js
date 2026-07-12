@@ -3,7 +3,7 @@ const levels = require("../config/levels");
 const Order = require("../models/Order");
 const Debit = require("../models/Debit");
 const applyIncome = require("./applyIncome");
-
+const checkRepurchaseEligibility = require("./checkRepurchaseEligibility");
 module.exports = async function calculateMonthlyIncome() {
 
     const users = await User.find();
@@ -28,6 +28,7 @@ module.exports = async function calculateMonthlyIncome() {
         const currentLevel = levels.find(
             level => level.level === user.level
         );
+        await checkRepurchaseEligibility(user);
 
         if (currentLevel) {
 
@@ -36,79 +37,91 @@ module.exports = async function calculateMonthlyIncome() {
                 user,
 
                 currentLevel.monthlyBonus,
-
-                "monthlyIncome",
-
-                "lifetimeMonthlyIncome"
-
             );
 
             if (payableMonthlyIncome > 0) {
 
-                // Director Bonus Category
+                if (user.isIncomeFrozen) {
 
-                if (user.level >= 1 && user.level <= 4) {
+                    console.log(`🔒 Monthly Income Frozen : ${user.uniqueId}`);
 
-                    user.associateBonusIncome += payableMonthlyIncome;
-                    user.lifetimeAssociateBonusIncome += payableMonthlyIncome;
+                    user.pendingMonthlyIncome += payableMonthlyIncome;
+
+                } else {
+
+                    // Director Bonus Category
+
+                    if (user.level >= 1 && user.level <= 4) {
+
+                        user.associateBonusIncome += payableMonthlyIncome;
+                        user.lifetimeAssociateBonusIncome += payableMonthlyIncome;
+
+                    }
+
+                    else if (user.level >= 5 && user.level <= 8) {
+
+                        user.regionalDirectorBonusIncome += payableMonthlyIncome;
+                        user.lifetimeRegionalDirectorBonusIncome += payableMonthlyIncome;
+
+                    }
+
+                    else if (user.level >= 9 && user.level <= 12) {
+
+                        user.stateDirectorBonusIncome += payableMonthlyIncome;
+                        user.lifetimeStateDirectorBonusIncome += payableMonthlyIncome;
+
+                    }
+
+                    else if (user.level >= 13 && user.level <= 14) {
+
+                        user.nationalDirectorBonusIncome += payableMonthlyIncome;
+                        user.lifetimeNationalDirectorBonusIncome += payableMonthlyIncome;
+
+                    }
+
+                    else if (user.level === 15) {
+
+                        user.internationalDirectorBonusIncome += payableMonthlyIncome;
+                        user.lifetimeInternationalDirectorBonusIncome += payableMonthlyIncome;
+
+                    }
+                    user.monthlyIncome += payableMonthlyIncome;
+
+                    user.lifetimeMonthlyIncome += payableMonthlyIncome;
+
+                    user.totalIncome += payableMonthlyIncome;
+
+                    user.lifetimeTotalIncome += payableMonthlyIncome;
+
+                    user.incomeWallet += payableMonthlyIncome;
+
+                    await Debit.create({
+
+                        type: "USER",
+
+                        subType: "MONTHLY_BONUS",
+
+                        name: user.fullName,
+
+                        loginId: user.uniqueId,
+
+                        mobile: user.mobile,
+
+                        amount: payableMonthlyIncome,
+
+                        minusTds: 0,
+
+                        minusMaintenance: 0,
+
+                        finalAmount: payableMonthlyIncome,
+
+                        description: `Monthly Bonus Level ${user.level}`,
+
+                        date: now
+
+                    });
 
                 }
-
-                else if (user.level >= 5 && user.level <= 8) {
-
-                    user.regionalDirectorBonusIncome += payableMonthlyIncome;
-                    user.lifetimeRegionalDirectorBonusIncome += payableMonthlyIncome;
-
-                }
-
-                else if (user.level >= 9 && user.level <= 12) {
-
-                    user.stateDirectorBonusIncome += payableMonthlyIncome;
-                    user.lifetimeStateDirectorBonusIncome += payableMonthlyIncome;
-
-                }
-
-                else if (user.level >= 13 && user.level <= 14) {
-
-                    user.nationalDirectorBonusIncome += payableMonthlyIncome;
-                    user.lifetimeNationalDirectorBonusIncome += payableMonthlyIncome;
-
-                }
-
-                else if (user.level === 15) {
-
-                    user.internationalDirectorBonusIncome += payableMonthlyIncome;
-                    user.lifetimeInternationalDirectorBonusIncome += payableMonthlyIncome;
-
-                }
-
-                // Debit Entry
-
-                await Debit.create({
-
-                    type: "USER",
-
-                    subType: "MONTHLY_BONUS",
-
-                    name: user.fullName,
-
-                    loginId: user.uniqueId,
-
-                    mobile: user.mobile,
-
-                    amount: payableMonthlyIncome,
-
-                    minusTds: 0,
-
-                    minusMaintenance: 0,
-
-                    finalAmount: payableMonthlyIncome,
-
-                    description: `Monthly Bonus Level ${user.level}`,
-
-                    date: now
-
-                });
 
             }
 
@@ -121,7 +134,7 @@ module.exports = async function calculateMonthlyIncome() {
         if (user.role === "FRANCHISE") {
 
             const startDate = user.lastMonthlyClosing || new Date(0);
-                        const result = await Order.aggregate([
+            const result = await Order.aggregate([
 
                 {
                     $match: {
@@ -174,10 +187,6 @@ module.exports = async function calculateMonthlyIncome() {
                     user,
 
                     retailProfit,
-
-                    "retailProfitIncome",
-
-                    "lifetimeRetailProfitIncome"
 
                 );
 
