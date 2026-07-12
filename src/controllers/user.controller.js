@@ -189,8 +189,16 @@ exports.getUserDashboard = async (req, res) => {
   try {
 
     const userId = req.user._id;
-    await checkRepurchaseEligibility(user);
+
+    // Pehle user fetch karo
     let user = await User.findById(userId);
+
+    // Fir repurchase eligibility check karo
+    await checkRepurchaseEligibility(user);
+
+    // Agar function ne user update kiya hai to latest data dubara le lo
+    user = await User.findById(userId);
+
     const wallet = await Wallet.findOne({ user: userId });
 
     /* ================= TEAM SUMMARY ================= */
