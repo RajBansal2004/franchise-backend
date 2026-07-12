@@ -122,6 +122,49 @@ router.post(
     }
   }
 );
+router.post(
+  "/run-monthly-closing",
+  auth,
+  permit("ADMIN"),
+  async (req, res) => {
+    try {
+
+      const settings = await Settings.findOne();
+
+      if (!settings) {
+        return res.status(404).json({
+          success: false,
+          message: "Settings not found",
+        });
+      }
+
+      console.log("🚀 MANUAL MONTHLY CLOSING STARTED");
+
+      await monthlyClosing();
+
+      settings.lastMonthlyClosing = new Date();
+
+      await settings.save();
+
+      console.log("✅ MANUAL MONTHLY CLOSING COMPLETED");
+
+      res.json({
+        success: true,
+        message: "Monthly Closing Completed Successfully",
+      });
+
+    } catch (err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+
+    }
+  }
+);
 
 
 
