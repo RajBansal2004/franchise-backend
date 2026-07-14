@@ -115,17 +115,19 @@ exports.purchaseProduct = async (req, res) => {
 exports.getStepPending = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    await checkLevels(user);
 
-    const steps = calculateStepPending(user);
+    const updatedUser = await User.findById(req.user._id);
+
+    const steps = calculateStepPending(updatedUser);
 
     res.json({
       user: {
-        name: user.fullName,
-        level: user.level
+        name: updatedUser.fullName,
+        level: updatedUser.level
       },
       steps
     });
@@ -140,9 +142,15 @@ exports.getRoyaltySummary = async (req, res) => {
   try {
 
     const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    await checkLevels(user);
 
-    const leftBP = user.monthlyLeftBP || 0;
-    const rightBP = user.monthlyRightBP || 0;
+    const updatedUser = await User.findById(req.user._id);
+
+    const leftBP = updatedUser.monthlyLeftBP || 0;
+    const rightBP = updatedUser.monthlyRightBP || 0;
 
     const consideredBP = Math.min(leftBP, rightBP);
 
@@ -156,7 +164,7 @@ exports.getRoyaltySummary = async (req, res) => {
       // ✅ IMPORTANT FIX (level check)
       let status = "Locked";
 
-      if (user.level >= item.level) {
+      if (updatedUser.level >= item.level) {
         status = consideredBP >= item.target
           ? "Eligible"
           : "Not Eligible";
@@ -171,11 +179,11 @@ exports.getRoyaltySummary = async (req, res) => {
     });
 
     res.json({
-      currentLevel: user.level,
+      currentLevel: updatedUser.level,
       leftBP,
       rightBP,
       consideredBP,
-      royaltyIncome: user.royaltyIncome || 0,
+      royaltyIncome: updatedUser.royaltyIncome || 0,
       levels
     });
 
@@ -190,18 +198,21 @@ exports.getUserDashboard = async (req, res) => {
 
     const userId = req.user._id;
 
-    // Pehle user fetch karo
     let user = await User.findById(userId);
-
-    // Fir repurchase eligibility check karo
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
     await checkRepurchaseEligibility(user);
 
-    // Agar function ne user update kiya hai to latest data dubara le lo
+    user = await User.findById(userId);
+    await checkLevels(user);
+
     user = await User.findById(userId);
 
     const wallet = await Wallet.findOne({ user: userId });
 
-    /* ================= TEAM SUMMARY ================= */
 
     const directTeam = await User.countDocuments({ parentId: userId });
 
@@ -278,7 +289,6 @@ exports.getUserDashboard = async (req, res) => {
 
         shippingAddress: user.shippingAddress || {},
         status: user.isActive ? 'Active' : 'Inactive',
-        photo: user.photo,
         // 🔥🔥🔥 YE LINE ADD KARO (MAIN FIX)
         kycStatus: user.kycStatus,
 
@@ -290,16 +300,21 @@ exports.getUserDashboard = async (req, res) => {
       /* ===== BUSINESS SUMMARY ===== */
 
       business: {
-        selfBP: user.selfBP || 0,
 
-        totalBonusBP: user.leftBP || 0,
-        totalIncentiveBP: user.rightBP || 0,
+        selfBP: user.isActive ? (user.selfBP || 0) : 0,
 
-        weeklyBonusBP: user.weeklyLeftBP || 0,
-        weeklyIncentiveBP: user.weeklyRightBP || 0,
+        totalBonusBP: user.isActive ? (user.leftBP || 0) : 0,
 
-        monthlyBonusBP: user.monthlyLeftBP || 0,
-        monthlyIncentiveBP: user.monthlyRightBP || 0
+        totalIncentiveBP: user.isActive ? (user.rightBP || 0) : 0,
+
+        weeklyBonusBP: user.isActive ? (user.weeklyLeftBP || 0) : 0,
+
+        weeklyIncentiveBP: user.isActive ? (user.weeklyRightBP || 0) : 0,
+
+        monthlyBonusBP: user.isActive ? (user.monthlyLeftBP || 0) : 0,
+
+        monthlyIncentiveBP: user.isActive ? (user.monthlyRightBP || 0) : 0
+
       },
 
       /* ===== INCOME SUMMARY ===== */
@@ -347,6 +362,12 @@ exports.getAccountSummary = async (req, res) => {
     const userId = req.user._id;
 
     const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    await checkLevels(user);
+
+    const updatedUser = await User.findById(userId);
     const wallet = await Wallet.findOne({ user: userId });
 
     // ================= TEAM =================
@@ -387,35 +408,35 @@ exports.getAccountSummary = async (req, res) => {
 
     res.json({
       profile: {
-        fullName: user.fullName,
-        uniqueId: user.uniqueId,
-        currentRank: user.currentRank,
-        isActive: user.isActive,
+        fullName: updatedUser.fullName,
+        uniqueId: updatedUser.uniqueId,
+        currentRank: updatedUser.currentRank,
+        isActive: updatedUser.isActive,
       },
       income: {
 
         totalIncome:
-          user.lifetimeTotalIncome || 0,
+          updatedUser.lifetimeTotalIncome || 0,
 
         weeklyIncome:
-          user.lifetimeWeeklyIncome || 0,
-        repurchaseIncome: user.lifetimeRepurchaseIncome || 0,
+          updatedUser.lifetimeWeeklyIncome || 0,
+        repurchaseIncome: updatedUser.lifetimeRepurchaseIncome || 0,
 
         monthlyIncome:
-          user.lifetimeMonthlyIncome || 0,
+          updatedUser.lifetimeMonthlyIncome || 0,
 
         royaltyIncome:
-          user.lifetimeRoyaltyIncome || 0,
+          updatedUser.lifetimeRoyaltyIncome || 0,
 
         thirdLegIncome:
-          user.lifetimeThirdLegIncome || 0,
+          updatedUser.lifetimeThirdLegIncome || 0,
 
         levelRewardIncome:
-          user.lifetimeLevelRewardIncome || 0,
+          updatedUser.lifetimeLevelRewardIncome || 0,
 
         walletBalance:
           wallet?.balance ||
-          user.incomeWallet ||
+          updatedUser.incomeWallet ||
           0
       },
 
