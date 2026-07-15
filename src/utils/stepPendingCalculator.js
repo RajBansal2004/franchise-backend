@@ -11,11 +11,9 @@ function calculateStepPending(user) {
 
     for (const step of steps) {
 
-        // Current available BP
         const currentLeft = carryLeft;
         const currentRight = carryRight;
 
-        // Jitna available hai utna hi use hoga
         const usedLeft = Math.min(currentLeft, step.leftReq);
         const usedRight = Math.min(currentRight, step.rightReq);
 
@@ -33,7 +31,6 @@ function calculateStepPending(user) {
             totalBonusBP: step.leftReq,
             totalIncentiveBP: step.rightReq,
 
-            // User ke paas is level ke time kitna BP tha
             userLeftBP: currentLeft,
             userRightBP: currentRight,
 
@@ -45,18 +42,18 @@ function calculateStepPending(user) {
                 : "Locked"
         });
 
-        // Available BP consume kar do
-        carryLeft -= usedLeft;
-        carryRight -= usedRight;
+        // ✅ Jitna available tha utna consume hoga
+        carryLeft = Math.max(0, carryLeft - usedLeft);
+        carryRight = Math.max(0, carryRight - usedRight);
 
-        // First incomplete level ke baad next sab lock
-        if (!completed) {
+        // ✅ Sirf status lock hoga
+        if (!completed && unlocked) {
             unlocked = false;
         }
     }
 
     const completedSteps = result.filter(
-        x => x.status === "Completed"
+        s => s.status === "Completed"
     ).length;
 
     return {
