@@ -11,30 +11,13 @@ function calculateStepPending(user) {
 
     for (const step of steps) {
 
-        // Agar previous step pending hai
-        if (!unlocked) {
+        // Current available BP
+        const currentLeft = carryLeft;
+        const currentRight = carryRight;
 
-            result.push({
-                step: step.step,
-                name: step.name,
-
-                totalBonusBP: step.leftReq,
-                totalIncentiveBP: step.rightReq,
-
-                userLeftBP: 0,
-                userRightBP: 0,
-
-                remainBonusBP: step.leftReq,
-                remainIncentiveBP: step.rightReq,
-
-                status: "Locked"
-            });
-
-            continue;
-        }
-
-        const usedLeft = Math.min(carryLeft, step.leftReq);
-        const usedRight = Math.min(carryRight, step.rightReq);
+        // Jitna available hai utna hi use hoga
+        const usedLeft = Math.min(currentLeft, step.leftReq);
+        const usedRight = Math.min(currentRight, step.rightReq);
 
         const remainBonusBP = step.leftReq - usedLeft;
         const remainIncentiveBP = step.rightReq - usedRight;
@@ -50,41 +33,37 @@ function calculateStepPending(user) {
             totalBonusBP: step.leftReq,
             totalIncentiveBP: step.rightReq,
 
-            userLeftBP: carryLeft,
-            userRightBP: carryRight,
+            // User ke paas is level ke time kitna BP tha
+            userLeftBP: currentLeft,
+            userRightBP: currentRight,
 
             remainBonusBP,
             remainIncentiveBP,
 
-            status: completed ? "Completed" : "Pending"
+            status: unlocked
+                ? (completed ? "Completed" : "Pending")
+                : "Locked"
         });
 
-        if (completed) {
+        // Available BP consume kar do
+        carryLeft -= usedLeft;
+        carryRight -= usedRight;
 
-            carryLeft -= step.leftReq;
-            carryRight -= step.rightReq;
-
-        } else {
-
-            // Yahi sabse important hai
-            // Ab agla level lock ho jayega
+        // First incomplete level ke baad next sab lock
+        if (!completed) {
             unlocked = false;
         }
     }
 
-    const completedSteps =
-        result.filter(x => x.status === "Completed").length;
+    const completedSteps = result.filter(
+        x => x.status === "Completed"
+    ).length;
 
     return {
-
         totalLevel: steps.length,
-
         completed: completedSteps,
-
         pending: steps.length - completedSteps,
-
         currentLevel: completedSteps + 1,
-
         steps: result
     };
 }
