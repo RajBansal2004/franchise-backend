@@ -18,7 +18,7 @@ const rewardSchema = new mongoose.Schema(
 
 const userSchema = new mongoose.Schema({
   /* ================= BASIC PROFILE ================= */
-  fullName: { type: String, required: true },
+  fullName: { type: String, default: "",},
   fatherName: { type: String, trim: true, default: null },
   organizationName: {
     type: String,
