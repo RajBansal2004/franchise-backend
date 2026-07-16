@@ -727,13 +727,6 @@ exports.createFranchiseByAdmin = async (req, res) => {
       ownerName
     } = req.body;
 
-    // ✅ basic validation
-    if (!fullName || !mobile) {
-      return res.status(400).json({
-        message: 'Full name and mobile required'
-      });
-    }
-
     const password = generatePassword();
     const franchiseId = generateFranchiseId();
 
