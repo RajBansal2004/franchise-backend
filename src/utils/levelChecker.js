@@ -1,5 +1,6 @@
 const levelSteps = require("../config/levelSteps");
 const rewardEngine = require("./rewardEngine");
+const calculateStepPending = require("../utils/stepPendingCalculator");
 
 function getRoyaltyKey(level) {
     if (level >= 5 && level <= 8) return "regional";
@@ -9,68 +10,23 @@ function getRoyaltyKey(level) {
     return null;
 }
 
+
 module.exports = async function checkLevels(user, session = null) {
 
-    if (!user) return null;
+    if (!user) return;
 
-    // ==========================
-    // Inactive User
-    // ==========================
-    if (
-        !user.isActive ||
-        !user.activationBP ||
-        (user.selfBP || 0) <= 0
-    ) {
+    const royalty = calculateStepPending(user);
 
-        const needUpdate =
-            user.level !== 0 ||
-            user.currentRank !== "DIRECT_SELLER";
+    const newLevel = royalty.completed;
 
-        if (needUpdate) {
-
-            user.level = 0;
-            user.currentRank = "DIRECT_SELLER";
-
-            user.royaltyEligible = {
-                regional: false,
-                state: false,
-                national: false,
-                international: false
-            };
-
-            user.levelAchievedAt = null;
-
-            if (session) {
-                await user.save({ session });
-            } else {
-                await user.save();
-            }
-        }
-
-        return user;
-    }
-
-    // ==========================
-    // Calculate Level
-    // ==========================
-
-    let newLevel = 0;
     let newRank = "DIRECT_SELLER";
 
-    for (const lvl of levelSteps) {
-
-        if (
-            (user.leftBP || 0) >= lvl.leftReq &&
-            (user.rightBP || 0) >= lvl.rightReq
-        ) {
-            newLevel = lvl.step;
-            newRank = lvl.name;
+    if (newLevel > 0) {
+        const level = levelSteps.find(x => x.step === newLevel);
+        if (level) {
+            newRank = level.name;
         }
     }
-
-    // ==========================
-    // No Change
-    // ==========================
 
     if (
         user.level === newLevel &&
@@ -79,15 +35,10 @@ module.exports = async function checkLevels(user, session = null) {
         return user;
     }
 
-    // ==========================
-    // Update Level
-    // ==========================
-
     user.level = newLevel;
     user.currentRank = newRank;
     user.levelAchievedAt = new Date();
 
-    // Reset Royalty Flags
     user.royaltyEligible = {
         regional: false,
         state: false,
@@ -101,14 +52,12 @@ module.exports = async function checkLevels(user, session = null) {
         user.royaltyEligible[royaltyKey] = true;
     }
 
-    // Reward Engine
     await rewardEngine(user);
 
-    if (session) {
+    if (session)
         await user.save({ session });
-    } else {
+    else
         await user.save();
-    }
 
     return user;
 };
