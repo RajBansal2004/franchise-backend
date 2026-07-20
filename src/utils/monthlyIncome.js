@@ -4,6 +4,7 @@ const Order = require("../models/Order");
 const Debit = require("../models/Debit");
 const applyIncome = require("./applyIncome");
 const checkRepurchaseEligibility = require("./checkRepurchaseEligibility");
+const calculateStepPending = require("../utils/stepPendingCalculator");
 module.exports = async function calculateMonthlyIncome() {
 
     const users = await User.find();
@@ -25,8 +26,12 @@ module.exports = async function calculateMonthlyIncome() {
         // Monthly Level Bonus
         // ============================================
 
+        const stepData = calculateStepPending(user);
+
+        const eligibleLevel = stepData.completed;
+
         const currentLevel = levels.find(
-            level => level.level === user.level
+            level => level.level === eligibleLevel
         );
 
         await checkRepurchaseEligibility(user);
@@ -34,13 +39,30 @@ module.exports = async function calculateMonthlyIncome() {
 
         if (currentLevel) {
 
+            const monthStart = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                1
+            );
+
+            const monthEnd = new Date(
+                now.getFullYear(),
+                now.getMonth() + 1,
+                1
+            );
+
             alreadyPaid = await Debit.findOne({
 
                 loginId: user.uniqueId,
 
                 subType: "LEVEL_BONUS",
 
-                level: currentLevel.level
+                level: currentLevel.level,
+
+                date: {
+                    $gte: monthStart,
+                    $lt: monthEnd
+                }
 
             });
 
@@ -73,35 +95,35 @@ module.exports = async function calculateMonthlyIncome() {
 
                     // Director Bonus Category
 
-                    if (user.level >= 1 && user.level <= 4) {
+                    if (eligibleLevel >= 1 && eligibleLevel <= 4) {
 
                         user.associateBonusIncome += payableMonthlyIncome;
                         user.lifetimeAssociateBonusIncome += payableMonthlyIncome;
 
                     }
 
-                    else if (user.level >= 5 && user.level <= 8) {
+                    else if (eligibleLevel >= 5 && eligibleLevel <= 8) {
 
                         user.regionalDirectorBonusIncome += payableMonthlyIncome;
                         user.lifetimeRegionalDirectorBonusIncome += payableMonthlyIncome;
 
                     }
 
-                    else if (user.level >= 9 && user.level <= 12) {
+                    else if (eligibleLevel >= 9 && eligibleLevel <= 12) {
 
                         user.stateDirectorBonusIncome += payableMonthlyIncome;
                         user.lifetimeStateDirectorBonusIncome += payableMonthlyIncome;
 
                     }
 
-                    else if (user.level >= 13 && user.level <= 14) {
+                    else if (eligibleLevel >= 13 && eligibleLevel <= 14) {
 
                         user.nationalDirectorBonusIncome += payableMonthlyIncome;
                         user.lifetimeNationalDirectorBonusIncome += payableMonthlyIncome;
 
                     }
 
-                    else if (user.level === 15) {
+                    else if (eligibleLevel === 15) {
 
                         user.internationalDirectorBonusIncome += payableMonthlyIncome;
                         user.lifetimeInternationalDirectorBonusIncome += payableMonthlyIncome;

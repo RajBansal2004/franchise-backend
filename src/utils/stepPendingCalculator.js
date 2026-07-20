@@ -60,7 +60,7 @@ function calculateStepPending(user) {
         totalLevel: steps.length,
         completed: completedSteps,
         pending: steps.length - completedSteps,
-        currentLevel: completedSteps + 1,
+        currentLevel: completedSteps,
         steps: result
     };
 }
