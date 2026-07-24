@@ -154,29 +154,35 @@ exports.getRoyaltySummary = async (req, res) => {
 
     const consideredBP = Math.min(leftBP, rightBP);
 
-    const levels = ROYALTY_CONFIG.map(item => {
+   const levels = ROYALTY_CONFIG.map(item => {
 
-      const percentage =
-        item.minPercent === item.maxPercent
-          ? `${item.minPercent}%`
-          : `${item.minPercent}-${item.maxPercent}%`;
+  const percentage =
+    item.minPercent === item.maxPercent
+      ? `${item.minPercent}%`
+      : `${item.minPercent}-${item.maxPercent}%`;
 
-      // ✅ IMPORTANT FIX (level check)
-      let status = "Locked";
+  let status = "Not Eligible";
+  let targetStatus = "Not Eligible";
 
-      if (updatedUser.level >= item.level) {
-        status = consideredBP >= item.target
-          ? "Eligible"
-          : "Not Eligible";
-      }
+  // User has achieved this level
+  if (updatedUser.level >= item.level) {
 
-      return {
-        level: item.level,
-        targetAmount: item.target,
-        percentage,
-        status
-      };
-    });
+    status = "Eligible";
+
+    targetStatus =
+      consideredBP >= item.target
+        ? "Eligible"
+        : "Not Eligible";
+  }
+
+  return {
+    level: item.level,
+    targetAmount: item.target,
+    percentage,
+    status,
+    targetStatus
+  };
+});
 
     res.json({
       currentLevel: updatedUser.level,
@@ -356,6 +362,7 @@ exports.getUserDashboard = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.getAccountSummary = async (req, res) => {
   try {
 
