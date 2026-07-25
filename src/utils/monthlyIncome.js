@@ -70,12 +70,7 @@ module.exports = async function calculateMonthlyIncome() {
 
         if (currentLevel && !alreadyPaid) {
 
-            const payableMonthlyIncome = applyIncome(
-
-                user,
-
-                currentLevel.monthlyBonus,
-            );
+            const payableMonthlyIncome = currentLevel.monthlyBonus;
 
             if (payableMonthlyIncome > 0) {
 

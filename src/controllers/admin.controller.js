@@ -946,7 +946,10 @@ exports.adminApproveOrder = async (req, res) => {
       // Promotion check
       await checkLevels(user, session);
       await matchingIncome(user._id, session);
-      await repurchaseIncome(user._id, usableBP, session);
+      // ✅ Repurchase income only after activation
+      if (!isFirstActivation) {
+        await repurchaseIncome(user._id, usableBP, session);
+      }
       //----------------------------------------------------
       // RELEASE PENDING INCOME AFTER REPURCHASE
       //----------------------------------------------------

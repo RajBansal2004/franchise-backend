@@ -11,7 +11,7 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 // SELF REPURCHASE INCOME
 //---------------------------------------
 
-if (user.level >= 1 && user.level <= 4) {
+
 
     const income = totalBP * 5;
 
@@ -50,8 +50,6 @@ if (user.level >= 1 && user.level <= 4) {
         await user.save({ session });
 
     }
-
-}
 
     //---------------------------------------
     // REPURCHASE BP PROPAGATION
