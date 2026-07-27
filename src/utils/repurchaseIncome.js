@@ -1,5 +1,5 @@
 const User = require("../models/User");
-
+const Debit = require("../models/Debit");
 module.exports = async function repurchaseIncome(startUserId, totalBP, session) {
 
     const user = await User.findById(startUserId).session(session);
@@ -35,22 +35,45 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
     }
 
-    if (payableIncome > 0) {
+   if (payableIncome > 0) {
 
-        user.repurchaseIncome += payableIncome;
-        user.monthlyRepurchaseIncome =
-            (user.monthlyRepurchaseIncome || 0) + payableIncome;
-        user.lifetimeRepurchaseIncome += payableIncome;
+    user.repurchaseIncome += payableIncome;
 
-        user.totalIncome += payableIncome;
+    user.monthlyRepurchaseIncome =
+        (user.monthlyRepurchaseIncome || 0) + payableIncome;
 
-        user.lifetimeTotalIncome += payableIncome;
+    user.lifetimeRepurchaseIncome += payableIncome;
 
-        user.incomeWallet += payableIncome;
+    user.totalIncome += payableIncome;
 
-        await user.save({ session });
+    user.lifetimeTotalIncome += payableIncome;
 
-    }
+    user.incomeWallet += payableIncome;
+
+    // ✅ Debit Entry
+    await Debit.create([{
+        type: "USER",
+        subType: "REPURCHASE",
+
+        name: user.fullName,
+        loginId: user.uniqueId,
+        mobile: user.mobile,
+
+        amount: payableIncome,
+
+        minusTds: 0,
+        minusMaintenance: 0,
+        finalAmount: payableIncome,
+
+        description: `Repurchase Income (${totalBP} BP)`,
+
+        date: new Date()
+
+    }], { session });
+
+    await user.save({ session });
+
+}
 
     //---------------------------------------
     // REPURCHASE BP PROPAGATION
