@@ -142,9 +142,13 @@ exports.getRoyaltySummary = async (req, res) => {
   try {
 
     const user = await User.findById(req.user._id);
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        message: "User not found"
+      });
     }
+
     await checkLevels(user);
 
     const updatedUser = await User.findById(req.user._id);
@@ -152,49 +156,82 @@ exports.getRoyaltySummary = async (req, res) => {
     const leftBP = updatedUser.monthlyLeftBP || 0;
     const rightBP = updatedUser.monthlyRightBP || 0;
 
+    // Dashboard ke liye
     const consideredBP = Math.min(leftBP, rightBP);
 
-   const levels = ROYALTY_CONFIG.map(item => {
+    // Royalty Target ke liye
+    const consideredIncome =
+      (updatedUser.monthlyIncome || 0) +
+      (updatedUser.monthlyRepurchaseIncome || 0);
 
-  const percentage =
-    item.minPercent === item.maxPercent
-      ? `${item.minPercent}%`
-      : `${item.minPercent}-${item.maxPercent}%`;
+    const levels = ROYALTY_CONFIG.map(item => {
 
-  let status = "Not Eligible";
-  let targetStatus = "Not Eligible";
+      const percentage =
+        item.minPercent === item.maxPercent
+          ? `${item.minPercent}%`
+          : `${item.minPercent}-${item.maxPercent}%`;
 
-  // User has achieved this level
-  if (updatedUser.level >= item.level) {
+      let status = "Not Eligible";
+      let targetStatus = "Not Eligible";
 
-    status = "Eligible";
+      // User ne ye level achieve kiya hai
+      if (updatedUser.level >= item.level) {
 
-    targetStatus =
-      consideredBP >= item.target
-        ? "Eligible"
-        : "Not Eligible";
-  }
+        status = "Eligible";
 
-  return {
-    level: item.level,
-    targetAmount: item.target,
-    percentage,
-    status,
-    targetStatus
-  };
-});
+        // Current month target complete
+        if (consideredIncome >= item.target) {
 
-    res.json({
+          targetStatus = "Eligible";
+
+        }
+        // Monthly Closing ke baad 24 hours grace
+        else if (
+          updatedUser.royaltyGraceUntil &&
+          new Date(updatedUser.royaltyGraceUntil) > new Date()
+        ) {
+
+          targetStatus = "Eligible";
+
+        }
+
+      }
+
+      return {
+        level: item.level,
+        targetAmount: item.target,
+        percentage,
+        status,
+        targetStatus
+      };
+
+    });
+
+    return res.json({
+
       currentLevel: updatedUser.level,
+
       leftBP,
       rightBP,
+
+      // Dashboard me BP dikhana hai
       consideredBP,
+
+      // Royalty ke liye income
+      consideredIncome,
+
       royaltyIncome: updatedUser.royaltyIncome || 0,
+
       levels
+
     });
 
   } catch (err) {
-    res.status(500).json({ message: err.message });
+
+    return res.status(500).json({
+      message: err.message
+    });
+
   }
 };
 

@@ -859,9 +859,6 @@ exports.adminApproveOrder = async (req, res) => {
         console.log(`📦 Item BP: ${item.bp} × ${item.qty} = ${itemBP}`);
       }
 
-      console.log("🔥 TOTAL BP:", totalBP);
-
-      // ❌ MIN BP CHECK (ONLY FIRST ACTIVATION)
       if (!user.isActive && totalBP < 51) {
         throw new Error("Minimum 51 BP required for activation ❌");
       }

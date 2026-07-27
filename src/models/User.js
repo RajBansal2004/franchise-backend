@@ -26,7 +26,6 @@ const userSchema = new mongoose.Schema({
     required: false
   },
 
-
   dob: Date,
   gender: { type: String, enum: ['male', 'female', 'other'] },
 
@@ -208,6 +207,15 @@ pendingMonthlyIncome: {
 
   monthlyLeftBP: { type: Number, default: 0 },
   monthlyRightBP: { type: Number, default: 0 },
+  monthlyRepurchaseIncome: {
+  type: Number,
+  default: 0
+},
+  
+royaltyGraceUntil: {
+  type: Date,
+  default: null
+},
 
   // ===== Profile =====
 

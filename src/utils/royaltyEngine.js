@@ -1,5 +1,5 @@
-const royaltyConfig = require('../config/royalty.config');
-const User = require('../models/User');
+const royaltyConfig = require("../config/royalty.config");
+const User = require("../models/User");
 
 async function calculateRoyalty(userId) {
 
@@ -8,45 +8,64 @@ async function calculateRoyalty(userId) {
     const user = await User.findById(userId);
     if (!user) return;
 
-    // ❌ Level <5 → NO ROYALTY
+    // ❌ Level 5 se niche royalty nahi
     if (user.level < 5) return;
 
-    const royaltySlab = royaltyConfig.find(r => r.level === user.level);
+    const royaltySlab = royaltyConfig.find(
+      r => r.level === user.level
+    );
+
     if (!royaltySlab) return;
 
-    const leftBP = user.monthlyLeftBP || 0;
-    const rightBP = user.monthlyRightBP || 0;
+    // ==========================================
+    // Monthly Income = Weekly + Repurchase
+    // ==========================================
 
-    const pairBP = Math.min(leftBP, rightBP);
+    const consideredIncome =
+      (user.monthlyIncome || 0) +
+      (user.monthlyRepurchaseIncome || 0);
 
-    // ❌ Target complete नहीं → NO ROYALTY
-    if (pairBP < royaltySlab.target) return;
+    // ❌ Target complete nahi
+    if (consideredIncome < royaltySlab.target) return;
 
+    // Royalty %
     const percent = royaltySlab.maxPercent;
 
-    const royaltyIncome = (pairBP * percent) / 100;
+    // Royalty Income
+    const royaltyIncome =
+      (consideredIncome * percent) / 100;
 
     const currentMonth = new Date().getMonth();
 
-    // ❌ Already paid
+    // ❌ Already Paid
     if (user.lastRoyaltyMonth === currentMonth) return;
 
-    // ✅ ADD income
+    // ✅ Income Add
     user.royaltyIncome += royaltyIncome;
     user.totalIncome += royaltyIncome;
     user.incomeWallet += royaltyIncome;
+
     user.lifetimeRoyaltyIncome =
       (user.lifetimeRoyaltyIncome || 0) + royaltyIncome;
 
     user.lifetimeTotalIncome =
       (user.lifetimeTotalIncome || 0) + royaltyIncome;
 
+    // ✅ Target Achieved Save
+    if (!user.royaltyTargetAchieved) {
+      user.royaltyTargetAchieved = {};
+    }
+
+    user.royaltyTargetAchieved[user.level] = true;
+
     user.lastRoyaltyMonth = currentMonth;
 
     await user.save();
 
   } catch (err) {
-    console.log("Royalty Error", err.message);
+
+    console.log("Royalty Error :", err.message);
+
   }
 
 }

@@ -7,9 +7,9 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
     if (!user || !user.isActive) return;
     if (user.role === "ADMIN") return;
 
-   //---------------------------------------
-// SELF REPURCHASE INCOME
-//---------------------------------------
+    //---------------------------------------
+    // SELF REPURCHASE INCOME
+    //---------------------------------------
 
 
 
@@ -38,7 +38,8 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
     if (payableIncome > 0) {
 
         user.repurchaseIncome += payableIncome;
-
+        user.monthlyRepurchaseIncome =
+            (user.monthlyRepurchaseIncome || 0) + payableIncome;
         user.lifetimeRepurchaseIncome += payableIncome;
 
         user.totalIncome += payableIncome;
