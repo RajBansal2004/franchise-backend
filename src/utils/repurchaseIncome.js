@@ -99,7 +99,6 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
         await parent.save({ session });
 
-
         parentId = parent.parentId;
     }
 

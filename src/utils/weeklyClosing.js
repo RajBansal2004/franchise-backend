@@ -14,13 +14,8 @@ module.exports = async function weeklyClosing() {
 
         try {
 
-            const left =
-                (user.weeklyLeftBP || 0) +
-                (user.repurchaseLeftBP || 0);
-
-            const right =
-                (user.weeklyRightBP || 0) +
-                (user.repurchaseRightBP || 0);
+            const left = user.weeklyLeftBP || 0;
+            const right = user.weeklyRightBP || 0;
 
             const matchedBP = Math.min(left, right);
 
@@ -45,51 +40,18 @@ module.exports = async function weeklyClosing() {
             } else if (user.totalIncome + income > cap) {
                 income = cap - user.totalIncome;
             }
-            if (income <= 0) {
-                continue;
-            }
-            await checkRepurchaseEligibility(user);
+
             const usedBP = pair * 50;
 
-            // LEFT consume
-            let remaining = usedBP;
+            user.weeklyLeftBP -= usedBP;
+            user.weeklyRightBP -= usedBP;
 
-            if (user.weeklyLeftBP >= remaining) {
-
-                user.weeklyLeftBP -= remaining;
-
-            } else {
-
-                remaining -= user.weeklyLeftBP;
-                user.weeklyLeftBP = 0;
-
-                user.repurchaseLeftBP = Math.max(
-                    0,
-                    user.repurchaseLeftBP - remaining
-                );
-            }
-
-            // RIGHT consume
-            remaining = usedBP;
-
-            if (user.weeklyRightBP >= remaining) {
-
-                user.weeklyRightBP -= remaining;
-
-            } else {
-
-                remaining -= user.weeklyRightBP;
-                user.weeklyRightBP = 0;
-
-                user.repurchaseRightBP = Math.max(
-                    0,
-                    user.repurchaseRightBP - remaining
-                );
-            }
+            if (user.weeklyLeftBP < 0) user.weeklyLeftBP = 0;
+            if (user.weeklyRightBP < 0) user.weeklyRightBP = 0;
 
             if (income > 0) {
 
-
+                await checkRepurchaseEligibility(user);
 
                 if (user.isIncomeFrozen) {
 
