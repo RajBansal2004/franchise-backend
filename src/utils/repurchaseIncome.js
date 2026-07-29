@@ -99,8 +99,6 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
         await parent.save({ session });
 
-        // ✅ Repurchase BP add hote hi matching check karo
-        await matchingIncome(parent._id, session);
 
         parentId = parent.parentId;
     }
