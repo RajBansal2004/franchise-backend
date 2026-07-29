@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Debit = require("../models/Debit");
+const matchingIncome = require("./matchingIncome");
 module.exports = async function repurchaseIncome(startUserId, totalBP, session) {
 
     const user = await User.findById(startUserId).session(session);
@@ -35,45 +36,45 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
     }
 
-   if (payableIncome > 0) {
+    if (payableIncome > 0) {
 
-    user.repurchaseIncome += payableIncome;
+        user.repurchaseIncome += payableIncome;
 
-    user.monthlyRepurchaseIncome =
-        (user.monthlyRepurchaseIncome || 0) + payableIncome;
+        user.monthlyRepurchaseIncome =
+            (user.monthlyRepurchaseIncome || 0) + payableIncome;
 
-    user.lifetimeRepurchaseIncome += payableIncome;
+        user.lifetimeRepurchaseIncome += payableIncome;
 
-    user.totalIncome += payableIncome;
+        user.totalIncome += payableIncome;
 
-    user.lifetimeTotalIncome += payableIncome;
+        user.lifetimeTotalIncome += payableIncome;
 
-    user.incomeWallet += payableIncome;
+        user.incomeWallet += payableIncome;
 
-    // ✅ Debit Entry
-    await Debit.create([{
-        type: "USER",
-        subType: "REPURCHASE",
+        // ✅ Debit Entry
+        await Debit.create([{
+            type: "USER",
+            subType: "REPURCHASE",
 
-        name: user.fullName,
-        loginId: user.uniqueId,
-        mobile: user.mobile,
+            name: user.fullName,
+            loginId: user.uniqueId,
+            mobile: user.mobile,
 
-        amount: payableIncome,
+            amount: payableIncome,
 
-        minusTds: 0,
-        minusMaintenance: 0,
-        finalAmount: payableIncome,
+            minusTds: 0,
+            minusMaintenance: 0,
+            finalAmount: payableIncome,
 
-        description: `Repurchase Income (${totalBP} BP)`,
+            description: `Repurchase Income (${totalBP} BP)`,
 
-        date: new Date()
+            date: new Date()
 
-    }], { session });
+        }], { session });
 
-    await user.save({ session });
+        await user.save({ session });
 
-}
+    }
 
     //---------------------------------------
     // REPURCHASE BP PROPAGATION
@@ -86,22 +87,20 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
     while (parentId) {
 
         const parent = await User.findById(parentId).session(session);
-
         if (!parent) break;
 
         if (direction === "LEFT") {
-
             parent.repurchaseLeftBP =
                 (parent.repurchaseLeftBP || 0) + totalBP;
-
         } else {
-
             parent.repurchaseRightBP =
                 (parent.repurchaseRightBP || 0) + totalBP;
-
         }
 
         await parent.save({ session });
+
+        // ✅ Repurchase BP add hote hi matching check karo
+        await matchingIncome(parent._id, session);
 
         parentId = parent.parentId;
     }
