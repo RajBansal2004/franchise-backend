@@ -37,7 +37,7 @@ const getDirectionForAncestor = (ancestorPath, userPath) => {
 };
 
 const distributeBP = async (user, bp, session) => {
-
+console.log("DISTRIBUTE BP CALLED", bp);
   let currentUser = user;
 
   while (currentUser.parentId) {
@@ -824,13 +824,9 @@ exports.adminApproveOrder = async (req, res) => {
   try {
     session.startTransaction();
 
-    console.log("👉 Approve API HIT:", req.params.id);
-
     const order = await Order.findById(req.params.id).session(session);
 
     if (!order) throw new Error("Order not found");
-
-    console.log("📦 Order Found:", order.orderId);
 
     if (order.status === "approved")
       throw new Error("Already approved");
@@ -841,13 +837,9 @@ exports.adminApproveOrder = async (req, res) => {
     // ================= USER ORDER =================
     if (order.orderFrom === "USER") {
 
-      console.log("👤 Processing USER order");
-
       // 🔥 GET USER FIRST (FIXED)
       user = await User.findById(order.user).session(session);
       if (!user) throw new Error("User not found");
-
-      console.log("👤 User:", user.fullName);
 
       // 🔥 CALCULATE TOTAL BP
       let totalBP = 0;
@@ -855,8 +847,6 @@ exports.adminApproveOrder = async (req, res) => {
       for (const item of order.items) {
         const itemBP = (item.bp || 0) * (item.qty || 0);
         totalBP += itemBP;
-
-        console.log(`📦 Item BP: ${item.bp} × ${item.qty} = ${itemBP}`);
       }
 
       if (!user.isActive && totalBP < 51) {
@@ -871,8 +861,6 @@ exports.adminApproveOrder = async (req, res) => {
       let foundationBP = 0;
 
       if (isFirstActivation) {
-
-        console.log("🆕 FIRST TIME ACTIVATION");
 
         const { activationBP } = req.body;
 
@@ -934,8 +922,12 @@ exports.adminApproveOrder = async (req, res) => {
       }
 
       await user.save({ session });
-
-      // ✅ DISTRIBUTE ONLY USABLE BP
+      console.log("ORDER TYPE");
+      console.log("isFirstActivation =", isFirstActivation);
+      console.log("usableBP =", usableBP);
+      console.log("orderId =", order.orderId);
+      console.log("orderType =", order.orderType);
+      console.log("saleType =", order.saleType);
       await distributeBP(user, usableBP, session);
       // Latest BP
       user = await User.findById(user._id).session(session);
