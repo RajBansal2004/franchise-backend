@@ -43,12 +43,12 @@ exports.purchaseProduct = async (req, res) => {
         parent.leftBP += totalBP;
         parent.weeklyLeftBP += totalBP;
         parent.monthlyLeftBP += totalBP;
-        parent.repurchaseLeftBP += totalBP;
+        // parent.repurchaseLeftBP += totalBP;
       } else {
         parent.rightBP += totalBP;
         parent.weeklyRightBP += totalBP;
         parent.monthlyRightBP += totalBP;
-        parent.repurchaseRightBP += totalBP;
+        // parent.repurchaseRightBP += totalBP;
       }
       // ✅ THIRD LEG BP (Only 3rd Direct Member Purchase)
       const children = await User.find({
@@ -92,6 +92,11 @@ exports.purchaseProduct = async (req, res) => {
 
     // 3. USER LEVEL
     await checkLevels(user);
+    console.log("Calling repurchaseIncome");
+    console.log("BP =", totalBP);
+    console.log("User =", user.uniqueId);
+    await repurchaseIncome(user._id, totalBP);
+
     const updatedUser = await User.findById(user._id);
 
     res.json({
