@@ -14,22 +14,52 @@ module.exports = async function weeklyClosing() {
 
         try {
 
-            // Product BP + Repurchase BP
-            const left =
-                (user.weeklyLeftBP || 0) +
-                (user.repurchaseLeftBP || 0);
+            // // Product BP + Repurchase BP
+            // const left =
+            //     (user.weeklyLeftBP || 0) +
+            //     (user.repurchaseLeftBP || 0);
 
-            const right =
-                (user.weeklyRightBP || 0) +
-                (user.repurchaseRightBP || 0);
+            // const right =
+            //     (user.weeklyRightBP || 0) +
+            //     (user.repurchaseRightBP || 0);
 
-            const matchedBP = Math.min(left, right);
+            // const matchedBP = Math.min(left, right);
 
-            if (matchedBP < 50) {
+            // if (matchedBP < 50) {
+            //     continue;
+            // }
+
+            // const pair = Math.floor(matchedBP / 50);
+
+            // let income = pair * 500;
+
+            // ================= ACTIVATION MATCHING =================
+
+            const activationMatchedBP = Math.min(
+                user.weeklyLeftBP || 0,
+                user.weeklyRightBP || 0
+            );
+
+            const activationPair = Math.floor(activationMatchedBP / 50);
+
+
+            // ================= REPURCHASE MATCHING =================
+
+            const repurchaseMatchedBP = Math.min(
+                user.repurchaseLeftBP || 0,
+                user.repurchaseRightBP || 0
+            );
+
+            const repurchasePair = Math.floor(repurchaseMatchedBP / 50);
+
+
+            // ================= TOTAL PAIR =================
+
+            const pair = activationPair + repurchasePair;
+
+            if (pair <= 0) {
                 continue;
             }
-
-            const pair = Math.floor(matchedBP / 50);
 
             let income = pair * 500;
 
@@ -47,43 +77,75 @@ module.exports = async function weeklyClosing() {
                 income = cap - user.totalIncome;
             }
 
-            const usedBP = pair * 50;
+            // const usedBP = pair * 50;
 
-            // LEFT consume
-            let remaining = usedBP;
+            // // LEFT consume
+            // let remaining = usedBP;
 
-            if (user.weeklyLeftBP >= remaining) {
+            // if (user.weeklyLeftBP >= remaining) {
 
-                user.weeklyLeftBP -= remaining;
+            //     user.weeklyLeftBP -= remaining;
 
-            } else {
+            // } else {
 
-                remaining -= user.weeklyLeftBP;
-                user.weeklyLeftBP = 0;
+            //     remaining -= user.weeklyLeftBP;
+            //     user.weeklyLeftBP = 0;
 
-                user.repurchaseLeftBP = Math.max(
-                    0,
-                    (user.repurchaseLeftBP || 0) - remaining
-                );
-            }
+            //     user.repurchaseLeftBP = Math.max(
+            //         0,
+            //         (user.repurchaseLeftBP || 0) - remaining
+            //     );
+            // }
 
-            // RIGHT consume
-            remaining = usedBP;
+            // // RIGHT consume
+            // remaining = usedBP;
 
-            if (user.weeklyRightBP >= remaining) {
+            // if (user.weeklyRightBP >= remaining) {
 
-                user.weeklyRightBP -= remaining;
+            //     user.weeklyRightBP -= remaining;
 
-            } else {
+            // } else {
 
-                remaining -= user.weeklyRightBP;
-                user.weeklyRightBP = 0;
+            //     remaining -= user.weeklyRightBP;
+            //     user.weeklyRightBP = 0;
 
-                user.repurchaseRightBP = Math.max(
-                    0,
-                    (user.repurchaseRightBP || 0) - remaining
-                );
-            }
+            //     user.repurchaseRightBP = Math.max(
+            //         0,
+            //         (user.repurchaseRightBP || 0) - remaining
+            //     );
+            // }
+
+
+
+            // ================= CONSUME ACTIVATION BP =================
+
+            const usedActivationBP = activationPair * 50;
+
+            user.weeklyLeftBP = Math.max(
+                0,
+                (user.weeklyLeftBP || 0) - usedActivationBP
+            );
+
+            user.weeklyRightBP = Math.max(
+                0,
+                (user.weeklyRightBP || 0) - usedActivationBP
+            );
+
+
+            // ================= CONSUME REPURCHASE BP =================
+
+            const usedRepurchaseBP = repurchasePair * 50;
+
+            user.repurchaseLeftBP = Math.max(
+                0,
+                (user.repurchaseLeftBP || 0) - usedRepurchaseBP
+            );
+
+            user.repurchaseRightBP = Math.max(
+                0,
+                (user.repurchaseRightBP || 0) - usedRepurchaseBP
+            );
+
 
             if (user.weeklyLeftBP < 0) user.weeklyLeftBP = 0;
             if (user.weeklyRightBP < 0) user.weeklyRightBP = 0;

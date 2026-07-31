@@ -50,7 +50,6 @@ exports.purchaseProduct = async (req, res) => {
         parent.monthlyRightBP += totalBP;
         // parent.repurchaseRightBP += totalBP;
       }
-      // ✅ THIRD LEG BP (Only 3rd Direct Member Purchase)
       const children = await User.find({
         parentId: parent._id
       }).sort({ createdAt: 1 });
