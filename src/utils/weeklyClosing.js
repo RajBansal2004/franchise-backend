@@ -14,8 +14,14 @@ module.exports = async function weeklyClosing() {
 
         try {
 
-            const left = user.weeklyLeftBP || 0;
-            const right = user.weeklyRightBP || 0;
+            // Product BP + Repurchase BP
+            const left =
+                (user.weeklyLeftBP || 0) +
+                (user.repurchaseLeftBP || 0);
+
+            const right =
+                (user.weeklyRightBP || 0) +
+                (user.repurchaseRightBP || 0);
 
             const matchedBP = Math.min(left, right);
 
@@ -43,8 +49,41 @@ module.exports = async function weeklyClosing() {
 
             const usedBP = pair * 50;
 
-            user.weeklyLeftBP -= usedBP;
-            user.weeklyRightBP -= usedBP;
+            // LEFT consume
+            let remaining = usedBP;
+
+            if (user.weeklyLeftBP >= remaining) {
+
+                user.weeklyLeftBP -= remaining;
+
+            } else {
+
+                remaining -= user.weeklyLeftBP;
+                user.weeklyLeftBP = 0;
+
+                user.repurchaseLeftBP = Math.max(
+                    0,
+                    (user.repurchaseLeftBP || 0) - remaining
+                );
+            }
+
+            // RIGHT consume
+            remaining = usedBP;
+
+            if (user.weeklyRightBP >= remaining) {
+
+                user.weeklyRightBP -= remaining;
+
+            } else {
+
+                remaining -= user.weeklyRightBP;
+                user.weeklyRightBP = 0;
+
+                user.repurchaseRightBP = Math.max(
+                    0,
+                    (user.repurchaseRightBP || 0) - remaining
+                );
+            }
 
             if (user.weeklyLeftBP < 0) user.weeklyLeftBP = 0;
             if (user.weeklyRightBP < 0) user.weeklyRightBP = 0;
