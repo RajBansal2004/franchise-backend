@@ -19,7 +19,10 @@ function getDirectionForAncestor(ancestorPath, userPath) {
 }
 
 module.exports = async function repurchaseIncome(startUserId, totalBP, session) {
-
+    console.log("========== REPURCHASE START ==========");
+    console.log("User:", startUserId.toString());
+    console.log("BP:", totalBP);
+    console.trace("Called From");
     const user = await User.findById(startUserId).session(session);
 
     if (!user) return;
