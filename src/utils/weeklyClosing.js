@@ -40,6 +40,15 @@ module.exports = async function weeklyClosing() {
                 user.weeklyRightBP || 0
             );
 
+            console.log("================================");
+            console.log(user.uniqueId);
+
+            console.log("Weekly Left :", user.weeklyLeftBP);
+            console.log("Weekly Right:", user.weeklyRightBP);
+
+            console.log("Rep Left :", user.repurchaseLeftBP);
+            console.log("Rep Right:", user.repurchaseRightBP);
+
             const activationPair = Math.floor(activationMatchedBP / 50);
 
 
@@ -51,7 +60,8 @@ module.exports = async function weeklyClosing() {
             );
 
             const repurchasePair = Math.floor(repurchaseMatchedBP / 50);
-
+            console.log("Activation Pair =", activationPair);
+            console.log("Repurchase Pair =", repurchasePair);
 
             // ================= TOTAL PAIR =================
 

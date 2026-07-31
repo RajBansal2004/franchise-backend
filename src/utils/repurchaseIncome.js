@@ -132,7 +132,11 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
         console.log(
             `Repurchase BP -> ${parent.uniqueId} | ${direction} | +${totalBP}`
         );
-
+        console.log(
+            `${parent.uniqueId}
+LEFT=${parent.repurchaseLeftBP}
+RIGHT=${parent.repurchaseRightBP}`
+        );
         await parent.save({ session });
 
         currentUser = parent;
