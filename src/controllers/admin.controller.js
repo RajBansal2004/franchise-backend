@@ -37,7 +37,7 @@ const getDirectionForAncestor = (ancestorPath, userPath) => {
 };
 
 const distributeBP = async (user, bp, session) => {
-console.log("DISTRIBUTE BP CALLED", bp);
+
   let currentUser = user;
 
   while (currentUser.parentId) {
@@ -922,26 +922,31 @@ exports.adminApproveOrder = async (req, res) => {
       }
 
       await user.save({ session });
-      console.log("ORDER TYPE");
-      console.log("isFirstActivation =", isFirstActivation);
-      console.log("usableBP =", usableBP);
-      console.log("orderId =", order.orderId);
-      console.log("orderType =", order.orderType);
-      console.log("saleType =", order.saleType);
-      await distributeBP(user, usableBP, session);
-      // Latest BP
-      user = await User.findById(user._id).session(session);
 
-      // Promotion check
-      await checkLevels(user, session);
-      await matchingIncome(user._id, session);
-      // ✅ Repurchase income only after activation
-      if (!isFirstActivation) {
+      // await distributeBP(user, usableBP, session);
+      // user = await User.findById(user._id).session(session);
+
+      // await checkLevels(user, session);
+      // await matchingIncome(user._id, session);
+      // if (!isFirstActivation) {
+      //   await repurchaseIncome(user._id, usableBP, session);
+      // }
+
+      if (isFirstActivation) {
+
+        // Activation BP
+        await distributeBP(user, usableBP, session);
+
+        user = await User.findById(user._id).session(session);
+
+        await checkLevels(user, session);
+
+      } else {
+
+        // Repurchase BP
         await repurchaseIncome(user._id, usableBP, session);
+        user = await User.findById(user._id).session(session);
       }
-      //----------------------------------------------------
-      // RELEASE PENDING INCOME AFTER REPURCHASE
-      //----------------------------------------------------
 
       await checkRepurchaseEligibility(user);
 
