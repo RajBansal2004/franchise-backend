@@ -2,8 +2,13 @@ const steps = require("../config/royaltySteps");
 
 function calculateStepPending(user) {
 
-    let carryLeft = user.leftBP || 0;
-    let carryRight = user.rightBP || 0;
+    let carryLeft =
+        (user.leftBP || 0) +
+        (user.rankRepurchaseLeftBP || 0);
+
+    let carryRight =
+        (user.rightBP || 0) +
+        (user.rankRepurchaseRightBP || 0);
 
     const result = [];
 

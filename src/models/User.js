@@ -379,6 +379,16 @@ franchiseKyc: {
   bankPassbook: String,
 },
 
+rankRepurchaseLeftBP: {
+    type: Number,
+    default: 0
+},
+
+rankRepurchaseRightBP: {
+    type: Number,
+    default: 0
+},
+
 legalDocs: {
   fssai: String,
   msme: String,

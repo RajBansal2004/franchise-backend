@@ -35,26 +35,26 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
     const income = totalBP * 5;
 
-  let cap = Infinity;
+    let cap = Infinity;
 
-if (user.activationBP === 51) {
-    cap = 100000;
-} else if (user.activationBP === 101) {
-    cap = 150000;
-}
+    if (user.activationBP === 51) {
+        cap = 100000;
+    } else if (user.activationBP === 101) {
+        cap = 150000;
+    }
 
-let payableIncome = income;
+    let payableIncome = income;
 
-// Repurchase Income Cap (same as Weekly)
-if ((user.monthlyRepurchaseIncome || 0) >= cap) {
+    // Repurchase Income Cap (same as Weekly)
+    if ((user.monthlyRepurchaseIncome || 0) >= cap) {
 
-    payableIncome = 0;
+        payableIncome = 0;
 
-} else if ((user.monthlyRepurchaseIncome || 0) + income > cap) {
+    } else if ((user.monthlyRepurchaseIncome || 0) + income > cap) {
 
-    payableIncome = cap - (user.monthlyRepurchaseIncome || 0);
+        payableIncome = cap - (user.monthlyRepurchaseIncome || 0);
 
-}
+    }
 
 
     if (payableIncome > 0) {
@@ -124,13 +124,21 @@ if ((user.monthlyRepurchaseIncome || 0) >= cap) {
 
         if (direction === "LEFT") {
 
-            parent.repurchaseLeftBP =
-                (parent.repurchaseLeftBP || 0) + totalBP;
+            parent.repurchaseRightBP =
+                (parent.repurchaseRightBP || 0) + totalBP;
+
+            // Permanent Rank BP
+            parent.rankRepurchaseRightBP =
+                (parent.rankRepurchaseRightBP || 0) + totalBP;
 
         } else {
 
             parent.repurchaseRightBP =
                 (parent.repurchaseRightBP || 0) + totalBP;
+
+            // Permanent Rank BP
+            parent.rankRepurchaseRightBP =
+                (parent.rankRepurchaseRightBP || 0) + totalBP;
         }
 
         console.log(
