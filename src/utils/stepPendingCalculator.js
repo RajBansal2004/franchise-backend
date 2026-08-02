@@ -2,13 +2,14 @@ const steps = require("../config/royaltySteps");
 
 function calculateStepPending(user) {
 
+    // Activation + Repurchase BP
     let carryLeft =
         (user.leftBP || 0) +
-        (user.rankRepurchaseLeftBP || 0);
+        (user.repurchaseLeftBP || 0);
 
     let carryRight =
         (user.rightBP || 0) +
-        (user.rankRepurchaseRightBP || 0);
+        (user.repurchaseRightBP || 0);
 
     const result = [];
 
