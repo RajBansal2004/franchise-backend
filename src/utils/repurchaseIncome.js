@@ -35,23 +35,27 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
     const income = totalBP * 5;
 
-    let cap = Infinity;
+  let cap = Infinity;
 
-    if (user.activationBP === 51)
-        cap = 100000;
-    else if (user.activationBP === 101)
-        cap = 150000;
+if (user.activationBP === 51) {
+    cap = 100000;
+} else if (user.activationBP === 101) {
+    cap = 150000;
+}
 
-    let payableIncome = income;
+let payableIncome = income;
 
-    if (user.totalIncome >= cap) {
+// Repurchase Income Cap (same as Weekly)
+if ((user.monthlyRepurchaseIncome || 0) >= cap) {
 
-        payableIncome = 0;
+    payableIncome = 0;
 
-    } else if (user.totalIncome + income > cap) {
+} else if ((user.monthlyRepurchaseIncome || 0) + income > cap) {
 
-        payableIncome = cap - user.totalIncome;
-    }
+    payableIncome = cap - (user.monthlyRepurchaseIncome || 0);
+
+}
+
 
     if (payableIncome > 0) {
 

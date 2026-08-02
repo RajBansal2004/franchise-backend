@@ -14,40 +14,11 @@ module.exports = async function weeklyClosing() {
 
         try {
 
-            // // Product BP + Repurchase BP
-            // const left =
-            //     (user.weeklyLeftBP || 0) +
-            //     (user.repurchaseLeftBP || 0);
-
-            // const right =
-            //     (user.weeklyRightBP || 0) +
-            //     (user.repurchaseRightBP || 0);
-
-            // const matchedBP = Math.min(left, right);
-
-            // if (matchedBP < 50) {
-            //     continue;
-            // }
-
-            // const pair = Math.floor(matchedBP / 50);
-
-            // let income = pair * 500;
-
-            // ================= ACTIVATION MATCHING =================
 
             const activationMatchedBP = Math.min(
                 user.weeklyLeftBP || 0,
                 user.weeklyRightBP || 0
             );
-
-            console.log("================================");
-            console.log(user.uniqueId);
-
-            console.log("Weekly Left :", user.weeklyLeftBP);
-            console.log("Weekly Right:", user.weeklyRightBP);
-
-            console.log("Rep Left :", user.repurchaseLeftBP);
-            console.log("Rep Right:", user.repurchaseRightBP);
 
             const activationPair = Math.floor(activationMatchedBP / 50);
 
@@ -60,9 +31,7 @@ module.exports = async function weeklyClosing() {
             );
 
             const repurchasePair = Math.floor(repurchaseMatchedBP / 50);
-            console.log("Activation Pair =", activationPair);
-            console.log("Repurchase Pair =", repurchasePair);
-
+           
             // ================= TOTAL PAIR =================
 
             const pair = activationPair + repurchasePair;
@@ -81,49 +50,15 @@ module.exports = async function weeklyClosing() {
             if (user.activationBP === 101)
                 cap = 150000;
 
-            if (user.totalIncome >= cap) {
+            if (user.weeklyIncome >= cap) {
+
                 income = 0;
-            } else if (user.totalIncome + income > cap) {
-                income = cap - user.totalIncome;
+
+            } else if (user.weeklyIncome + income > cap) {
+
+                income = cap - user.weeklyIncome;
+
             }
-
-            // const usedBP = pair * 50;
-
-            // // LEFT consume
-            // let remaining = usedBP;
-
-            // if (user.weeklyLeftBP >= remaining) {
-
-            //     user.weeklyLeftBP -= remaining;
-
-            // } else {
-
-            //     remaining -= user.weeklyLeftBP;
-            //     user.weeklyLeftBP = 0;
-
-            //     user.repurchaseLeftBP = Math.max(
-            //         0,
-            //         (user.repurchaseLeftBP || 0) - remaining
-            //     );
-            // }
-
-            // // RIGHT consume
-            // remaining = usedBP;
-
-            // if (user.weeklyRightBP >= remaining) {
-
-            //     user.weeklyRightBP -= remaining;
-
-            // } else {
-
-            //     remaining -= user.weeklyRightBP;
-            //     user.weeklyRightBP = 0;
-
-            //     user.repurchaseRightBP = Math.max(
-            //         0,
-            //         (user.repurchaseRightBP || 0) - remaining
-            //     );
-            // }
 
 
 
@@ -165,9 +100,6 @@ module.exports = async function weeklyClosing() {
                 await checkRepurchaseEligibility(user);
 
                 if (user.isIncomeFrozen) {
-
-                    console.log(`🔒 Income Frozen : ${user.uniqueId}`);
-
                     user.pendingWeeklyIncome += income;
 
                 } else {
@@ -204,15 +136,9 @@ module.exports = async function weeklyClosing() {
                 }
 
             }
-
-            console.log("Debit Created Successfully :", user.uniqueId);
             user.lastWeeklyPaidAt = now;
 
             await user.save({ validateBeforeSave: false });
-
-            console.log(
-                `${user.uniqueId} | Pair=${pair} | Income=${income}`
-            );
 
         }
         catch (err) {

@@ -16,7 +16,10 @@ const repurchaseIncome = require("../utils/repurchaseIncome");
 const Settings = require("../models/Settings");
 const calculateMonthlyIncome = require("../utils/monthlyIncome");
 const weeklyClosingService = require("../utils/weeklyClosing");
+const resetWeeklyIncome = require("../utils/resetWeeklyIncome");
 const monthlyClosingService = require("../utils/monthlyClosing");
+const resetMonthlyRepurchaseIncome = require("../utils/resetMonthlyRepurchaseIncome");
+
 const checkRepurchaseEligibility = require('../utils/checkRepurchaseEligibility');
 
 const getDirectionForAncestor = (ancestorPath, userPath) => {
@@ -1474,7 +1477,7 @@ exports.weeklyClosing = async (req, res) => {
     console.log("🚀 MANUAL WEEKLY CLOSING STARTED");
 
     await weeklyClosingService();
-
+    await resetWeeklyIncome();
     settings.lastWeeklyClosing = new Date();
 
     await settings.save();
@@ -1522,7 +1525,7 @@ exports.monthlyClosing = async (req, res) => {
     console.log("🚀 MANUAL MONTHLY CLOSING STARTED");
 
     await monthlyClosingService();
-
+    await resetMonthlyRepurchaseIncome();
     settings.lastMonthlyClosing = new Date();
 
     await settings.save();
