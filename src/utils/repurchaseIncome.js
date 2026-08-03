@@ -124,19 +124,17 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
         if (direction === "LEFT") {
 
-            parent.repurchaseRightBP =
-                (parent.repurchaseRightBP || 0) + totalBP;
+            parent.repurchaseLeftBP =
+                (parent.repurchaseLeftBP || 0) + totalBP;
 
-            // Permanent Rank BP
-            parent.rankRepurchaseRightBP =
-                (parent.rankRepurchaseRightBP || 0) + totalBP;
+            parent.rankRepurchaseLeftBP =
+                (parent.rankRepurchaseLeftBP || 0) + totalBP;
 
         } else {
 
             parent.repurchaseRightBP =
                 (parent.repurchaseRightBP || 0) + totalBP;
 
-            // Permanent Rank BP
             parent.rankRepurchaseRightBP =
                 (parent.rankRepurchaseRightBP || 0) + totalBP;
         }
