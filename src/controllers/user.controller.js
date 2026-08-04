@@ -363,15 +363,12 @@ exports.getUserDashboard = async (req, res) => {
 
       income: {
         weeklyIncome: user.weeklyIncome || 0,
-        monthlyIncome: user.monthlyIncome || 0,
+        monthlyIncome: user.lifetimeMonthlyIncome || 0,
 
         thirdLegIncome: user.thirdLegIncome || 0,
         royaltyIncome: user.royaltyIncome || 0,
         levelRewardIncome: user.levelRewardIncome || 0,
-
-
         totalIncome: user.totalIncome || 0,
-
         walletBalance: wallet?.balance || user.incomeWallet || 0
       },
 

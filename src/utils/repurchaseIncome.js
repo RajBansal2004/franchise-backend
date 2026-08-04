@@ -19,10 +19,6 @@ function getDirectionForAncestor(ancestorPath, userPath) {
 }
 
 module.exports = async function repurchaseIncome(startUserId, totalBP, session) {
-    console.log("========== REPURCHASE START ==========");
-    console.log("User:", startUserId.toString());
-    console.log("BP:", totalBP);
-    console.trace("Called From");
     const user = await User.findById(startUserId).session(session);
 
     if (!user) return;
@@ -129,6 +125,8 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
             parent.rankRepurchaseLeftBP =
                 (parent.rankRepurchaseLeftBP || 0) + totalBP;
+            parent.leftBP =
+                (parent.leftBP || 0) + totalBP;
 
         } else {
 
@@ -137,6 +135,8 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
 
             parent.rankRepurchaseRightBP =
                 (parent.rankRepurchaseRightBP || 0) + totalBP;
+            parent.rightBP =
+                (parent.rightBP || 0) + totalBP;
         }
 
         console.log(
