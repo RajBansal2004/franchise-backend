@@ -19,8 +19,8 @@ function calculateStepPending(user) {
         const currentLeft = carryLeft;
         const currentRight = carryRight;
 
-        const usedLeft = Math.min(currentLeft, step.leftReq);
-        const usedRight = Math.min(currentRight, step.rightReq);
+        // const usedLeft = Math.min(currentLeft, step.leftReq);
+        // const usedRight = Math.min(currentRight, step.rightReq);
 
         const remainBonusBP = step.leftReq - usedLeft;
         const remainIncentiveBP = step.rightReq - usedRight;
@@ -48,8 +48,8 @@ function calculateStepPending(user) {
         });
 
         // ✅ Jitna available tha utna consume hoga
-        carryLeft = Math.max(0, carryLeft - usedLeft);
-        carryRight = Math.max(0, carryRight - usedRight);
+        // carryLeft = Math.max(0, carryLeft - usedLeft);
+        // carryRight = Math.max(0, carryRight - usedRight);
 
         // ✅ Sirf status lock hoga
         if (!completed && unlocked) {
