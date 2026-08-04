@@ -463,10 +463,29 @@ exports.getAccountSummary = async (req, res) => {
 
         weeklyIncome:
           updatedUser.lifetimeWeeklyIncome || 0,
-        repurchaseIncome: updatedUser.lifetimeRepurchaseIncome || 0,
 
+        repurchaseIncome:
+          updatedUser.lifetimeRepurchaseIncome || 0,
+
+        // Total Level Bonus
         monthlyIncome:
           updatedUser.lifetimeMonthlyIncome || 0,
+
+        // Category Wise Bonus
+        associateBonusIncome:
+          updatedUser.lifetimeAssociateBonusIncome || 0,
+
+        regionalDirectorBonusIncome:
+          updatedUser.lifetimeRegionalDirectorBonusIncome || 0,
+
+        stateDirectorBonusIncome:
+          updatedUser.lifetimeStateDirectorBonusIncome || 0,
+
+        nationalDirectorBonusIncome:
+          updatedUser.lifetimeNationalDirectorBonusIncome || 0,
+
+        internationalDirectorBonusIncome:
+          updatedUser.lifetimeInternationalDirectorBonusIncome || 0,
 
         royaltyIncome:
           updatedUser.lifetimeRoyaltyIncome || 0,

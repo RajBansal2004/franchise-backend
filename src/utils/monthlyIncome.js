@@ -28,139 +28,246 @@ module.exports = async function calculateMonthlyIncome() {
 
         const stepData = calculateStepPending(user);
 
-        const eligibleLevel = stepData.completed;
+        // const eligibleLevel = stepData.completed;
 
-        const currentLevel = levels.find(
-            level => level.level === eligibleLevel
-        );
+        // const currentLevel = levels.find(
+        //     level => level.level === eligibleLevel
+        // );
 
+        // await checkRepurchaseEligibility(user);
+        // let alreadyPaid = null;
+
+        // if (currentLevel) {
+
+        //     const monthStart = new Date(
+        //         now.getFullYear(),
+        //         now.getMonth(),
+        //         1
+        //     );
+
+        //     const monthEnd = new Date(
+        //         now.getFullYear(),
+        //         now.getMonth() + 1,
+        //         1
+        //     );
+
+        //     alreadyPaid = await Debit.findOne({
+
+        //         loginId: user.uniqueId,
+
+        //         subType: "LEVEL_BONUS",
+
+        //         level: currentLevel.level,
+
+        //         date: {
+        //             $gte: monthStart,
+        //             $lt: monthEnd
+        //         }
+
+        //     });
+
+        // }
         await checkRepurchaseEligibility(user);
-        let alreadyPaid = null;
 
-        if (currentLevel) {
+        const eligibleLevel = stepData.completed;
+        for (let levelNo = 1; levelNo <= eligibleLevel; levelNo++) {
 
-            const monthStart = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                1
+            const currentLevel = levels.find(
+                l => l.level === levelNo
             );
 
-            const monthEnd = new Date(
-                now.getFullYear(),
-                now.getMonth() + 1,
-                1
-            );
+            if (!currentLevel) continue;
 
-            alreadyPaid = await Debit.findOne({
+            // Life me ek hi baar milega
+            const alreadyPaid = await Debit.findOne({
 
                 loginId: user.uniqueId,
 
                 subType: "LEVEL_BONUS",
 
-                level: currentLevel.level,
-
-                date: {
-                    $gte: monthStart,
-                    $lt: monthEnd
-                }
+                level: levelNo
 
             });
 
-        }
-
-        if (currentLevel && !alreadyPaid) {
+            if (alreadyPaid) {
+                continue;
+            }
 
             const payableMonthlyIncome = currentLevel.monthlyBonus;
 
-            if (payableMonthlyIncome > 0) {
+            if (payableMonthlyIncome <= 0) {
+                continue;
+            }
 
-                if (user.isIncomeFrozen) {
+            if (user.isIncomeFrozen) {
 
-                    console.log(`🔒 Monthly Income Frozen : ${user.uniqueId}`);
+                user.pendingMonthlyIncome =
+                    (user.pendingMonthlyIncome || 0) + payableMonthlyIncome;
 
-                    // Pending sirf ek baar add hoga
-                    if (user.pendingMonthlyIncome <= 0) {
+                continue;
+            }
 
-                        user.pendingMonthlyIncome = payableMonthlyIncome;
+            // ========= Category =========
 
-                    }
+            if (levelNo >= 1 && levelNo <= 4) {
 
-                }
-                else {
+                user.associateBonusIncome += payableMonthlyIncome;
+                user.lifetimeAssociateBonusIncome += payableMonthlyIncome;
 
-                    // Director Bonus Category
+            } else if (levelNo >= 5 && levelNo <= 8) {
 
-                    if (eligibleLevel >= 1 && eligibleLevel <= 4) {
+                user.regionalDirectorBonusIncome += payableMonthlyIncome;
+                user.lifetimeRegionalDirectorBonusIncome += payableMonthlyIncome;
 
-                        user.associateBonusIncome += payableMonthlyIncome;
-                        user.lifetimeAssociateBonusIncome += payableMonthlyIncome;
+            } else if (levelNo >= 9 && levelNo <= 12) {
 
-                    }
+                user.stateDirectorBonusIncome += payableMonthlyIncome;
+                user.lifetimeStateDirectorBonusIncome += payableMonthlyIncome;
 
-                    else if (eligibleLevel >= 5 && eligibleLevel <= 8) {
+            } else if (levelNo >= 13 && levelNo <= 14) {
 
-                        user.regionalDirectorBonusIncome += payableMonthlyIncome;
-                        user.lifetimeRegionalDirectorBonusIncome += payableMonthlyIncome;
+                user.nationalDirectorBonusIncome += payableMonthlyIncome;
+                user.lifetimeNationalDirectorBonusIncome += payableMonthlyIncome;
 
-                    }
+            } else if (levelNo === 15) {
 
-                    else if (eligibleLevel >= 9 && eligibleLevel <= 12) {
-
-                        user.stateDirectorBonusIncome += payableMonthlyIncome;
-                        user.lifetimeStateDirectorBonusIncome += payableMonthlyIncome;
-
-                    }
-
-                    else if (eligibleLevel >= 13 && eligibleLevel <= 14) {
-
-                        user.nationalDirectorBonusIncome += payableMonthlyIncome;
-                        user.lifetimeNationalDirectorBonusIncome += payableMonthlyIncome;
-
-                    }
-
-                    else if (eligibleLevel === 15) {
-
-                        user.internationalDirectorBonusIncome += payableMonthlyIncome;
-                        user.lifetimeInternationalDirectorBonusIncome += payableMonthlyIncome;
-
-                    }
-                    user.monthlyIncome += payableMonthlyIncome;
-
-                    user.lifetimeMonthlyIncome += payableMonthlyIncome;
-
-                    user.totalIncome += payableMonthlyIncome;
-
-                    user.lifetimeTotalIncome += payableMonthlyIncome;
-
-                    user.incomeWallet += payableMonthlyIncome;
-
-                    await Debit.create({
-
-                        type: "USER",
-
-                        subType: "LEVEL_BONUS",
-
-                        level: currentLevel.level,
-
-                        name: user.fullName,
-                        loginId: user.uniqueId,
-                        mobile: user.mobile,
-                        amount: payableMonthlyIncome,
-                        minusTds: 0,
-                        minusMaintenance: 0,
-                        finalAmount: payableMonthlyIncome,
-                        description: `${currentLevel.rank} Level Bonus`,
-
-                        date: now
-
-                    });
-                    monthlyProcessed = true;
-
-                }
+                user.internationalDirectorBonusIncome += payableMonthlyIncome;
+                user.lifetimeInternationalDirectorBonusIncome += payableMonthlyIncome;
 
             }
 
+            user.monthlyIncome += payableMonthlyIncome;
+            user.lifetimeMonthlyIncome += payableMonthlyIncome;
+
+            user.totalIncome += payableMonthlyIncome;
+            user.lifetimeTotalIncome += payableMonthlyIncome;
+
+            user.incomeWallet += payableMonthlyIncome;
+
+            await Debit.create({
+
+                type: "USER",
+
+                subType: "LEVEL_BONUS",
+
+                level: levelNo,
+
+                name: user.fullName,
+
+                loginId: user.uniqueId,
+
+                mobile: user.mobile,
+
+                amount: payableMonthlyIncome,
+
+                minusTds: 0,
+
+                minusMaintenance: 0,
+
+                finalAmount: payableMonthlyIncome,
+
+                description: `${currentLevel.rank} Level Bonus`,
+
+                date: now
+
+            });
+
+            monthlyProcessed = true;
         }
+
+        // if (currentLevel && !alreadyPaid) {
+
+        //     const payableMonthlyIncome = currentLevel.monthlyBonus;
+
+        //     if (payableMonthlyIncome > 0) {
+
+        //         if (user.isIncomeFrozen) {
+
+        //             console.log(`🔒 Monthly Income Frozen : ${user.uniqueId}`);
+
+        //             // Pending sirf ek baar add hoga
+        //             if (user.pendingMonthlyIncome <= 0) {
+
+        //                 user.pendingMonthlyIncome = payableMonthlyIncome;
+
+        //             }
+
+        //         }
+        //         else {
+
+        //             // Director Bonus Category
+
+        //             if (eligibleLevel >= 1 && eligibleLevel <= 4) {
+
+        //                 user.associateBonusIncome += payableMonthlyIncome;
+        //                 user.lifetimeAssociateBonusIncome += payableMonthlyIncome;
+
+        //             }
+
+        //             else if (eligibleLevel >= 5 && eligibleLevel <= 8) {
+
+        //                 user.regionalDirectorBonusIncome += payableMonthlyIncome;
+        //                 user.lifetimeRegionalDirectorBonusIncome += payableMonthlyIncome;
+
+        //             }
+
+        //             else if (eligibleLevel >= 9 && eligibleLevel <= 12) {
+
+        //                 user.stateDirectorBonusIncome += payableMonthlyIncome;
+        //                 user.lifetimeStateDirectorBonusIncome += payableMonthlyIncome;
+
+        //             }
+
+        //             else if (eligibleLevel >= 13 && eligibleLevel <= 14) {
+
+        //                 user.nationalDirectorBonusIncome += payableMonthlyIncome;
+        //                 user.lifetimeNationalDirectorBonusIncome += payableMonthlyIncome;
+
+        //             }
+
+        //             else if (eligibleLevel === 15) {
+
+        //                 user.internationalDirectorBonusIncome += payableMonthlyIncome;
+        //                 user.lifetimeInternationalDirectorBonusIncome += payableMonthlyIncome;
+
+        //             }
+        //             user.monthlyIncome += payableMonthlyIncome;
+
+        //             user.lifetimeMonthlyIncome += payableMonthlyIncome;
+
+        //             user.totalIncome += payableMonthlyIncome;
+
+        //             user.lifetimeTotalIncome += payableMonthlyIncome;
+
+        //             user.incomeWallet += payableMonthlyIncome;
+
+        //             await Debit.create({
+
+        //                 type: "USER",
+
+        //                 subType: "LEVEL_BONUS",
+
+        //                 level: currentLevel.level,
+
+        //                 name: user.fullName,
+        //                 loginId: user.uniqueId,
+        //                 mobile: user.mobile,
+        //                 amount: payableMonthlyIncome,
+        //                 minusTds: 0,
+        //                 minusMaintenance: 0,
+        //                 finalAmount: payableMonthlyIncome,
+        //                 description: `${currentLevel.rank} Level Bonus`,
+
+        //                 date: now
+
+        //             });
+        //             monthlyProcessed = true;
+
+        //         }
+
+        //     }
+
+        // }
 
         // ============================================
         // Franchise Retail Profit
