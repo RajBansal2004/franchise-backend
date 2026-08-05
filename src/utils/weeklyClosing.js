@@ -25,12 +25,12 @@ module.exports = async function weeklyClosing() {
 
             // ================= REPURCHASE MATCHING =================
 
-            const repurchaseMatchedBP = Math.min(
-                user.repurchaseLeftBP || 0,
-                user.repurchaseRightBP || 0
-            );
+            // const repurchaseMatchedBP = Math.min(
+            //     user.repurchaseLeftBP || 0,
+            //     user.repurchaseRightBP || 0
+            // );
 
-            const repurchasePair = Math.floor(repurchaseMatchedBP / 50);
+            // const repurchasePair = Math.floor(repurchaseMatchedBP / 50);
            
             // ================= TOTAL PAIR =================
 
@@ -79,17 +79,17 @@ module.exports = async function weeklyClosing() {
 
             // ================= CONSUME REPURCHASE BP =================
 
-            const usedRepurchaseBP = repurchasePair * 50;
+            // const usedRepurchaseBP = repurchasePair * 50;
 
-            user.repurchaseLeftBP = Math.max(
-                0,
-                (user.repurchaseLeftBP || 0) - usedRepurchaseBP
-            );
+            // user.repurchaseLeftBP = Math.max(
+            //     0,
+            //     (user.repurchaseLeftBP || 0) - usedRepurchaseBP
+            // );
 
-            user.repurchaseRightBP = Math.max(
-                0,
-                (user.repurchaseRightBP || 0) - usedRepurchaseBP
-            );
+            // user.repurchaseRightBP = Math.max(
+            //     0,
+            //     (user.repurchaseRightBP || 0) - usedRepurchaseBP
+            // );
 
 
             if (user.weeklyLeftBP < 0) user.weeklyLeftBP = 0;
