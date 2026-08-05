@@ -19,11 +19,15 @@ function calculateStepPending(user) {
         const currentLeft = carryLeft;
         const currentRight = carryRight;
 
-        // const usedLeft = Math.min(currentLeft, step.leftReq);
-        // const usedRight = Math.min(currentRight, step.rightReq);
+        const remainBonusBP = Math.max(
+            0,
+            step.leftReq - currentLeft
+        );
 
-        const remainBonusBP = step.leftReq - usedLeft;
-        const remainIncentiveBP = step.rightReq - usedRight;
+        const remainIncentiveBP = Math.max(
+            0,
+            step.rightReq - currentRight
+        );
 
         const completed =
             remainBonusBP === 0 &&
