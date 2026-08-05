@@ -127,7 +127,11 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
                 (parent.rankRepurchaseLeftBP || 0) + totalBP;
             parent.leftBP =
                 (parent.leftBP || 0) + totalBP;
+            parent.weeklyLeftBP =
+                (parent.weeklyLeftBP || 0) + totalBP;
 
+            parent.monthlyLeftBP =
+                (parent.monthlyLeftBP || 0) + totalBP;
         } else {
 
             parent.repurchaseRightBP =
@@ -137,6 +141,11 @@ module.exports = async function repurchaseIncome(startUserId, totalBP, session) 
                 (parent.rankRepurchaseRightBP || 0) + totalBP;
             parent.rightBP =
                 (parent.rightBP || 0) + totalBP;
+            parent.weeklyRightBP =
+                (parent.weeklyRightBP || 0) + totalBP;
+
+            parent.monthlyRightBP =
+                (parent.monthlyRightBP || 0) + totalBP;
         }
 
         console.log(
