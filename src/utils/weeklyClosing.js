@@ -15,12 +15,12 @@ module.exports = async function weeklyClosing() {
         try {
 
 
-            const activationMatchedBP = Math.min(
+            const matchedBP = Math.min(
                 user.weeklyLeftBP || 0,
                 user.weeklyRightBP || 0
             );
 
-            const activationPair = Math.floor(activationMatchedBP / 50);
+            const pair = Math.floor(matchedBP / 50);
 
 
             // ================= REPURCHASE MATCHING =================
@@ -31,10 +31,10 @@ module.exports = async function weeklyClosing() {
             // );
 
             // const repurchasePair = Math.floor(repurchaseMatchedBP / 50);
-           
+
             // ================= TOTAL PAIR =================
 
-            const pair = activationPair + repurchasePair;
+            // const pair = activationPair + repurchasePair;
 
             if (pair <= 0) {
                 continue;
@@ -64,16 +64,16 @@ module.exports = async function weeklyClosing() {
 
             // ================= CONSUME ACTIVATION BP =================
 
-            const usedActivationBP = activationPair * 50;
+            const usedBP = pair * 50;
 
             user.weeklyLeftBP = Math.max(
                 0,
-                (user.weeklyLeftBP || 0) - usedActivationBP
+                (user.weeklyLeftBP || 0) - usedBP
             );
 
             user.weeklyRightBP = Math.max(
                 0,
-                (user.weeklyRightBP || 0) - usedActivationBP
+                (user.weeklyRightBP || 0) - usedBP
             );
 
 
