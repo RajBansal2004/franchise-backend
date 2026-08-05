@@ -25,11 +25,11 @@ module.exports = async function thirdLegIncome(userId) {
     else if (user.activationBP === 101)
         cap = 150000;
 
-    if (cap && user.totalIncome >= cap)
+    if (cap && user.weeklyIncome >= cap)
         return;
 
-    if (cap && user.totalIncome + income > cap) {
-        income = cap - user.totalIncome;
+    if (cap && user.weeklyIncome + income > cap) {
+        income = cap - user.weeklyIncome;
     }
 
     if (income <= 0)

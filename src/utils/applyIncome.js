@@ -14,14 +14,14 @@ module.exports = function applyIncome(user, amount) {
 
     let payable = amount;
 
-    if (user.totalIncome >= cap) {
+    if (user.weeklyIncome >= cap) {
 
         payable = 0;
 
     }
-    else if (user.totalIncome + payable > cap) {
+    else if (user.weeklyIncome + payable > cap) {
 
-        payable = cap - user.totalIncome;
+        payable = cap - user.weeklyIncome;
 
     }
 
