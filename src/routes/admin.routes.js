@@ -8,7 +8,7 @@ const weeklyClosing = require("../utils/weeklyClosing");
 const monthlyClosing = require("../utils/monthlyClosing");
 const resetWeeklyIncome = require("../utils/resetWeeklyIncome");
 router.get('/dashboard', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getDashboardStats);
-router.put('/user/:userId/activate', auth, permit('ADMIN', 'SUBADMIN'),  ctrl.toggleActiveStatus);
+router.put('/user/:userId/activate', auth, permit('ADMIN', 'SUBADMIN'), ctrl.toggleActiveStatus);
 router.put('/user/:userId/block', auth, permit('ADMIN'), ctrl.toggleBlockStatus);
 router.get('/users', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getUsers);
 router.get('/kyc/pending', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getPendingKyc);
@@ -28,7 +28,7 @@ router.post(
 router.get(
   "/subadmin/profile",
   auth,
-  permit("SUBADMIN","ADMIN"),
+  permit("SUBADMIN", "ADMIN"),
   ctrl.getSubadminProfile
 );
 
@@ -47,10 +47,10 @@ router.get("/franchise-orders", auth, ctrl.getFranchiseOrdersAdmin);
 router.put("/approve/:id", auth, ctrl.adminApproveOrder);
 router.get("/foundation-bp", auth, ctrl.getFoundationBP);
 router.get("/turnover", auth, ctrl.getTurnoverReport);
-router.post("/debit",auth, ctrl.addDebit);
-router.get("/debit",auth, ctrl.getDebits);
-router.post("/credit",auth, ctrl.addCredit);
-router.get("/credit",auth, ctrl.getCredits);
+router.post("/debit", auth, ctrl.addDebit);
+router.get("/debit", auth, ctrl.getDebits);
+router.post("/credit", auth, ctrl.addCredit);
+router.get("/credit", auth, ctrl.getCredits);
 router.put("/debit/:id", ctrl.updateDebit);
 router.put(
   "/user/:id",
@@ -101,9 +101,13 @@ router.post(
       console.log("🚀 MANUAL WEEKLY CLOSING STARTED");
 
       await weeklyClosing();
-      await resetWeeklyIncome(); 
+
 
       settings.lastWeeklyClosing = new Date();
+      // 2 hours baad reset karna hai
+      settings.weeklyIncomeResetAt = new Date(
+        Date.now() + 2 * 60 * 60 * 1000
+      );
       await settings.save();
 
       console.log("✅ MANUAL WEEKLY CLOSING COMPLETED");

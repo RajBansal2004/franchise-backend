@@ -108,6 +108,10 @@ weeklyClosingTime: {
   type: String,
   default: "00:00", // HH:mm (24-hour)
 },
+weeklyIncomeResetAt: {
+    type: Date,
+    default: null
+},
 
 // Monthly
 monthlyClosingDate: {
