@@ -106,7 +106,7 @@ router.post(
       settings.lastWeeklyClosing = new Date();
       // 2 hours baad reset karna hai
       settings.weeklyIncomeResetAt = new Date(
-        Date.now() + 2 * 60 * 60 * 1000
+        Date.now() + 2 * 60 * 1000
       );
       await settings.save();
 
