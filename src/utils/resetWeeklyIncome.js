@@ -13,7 +13,7 @@ module.exports = async function resetWeeklyIncome() {
             }
         }
     );
-
+    console.log("reset bp hai-----",result);
     console.log("✅ Weekly Income Reset Completed");
 
 };

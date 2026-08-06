@@ -1477,7 +1477,9 @@ exports.weeklyClosing = async (req, res) => {
     console.log("🚀 MANUAL WEEKLY CLOSING STARTED");
 
     await weeklyClosingService();
+    console.log("Before Reset");
     await resetWeeklyIncome();
+    console.log("After Reset");
     settings.lastWeeklyClosing = new Date();
 
     await settings.save();
