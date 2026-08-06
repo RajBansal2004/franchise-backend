@@ -6,7 +6,7 @@ const upload = require("../middlewares/uploadCloudinary");
 const Settings = require("../models/Settings");
 const weeklyClosing = require("../utils/weeklyClosing");
 const monthlyClosing = require("../utils/monthlyClosing");
-
+const resetWeeklyIncome = require("../utils/resetWeeklyIncome");
 router.get('/dashboard', auth, permit('ADMIN', 'SUBADMIN'), ctrl.getDashboardStats);
 router.put('/user/:userId/activate', auth, permit('ADMIN', 'SUBADMIN'),  ctrl.toggleActiveStatus);
 router.put('/user/:userId/block', auth, permit('ADMIN'), ctrl.toggleBlockStatus);
@@ -101,6 +101,7 @@ router.post(
       console.log("🚀 MANUAL WEEKLY CLOSING STARTED");
 
       await weeklyClosing();
+      await resetWeeklyIncome(); 
 
       settings.lastWeeklyClosing = new Date();
       await settings.save();

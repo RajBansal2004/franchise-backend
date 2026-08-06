@@ -902,8 +902,6 @@ exports.adminApproveOrder = async (req, res) => {
 
       // ✅ SELF BP
       user.selfBP = (user.selfBP || 0) + usableBP;
-
-      // ✅ FOUNDATION BP
       if (foundationBP > 0) {
         user.foundationBP = (user.foundationBP || 0) + foundationBP;
         // ✅ SAVE HISTORY
@@ -925,15 +923,6 @@ exports.adminApproveOrder = async (req, res) => {
       }
 
       await user.save({ session });
-
-      // await distributeBP(user, usableBP, session);
-      // user = await User.findById(user._id).session(session);
-
-      // await checkLevels(user, session);
-      // await matchingIncome(user._id, session);
-      // if (!isFirstActivation) {
-      //   await repurchaseIncome(user._id, usableBP, session);
-      // }
 
       if (isFirstActivation) {
 

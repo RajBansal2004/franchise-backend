@@ -2,7 +2,7 @@ const User = require("../models/User");
 
 module.exports = async function resetWeeklyIncome() {
 
-    await User.updateMany(
+    const result = await User.updateMany(
         {
             isActive: true,
             role: { $ne: "ADMIN" }
@@ -13,7 +13,7 @@ module.exports = async function resetWeeklyIncome() {
             }
         }
     );
-    console.log("reset bp hai-----",result);
-    console.log("✅ Weekly Income Reset Completed");
 
+    console.log("Reset Result:", result);
+    console.log("✅ Weekly Income Reset Completed");
 };
