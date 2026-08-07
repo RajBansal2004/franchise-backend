@@ -295,6 +295,35 @@ rewardLevels: {
   type: [Number],
   default: []
 },
+goldFund: {
+    type: Number,
+    default: 0
+},
+
+bikeFund: {
+    type: Number,
+    default: 0
+},
+
+carFund: {
+    type: Number,
+    default: 0
+},
+
+isGoldRewardGiven: {
+    type: Boolean,
+    default: false
+},
+
+isBikeRewardGiven: {
+    type: Boolean,
+    default: false
+},
+
+isCarRewardGiven: {
+    type: Boolean,
+    default: false
+},
 associateBonusIncome: {
   type: Number,
   default: 0

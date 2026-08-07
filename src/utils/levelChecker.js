@@ -1,6 +1,7 @@
 const levelSteps = require("../config/levelSteps");
 const rewardEngine = require("./rewardEngine");
 const calculateStepPending = require("../utils/stepPendingCalculator");
+const checkLevelReward = require("../utils/checkLevelReward");
 
 function getRoyaltyKey(level) {
     if (level >= 5 && level <= 8) return "regional";
@@ -53,7 +54,7 @@ module.exports = async function checkLevels(user, session = null) {
     }
 
     await rewardEngine(user);
-
+    await checkLevelReward(user, session);
     if (session)
         await user.save({ session });
     else
