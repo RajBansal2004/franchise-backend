@@ -789,7 +789,7 @@ exports.getUserOrders = async (req, res) => {
     const orders = await Order.find({
       orderFrom: "USER"
     })
-      .populate("user", "fullName email uniqueId role isActive")
+      .populate("user", "fullName email uniqueId mobile shippingAddress role isActive")
       .populate("items.product", "title images image price")
       .sort({ createdAt: -1 });
 
