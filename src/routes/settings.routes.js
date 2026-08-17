@@ -52,7 +52,52 @@ router.post(
     }
   }
 );
+// ================= DELETE SLIDER =================
+router.delete("/slider/:id", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
 
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Settings not found",
+      });
+    }
+
+    const slider = settings.sliderImages.id(req.params.id);
+
+    if (!slider) {
+      return res.status(404).json({
+        success: false,
+        message: "Slider image not found",
+      });
+    }
+
+    // Delete image from Cloudinary
+    if (slider.public_id) {
+      await cloudinary.uploader.destroy(slider.public_id);
+    }
+
+    // Remove image from MongoDB
+    settings.sliderImages.pull(req.params.id);
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      message: "Slider image deleted successfully",
+      data: settings,
+    });
+
+  } catch (err) {
+    console.error("Delete Slider Error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
 
 // ================= FOUNDER =================
 router.post(
