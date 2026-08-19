@@ -53,7 +53,7 @@ router.post(
   }
 );
 // ================= DELETE SLIDER =================
-router.delete("/slider/:id", async (req, res) => {
+router.delete("/slider/:id", async (req, res) =>  {
   try {
     const settings = await Settings.findOne();
 
