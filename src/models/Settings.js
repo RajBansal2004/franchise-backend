@@ -9,6 +9,26 @@ const FounderMemberSchema = new mongoose.Schema({
   },
 });
 
+const TeamSchema = new mongoose.Schema({
+
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  role: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  image: {
+    url: String,
+    public_id: String,
+  },
+
+});
 const OfferSchema = new mongoose.Schema({
   title: String,
   description: String,
@@ -54,7 +74,7 @@ const SettingsSchema = new mongoose.Schema({
 
   // Founder Members
   founderMembers: [FounderMemberSchema],
-
+  team: [TeamSchema],
   // Offers
   offers: [OfferSchema],
 
@@ -77,52 +97,52 @@ const SettingsSchema = new mongoose.Schema({
   ],
   // Closing Settings
 
-weeklyClosingMode: {
-  type: String,
-  enum: ["AUTO", "MANUAL"],
-  default: "AUTO",
-},
+  weeklyClosingMode: {
+    type: String,
+    enum: ["AUTO", "MANUAL"],
+    default: "AUTO",
+  },
 
-monthlyClosingMode: {
-  type: String,
-  enum: ["AUTO", "MANUAL"],
-  default: "AUTO",
-},
+  monthlyClosingMode: {
+    type: String,
+    enum: ["AUTO", "MANUAL"],
+    default: "AUTO",
+  },
 
-lastWeeklyClosing: {
-  type: Date,
-  default: null,
-},
+  lastWeeklyClosing: {
+    type: Date,
+    default: null,
+  },
 
-lastMonthlyClosing: {
-  type: Date,
-  default: null,
-},
-// Weekly
-weeklyClosingDay: {
-  type: Number,
-  default: 3, // Wednesday
-},
+  lastMonthlyClosing: {
+    type: Date,
+    default: null,
+  },
+  // Weekly
+  weeklyClosingDay: {
+    type: Number,
+    default: 3, // Wednesday
+  },
 
-weeklyClosingTime: {
-  type: String,
-  default: "00:00", // HH:mm (24-hour)
-},
-weeklyIncomeResetAt: {
+  weeklyClosingTime: {
+    type: String,
+    default: "00:00", // HH:mm (24-hour)
+  },
+  weeklyIncomeResetAt: {
     type: Date,
     default: null
-},
+  },
 
-// Monthly
-monthlyClosingDate: {
-  type: String,
-  default: "LAST", // LAST or 1-31
-},
+  // Monthly
+  monthlyClosingDate: {
+    type: String,
+    default: "LAST", // LAST or 1-31
+  },
 
-monthlyClosingTime: {
-  type: String,
-  default: "23:59",
-},
+  monthlyClosingTime: {
+    type: String,
+    default: "23:59",
+  },
 });
 
 module.exports = mongoose.model("Settings", SettingsSchema);

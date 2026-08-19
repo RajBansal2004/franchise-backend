@@ -576,4 +576,203 @@ router.delete("/founder-member/:id", async (req, res) => {
     message: "Member Deleted",
   });
 });
+// ================= TEAM =================
+
+// GET ALL TEAM MEMBERS
+router.get("/team", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    res.json({
+      success: true,
+      data: settings?.team || [],
+    });
+
+  } catch (err) {
+    console.error("Get team error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+// CREATE TEAM MEMBER
+router.post(
+  "/team",
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      let settings = await Settings.findOne();
+
+      if (!settings) {
+        settings = new Settings();
+      }
+
+      if (!req.body.name || !req.body.role) {
+        return res.status(400).json({
+          success: false,
+          message: "Name and role are required",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "Team member image is required",
+        });
+      }
+
+      settings.team.push({
+        name: req.body.name,
+        role: req.body.role,
+
+        image: {
+          url: req.file.path,
+          public_id: req.file.filename,
+        },
+      });
+
+      await settings.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Team member created successfully",
+        data: settings.team,
+      });
+
+    } catch (err) {
+      console.error("Create team error:", err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
+
+// UPDATE TEAM MEMBER
+router.put(
+  "/team/:id",
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const settings = await Settings.findOne();
+
+      if (!settings) {
+        return res.status(404).json({
+          success: false,
+          message: "Settings not found",
+        });
+      }
+
+      const member = settings.team.id(req.params.id);
+
+      if (!member) {
+        return res.status(404).json({
+          success: false,
+          message: "Team member not found",
+        });
+      }
+
+      // Update name
+      if (req.body.name) {
+        member.name = req.body.name;
+      }
+
+      // Update role
+      if (req.body.role) {
+        member.role = req.body.role;
+      }
+
+      // If new image uploaded
+      if (req.file) {
+
+        // Delete old image from Cloudinary
+        if (member.image?.public_id) {
+          await cloudinary.uploader.destroy(
+            member.image.public_id
+          );
+        }
+
+        // Save new image
+        member.image = {
+          url: req.file.path,
+          public_id: req.file.filename,
+        };
+      }
+
+      await settings.save();
+
+      res.json({
+        success: true,
+        message: "Team member updated successfully",
+        data: member,
+      });
+
+    } catch (err) {
+      console.error("Update team error:", err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
+
+// DELETE TEAM MEMBER
+router.delete(
+  "/team/:id",
+  async (req, res) => {
+    try {
+      const settings = await Settings.findOne();
+
+      if (!settings) {
+        return res.status(404).json({
+          success: false,
+          message: "Settings not found",
+        });
+      }
+
+      const member = settings.team.id(req.params.id);
+
+      if (!member) {
+        return res.status(404).json({
+          success: false,
+          message: "Team member not found",
+        });
+      }
+
+      // Delete image from Cloudinary
+      if (member.image?.public_id) {
+        await cloudinary.uploader.destroy(
+          member.image.public_id
+        );
+      }
+
+      // Remove member from MongoDB
+      settings.team.pull(req.params.id);
+
+      await settings.save();
+
+      res.json({
+        success: true,
+        message: "Team member deleted successfully",
+      });
+
+    } catch (err) {
+      console.error("Delete team error:", err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
 module.exports = router;
