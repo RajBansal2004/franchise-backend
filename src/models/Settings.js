@@ -84,6 +84,60 @@ const SettingsSchema = new mongoose.Schema({
   // Google Forms
   weeklyClosingForm: String,
   monthlyClosingForm: String,
+    // ================= DOCUMENT PDFS =================
+
+  profitableBusinessPdfs: [
+    {
+      title: {
+        type: String,
+        trim: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
+    },
+  ],
+
+  traineePdfs: [
+    {
+      title: {
+        type: String,
+        trim: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
+    },
+  ],
+
+  supportPdfs: [
+    {
+      title: {
+        type: String,
+        trim: true,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
+    },
+  ],
+
+  // ================= TESTIMONIALS =================
   testimonials: [
     {
       name: String,

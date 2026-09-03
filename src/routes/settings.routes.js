@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Settings = require("../models/Settings");
 const upload = require("../middlewares/uploadCloudinary");
+const uploadPdf = require("../middlewares/uploadPdfCloudinary");
 const cloudinary = require("../config/cloudinary");
 
 
@@ -775,4 +776,359 @@ router.delete(
     }
   }
 );
+// ================= DOCUMENT PDFS =================
+
+// GET PROFITABLE BUSINESS PDFs
+router.get("/profitable-business-pdfs", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    res.json({
+      success: true,
+      data: settings?.profitableBusinessPdfs || [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+
+// ADD PROFITABLE BUSINESS PDF
+router.post(
+  "/profitable-business-pdf",
+  uploadPdf.single("pdf"),
+  async (req, res) => {
+    try {
+      let settings = await Settings.findOne();
+
+      if (!settings) {
+        settings = new Settings();
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "PDF is required",
+        });
+      }
+
+      if (settings.profitableBusinessPdfs.length >= 5) {
+        return res.status(400).json({
+          success: false,
+          message: "Maximum 5 PDFs are allowed",
+        });
+      }
+
+      settings.profitableBusinessPdfs.push({
+        title: req.body.title || "Business Document",
+        url: req.file.path,
+        public_id: req.file.filename,
+      });
+
+      await settings.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Profitable Business PDF uploaded successfully",
+        data: settings.profitableBusinessPdfs,
+      });
+
+    } catch (err) {
+      console.error("Profitable PDF upload error:", err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
+
+// DELETE PROFITABLE BUSINESS PDF
+router.delete("/profitable-business-pdf/:id", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Settings not found",
+      });
+    }
+
+    const pdf = settings.profitableBusinessPdfs.id(req.params.id);
+
+    if (!pdf) {
+      return res.status(404).json({
+        success: false,
+        message: "PDF not found",
+      });
+    }
+
+    if (pdf.public_id) {
+      await cloudinary.uploader.destroy(pdf.public_id, {
+        resource_type: "raw",
+      });
+    }
+
+    settings.profitableBusinessPdfs.pull(req.params.id);
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      message: "PDF deleted successfully",
+    });
+
+  } catch (err) {
+    console.error("Delete profitable PDF error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+
+// ================= TRAINEE PDF =================
+
+// GET
+router.get("/trainee-pdfs", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    res.json({
+      success: true,
+      data: settings?.traineePdfs || [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+
+// ADD
+router.post(
+  "/trainee-pdf",
+  uploadPdf.single("pdf"),
+  async (req, res) => {
+    try {
+      let settings = await Settings.findOne();
+
+      if (!settings) {
+        settings = new Settings();
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "PDF is required",
+        });
+      }
+
+      if (settings.traineePdfs.length >= 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Maximum 2 trainee PDFs are allowed",
+        });
+      }
+
+      settings.traineePdfs.push({
+        title: req.body.title || "Trainee Document",
+        url: req.file.path,
+        public_id: req.file.filename,
+      });
+
+      await settings.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Trainee PDF uploaded successfully",
+        data: settings.traineePdfs,
+      });
+
+    } catch (err) {
+      console.error("Trainee PDF upload error:", err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
+
+// DELETE
+router.delete("/trainee-pdf/:id", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Settings not found",
+      });
+    }
+
+    const pdf = settings.traineePdfs.id(req.params.id);
+
+    if (!pdf) {
+      return res.status(404).json({
+        success: false,
+        message: "PDF not found",
+      });
+    }
+
+    if (pdf.public_id) {
+      await cloudinary.uploader.destroy(pdf.public_id, {
+        resource_type: "raw",
+      });
+    }
+
+    settings.traineePdfs.pull(req.params.id);
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      message: "Trainee PDF deleted successfully",
+    });
+
+  } catch (err) {
+    console.error("Delete trainee PDF error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+
+// ================= SUPPORT PDF =================
+
+// GET
+router.get("/support-pdfs", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    res.json({
+      success: true,
+      data: settings?.supportPdfs || [],
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+
+// ADD
+router.post(
+  "/support-pdf",
+  uploadPdf.single("pdf"),
+  async (req, res) => {
+    try {
+      let settings = await Settings.findOne();
+
+      if (!settings) {
+        settings = new Settings();
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "PDF is required",
+        });
+      }
+
+      if (settings.supportPdfs.length >= 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Maximum 2 support PDFs are allowed",
+        });
+      }
+
+      settings.supportPdfs.push({
+        title: req.body.title || "Support Document",
+        url: req.file.path,
+        public_id: req.file.filename,
+      });
+
+      await settings.save();
+
+      res.status(201).json({
+        success: true,
+        message: "Support PDF uploaded successfully",
+        data: settings.supportPdfs,
+      });
+
+    } catch (err) {
+      console.error("Support PDF upload error:", err);
+
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+);
+
+
+// DELETE
+router.delete("/support-pdf/:id", async (req, res) => {
+  try {
+    const settings = await Settings.findOne();
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: "Settings not found",
+      });
+    }
+
+    const pdf = settings.supportPdfs.id(req.params.id);
+
+    if (!pdf) {
+      return res.status(404).json({
+        success: false,
+        message: "PDF not found",
+      });
+    }
+
+    if (pdf.public_id) {
+      await cloudinary.uploader.destroy(pdf.public_id, {
+        resource_type: "raw",
+      });
+    }
+
+    settings.supportPdfs.pull(req.params.id);
+
+    await settings.save();
+
+    res.json({
+      success: true,
+      message: "Support PDF deleted successfully",
+    });
+
+  } catch (err) {
+    console.error("Delete support PDF error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
 module.exports = router;
