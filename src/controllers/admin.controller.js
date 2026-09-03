@@ -181,6 +181,34 @@ exports.createAdmin = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+exports.getPublicFranchises = async (req, res) => {
+  try {
+    const franchises = await User.find(
+      {
+        role: "FRANCHISE",
+        isBlocked: false,
+      },
+      {
+        _id: 1,
+        franchiseName: 1,
+        franchiseOwnerName: 1,
+      }
+    ).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      total: franchises.length,
+      data: franchises,
+    });
+  } catch (error) {
+    console.error("Public franchise fetch error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to load franchise details",
+    });
+  }
+};
 exports.getSubadminProfile = async (req, res) => {
   try {
 
