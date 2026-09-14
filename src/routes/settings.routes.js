@@ -815,13 +815,6 @@ router.post(
         });
       }
 
-      if (settings.profitableBusinessPdfs.length >= 5) {
-        return res.status(400).json({
-          success: false,
-          message: "Maximum 5 PDFs are allowed",
-        });
-      }
-
       settings.profitableBusinessPdfs.push({
         title: req.body.title || "Business Document",
         url: req.file.path,
@@ -934,13 +927,6 @@ router.post(
         });
       }
 
-      if (settings.traineePdfs.length >= 2) {
-        return res.status(400).json({
-          success: false,
-          message: "Maximum 2 trainee PDFs are allowed",
-        });
-      }
-
       settings.traineePdfs.push({
         title: req.body.title || "Trainee Document",
         url: req.file.path,
@@ -1050,13 +1036,6 @@ router.post(
         return res.status(400).json({
           success: false,
           message: "PDF is required",
-        });
-      }
-
-      if (settings.supportPdfs.length >= 2) {
-        return res.status(400).json({
-          success: false,
-          message: "Maximum 2 support PDFs are allowed",
         });
       }
 
