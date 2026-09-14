@@ -192,6 +192,8 @@ exports.getPublicFranchises = async (req, res) => {
         _id: 1,
         franchiseName: 1,
         franchiseOwnerName: 1,
+        location: 1,
+        shippingAddress: 1,
       }
     ).sort({ createdAt: -1 });
 
