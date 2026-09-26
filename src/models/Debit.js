@@ -44,6 +44,12 @@ const debitSchema = new mongoose.Schema({
 
   // company
   beneficiaryAccount: String,
+     // ✅ REMARK
+    remark: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   description: String,
   minusTds: {
     type: Number,

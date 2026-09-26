@@ -1468,7 +1468,8 @@ exports.addDebit = async (req, res) => {
       amount,
       minusTds,
       minusMaintenance,
-      finalAmount
+      finalAmount,
+      remark: req.body.remark || "",
     });
 
     res.json({

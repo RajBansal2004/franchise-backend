@@ -11,5 +11,6 @@ router.get("/", ctrl.getAllLicenses);
 
 // 👉 ADMIN UPDATE STATUS
 router.put("/:id", ctrl.updateStatus);
+router.delete("/:id", ctrl.deleteLicense);
 
 module.exports = router;

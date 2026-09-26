@@ -36,3 +36,28 @@ exports.updateStatus = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+// Delete License Application (Admin)
+exports.deleteLicense = async (req, res) => {
+  try {
+    const deleted = await License.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "License application not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "License application deleted successfully",
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
