@@ -19,7 +19,7 @@ const weeklyClosingService = require("../utils/weeklyClosing");
 const resetWeeklyIncome = require("../utils/resetWeeklyIncome");
 const monthlyClosingService = require("../utils/monthlyClosing");
 const resetMonthlyRepurchaseIncome = require("../utils/resetMonthlyRepurchaseIncome");
-
+const InvoiceCounter = require("../models/InvoiceCounter");
 const checkRepurchaseEligibility = require('../utils/checkRepurchaseEligibility');
 
 const getDirectionForAncestor = (ancestorPath, userPath) => {
@@ -819,7 +819,7 @@ exports.getUserOrders = async (req, res) => {
     const orders = await Order.find({
       orderFrom: "USER"
     })
-      .populate("user", "fullName email uniqueId mobile shippingAddress role isActive")
+      .populate("user", "fullName email uniqueId mobile shippingAddress location role isActive")
       .populate("items.product", "title images image price")
       .sort({ createdAt: -1 });
 
@@ -836,7 +836,7 @@ exports.getFranchiseOrdersAdmin = async (req, res) => {
     const orders = await Order.find({
       orderFrom: "FRANCHISE"   // ✅ ONLY THIS
     })
-      .populate("user", "fullName email uniqueId role isActive")
+      .populate("user", "fullName email uniqueId location role isActive")
       .populate("items.product", "title images image price")
       .sort({ createdAt: -1 });
 
@@ -1075,6 +1075,48 @@ exports.adminApproveOrder = async (req, res) => {
     }
 
     // ================= FINAL =================
+    // order.status = "approved";
+    // order.approvedAt = new Date();
+
+    // await order.save({ session });
+    // ================= FINAL =================
+
+    // ==========================================
+    // GENERATE SEQUENTIAL INVOICE NUMBER
+    // ==========================================
+
+    // ==========================================
+    // GENERATE SEQUENTIAL INVOICE NUMBER
+    // ==========================================
+
+    const counter = await InvoiceCounter.findOneAndUpdate(
+      {
+        name: "TAX_INVOICE"
+      },
+      {
+        $inc: {
+          sequence: 1
+        }
+      },
+      {
+        new: true,
+        session
+      }
+    );
+
+    if (!counter) {
+      throw new Error(
+        "Invoice counter is not initialized. Please create TAX_INVOICE counter with sequence 6."
+      );
+    }
+
+    const invoiceNumber = String(counter.sequence).padStart(3, "0");
+
+    // ==========================================
+    // SAVE INVOICE NUMBER
+    // ==========================================
+
+    order.invoiceNo = invoiceNumber;
     order.status = "approved";
     order.approvedAt = new Date();
 
@@ -1131,7 +1173,8 @@ exports.adminApproveOrder = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Order Approved Successfully"
+      message: "Order Approved Successfully",
+      invoiceNo: order.invoiceNo,
     });
 
   } catch (err) {
@@ -1189,232 +1232,232 @@ exports.getFoundationBP = async (req, res) => {
 
 
 exports.getTurnoverReport = async (req, res) => {
-    try {
-        const Credit = require("../models/Credit");
-        const Debit = require("../models/Debit");
+  try {
+    const Credit = require("../models/Credit");
+    const Debit = require("../models/Debit");
 
-        const { fromDate, toDate } = req.query;
+    const { fromDate, toDate } = req.query;
 
-        // ==========================================
-        // DATE FILTER
-        // ==========================================
+    // ==========================================
+    // DATE FILTER
+    // ==========================================
 
-        const creditMatch = {};
-        const debitMatch = {};
+    const creditMatch = {};
+    const debitMatch = {};
 
-        if (fromDate || toDate) {
-            const creditDate = {};
-            const debitDate = {};
+    if (fromDate || toDate) {
+      const creditDate = {};
+      const debitDate = {};
 
-            if (fromDate) {
-                creditDate.$gte = new Date(`${fromDate}T00:00:00`);
-                debitDate.$gte = new Date(`${fromDate}T00:00:00`);
-            }
+      if (fromDate) {
+        creditDate.$gte = new Date(`${fromDate}T00:00:00`);
+        debitDate.$gte = new Date(`${fromDate}T00:00:00`);
+      }
 
-            if (toDate) {
-                creditDate.$lte = new Date(`${toDate}T23:59:59.999`);
-                debitDate.$lte = new Date(`${toDate}T23:59:59.999`);
-            }
+      if (toDate) {
+        creditDate.$lte = new Date(`${toDate}T23:59:59.999`);
+        debitDate.$lte = new Date(`${toDate}T23:59:59.999`);
+      }
 
-            creditMatch.date = creditDate;
-            debitMatch.date = debitDate;
-        }
-
-        // ==========================================
-        // CREDIT - DAY WISE
-        // ==========================================
-
-        const creditData = await Credit.aggregate([
-            {
-                $match: creditMatch
-            },
-            {
-                $group: {
-                    _id: {
-                        $dateToString: {
-                            format: "%Y-%m-%d",
-                            date: "$date"
-                        }
-                    },
-
-                    totalCredit: {
-                        $sum: "$amount"
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: "$_id",
-                    totalCredit: 1
-                }
-            }
-        ]);
-
-        // ==========================================
-        // DEBIT - DAY WISE
-        // ==========================================
-
-        const debitData = await Debit.aggregate([
-            {
-                $match: debitMatch
-            },
-            {
-                $group: {
-                    _id: {
-                        $dateToString: {
-                            format: "%Y-%m-%d",
-                            date: "$date"
-                        }
-                    },
-
-                    totalDebit: {
-                        $sum: {
-                            $cond: [
-                                {
-                                    $gt: [
-                                        "$finalAmount",
-                                        0
-                                    ]
-                                },
-                                "$finalAmount",
-                                "$amount"
-                            ]
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: "$_id",
-                    totalDebit: 1
-                }
-            }
-        ]);
-
-        // ==========================================
-        // MERGE CREDIT + DEBIT
-        // ==========================================
-
-        const reportMap = {};
-
-        creditData.forEach((item) => {
-
-            reportMap[item.date] = {
-                date: item.date,
-                totalCredit: Number(item.totalCredit || 0),
-                totalDebit: 0
-            };
-
-        });
-
-        debitData.forEach((item) => {
-
-            if (!reportMap[item.date]) {
-
-                reportMap[item.date] = {
-                    date: item.date,
-                    totalCredit: 0,
-                    totalDebit: 0
-                };
-
-            }
-
-            reportMap[item.date].totalDebit =
-                Number(item.totalDebit || 0);
-
-        });
-
-        // ==========================================
-        // FINAL DAY-WISE REPORT
-        // ==========================================
-
-        const result = Object.values(reportMap)
-            .map((item) => {
-
-                const totalCredit =
-                    Number(item.totalCredit.toFixed(2));
-
-                const totalDebit =
-                    Number(item.totalDebit.toFixed(2));
-
-                return {
-                    date: item.date,
-                    totalCredit,
-                    totalDebit,
-
-                    // Credit - Debit
-                    netAmount: Number(
-                        (totalCredit - totalDebit).toFixed(2)
-                    )
-                };
-
-            })
-            .sort(
-                (a, b) =>
-                    new Date(b.date) -
-                    new Date(a.date)
-            );
-
-        // ==========================================
-        // GRAND TOTAL
-        // ==========================================
-
-        const grandTotal = result.reduce(
-            (acc, item) => {
-
-                acc.totalCredit += item.totalCredit;
-                acc.totalDebit += item.totalDebit;
-                acc.netAmount += item.netAmount;
-
-                return acc;
-
-            },
-            {
-                totalCredit: 0,
-                totalDebit: 0,
-                netAmount: 0
-            }
-        );
-
-        // ==========================================
-        // RESPONSE
-        // ==========================================
-
-        res.json({
-            success: true,
-
-            data: result,
-
-            grandTotal: {
-                totalCredit: Number(
-                    grandTotal.totalCredit.toFixed(2)
-                ),
-
-                totalDebit: Number(
-                    grandTotal.totalDebit.toFixed(2)
-                ),
-
-                netAmount: Number(
-                    grandTotal.netAmount.toFixed(2)
-                )
-            }
-        });
-
-    } catch (err) {
-
-        console.error(
-            "❌ TURNOVER REPORT ERROR:",
-            err
-        );
-
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
-
+      creditMatch.date = creditDate;
+      debitMatch.date = debitDate;
     }
+
+    // ==========================================
+    // CREDIT - DAY WISE
+    // ==========================================
+
+    const creditData = await Credit.aggregate([
+      {
+        $match: creditMatch
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$date"
+            }
+          },
+
+          totalCredit: {
+            $sum: "$amount"
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          totalCredit: 1
+        }
+      }
+    ]);
+
+    // ==========================================
+    // DEBIT - DAY WISE
+    // ==========================================
+
+    const debitData = await Debit.aggregate([
+      {
+        $match: debitMatch
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$date"
+            }
+          },
+
+          totalDebit: {
+            $sum: {
+              $cond: [
+                {
+                  $gt: [
+                    "$finalAmount",
+                    0
+                  ]
+                },
+                "$finalAmount",
+                "$amount"
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          totalDebit: 1
+        }
+      }
+    ]);
+
+    // ==========================================
+    // MERGE CREDIT + DEBIT
+    // ==========================================
+
+    const reportMap = {};
+
+    creditData.forEach((item) => {
+
+      reportMap[item.date] = {
+        date: item.date,
+        totalCredit: Number(item.totalCredit || 0),
+        totalDebit: 0
+      };
+
+    });
+
+    debitData.forEach((item) => {
+
+      if (!reportMap[item.date]) {
+
+        reportMap[item.date] = {
+          date: item.date,
+          totalCredit: 0,
+          totalDebit: 0
+        };
+
+      }
+
+      reportMap[item.date].totalDebit =
+        Number(item.totalDebit || 0);
+
+    });
+
+    // ==========================================
+    // FINAL DAY-WISE REPORT
+    // ==========================================
+
+    const result = Object.values(reportMap)
+      .map((item) => {
+
+        const totalCredit =
+          Number(item.totalCredit.toFixed(2));
+
+        const totalDebit =
+          Number(item.totalDebit.toFixed(2));
+
+        return {
+          date: item.date,
+          totalCredit,
+          totalDebit,
+
+          // Credit - Debit
+          netAmount: Number(
+            (totalCredit - totalDebit).toFixed(2)
+          )
+        };
+
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.date) -
+          new Date(a.date)
+      );
+
+    // ==========================================
+    // GRAND TOTAL
+    // ==========================================
+
+    const grandTotal = result.reduce(
+      (acc, item) => {
+
+        acc.totalCredit += item.totalCredit;
+        acc.totalDebit += item.totalDebit;
+        acc.netAmount += item.netAmount;
+
+        return acc;
+
+      },
+      {
+        totalCredit: 0,
+        totalDebit: 0,
+        netAmount: 0
+      }
+    );
+
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+
+    res.json({
+      success: true,
+
+      data: result,
+
+      grandTotal: {
+        totalCredit: Number(
+          grandTotal.totalCredit.toFixed(2)
+        ),
+
+        totalDebit: Number(
+          grandTotal.totalDebit.toFixed(2)
+        ),
+
+        netAmount: Number(
+          grandTotal.netAmount.toFixed(2)
+        )
+      }
+    });
+
+  } catch (err) {
+
+    console.error(
+      "❌ TURNOVER REPORT ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
 };
 
 //  ADD CREDIT
