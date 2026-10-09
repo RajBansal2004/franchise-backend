@@ -1576,10 +1576,30 @@ exports.getDebits = async (req, res) => {
 
 };
 
+
 exports.updateDebit = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Atomic update ke liye requested deduction identify karein
+    const isTdsRequest = req.body.minusTds !== undefined;
+    const isMaintenanceRequest =
+      req.body.minusMaintenance !== undefined;
+
+    if (isTdsRequest === isMaintenanceRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "Please request either TDS or Maintenance deduction",
+      });
+    }
+
+    const field = isTdsRequest
+      ? "minusTds"
+      : "minusMaintenance";
+
+    const label = isTdsRequest ? "TDS" : "Maintenance";
+
+    // Record load karein
     const debit = await Debit.findById(id);
 
     if (!debit) {
@@ -1589,58 +1609,95 @@ exports.updateDebit = async (req, res) => {
       });
     }
 
-    // Update values first
-    if (req.body.minusTds !== undefined) {
-      debit.minusTds = Number(req.body.minusTds);
-    }
-
-    if (req.body.minusMaintenance !== undefined) {
-      debit.minusMaintenance = Number(req.body.minusMaintenance);
-    }
-
-    // Validation
-    if (debit.minusTds > debit.amount) {
+    // Already deducted ho to dobara deduction na karein
+    if (Number(debit[field] || 0) > 0) {
       return res.status(400).json({
         success: false,
-        message: "TDS cannot exceed amount",
+        message: `${label} has already been deducted for this amount`,
       });
     }
 
-    if (debit.minusMaintenance > debit.amount) {
+    const amount = Number(debit.amount || 0);
+
+    if (!Number.isFinite(amount) || amount < 0) {
       return res.status(400).json({
         success: false,
-        message: "Maintenance cannot exceed amount",
+        message: "Invalid debit amount",
       });
     }
 
-    const totalDeduction =
-      Number(debit.minusTds) + Number(debit.minusMaintenance);
+    // Original amount ka 5% calculate karein
+    const deduction = Number((amount * 0.05).toFixed(2));
 
-    if (totalDeduction > debit.amount) {
+    // Atomic compare-and-set: same deduction concurrent requests
+    // mein dobara apply na ho.
+    const updatedDebit = await Debit.findOneAndUpdate(
+      {
+        _id: id,
+        [field]: { $in: [0, null] },
+      },
+      [
+        {
+          $set: {
+            [field]: deduction,
+          },
+        },
+        {
+          $set: {
+            finalAmount: {
+              $subtract: [
+                "$amount",
+                {
+                  $add: [
+                    { $ifNull: ["$minusTds", 0] },
+                    { $ifNull: ["$minusMaintenance", 0] },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+      {
+        new: true,
+        updatePipeline: true,
+        runValidators: true,
+      }
+    );
+
+    if (!updatedDebit) {
+      const latestDebit = await Debit.findById(id);
+
+      if (!latestDebit) {
+        return res.status(404).json({
+          success: false,
+          message: "Debit not found",
+        });
+      }
+
       return res.status(400).json({
         success: false,
-        message: "Total deductions cannot exceed amount",
+        message: `${label} has already been deducted for this amount`,
       });
     }
 
-    debit.finalAmount =
-      Number(debit.amount) -
-      Number(debit.minusTds) -
-      Number(debit.minusMaintenance);
-
-    await debit.save();
-
-    res.json({
+    return res.json({
       success: true,
-      debit,
+      message: `${label} deducted successfully`,
+      debit: updatedDebit,
     });
   } catch (err) {
-    res.status(500).json({
+    console.error("UPDATE DEBIT ERROR:", err);
+
+    return res.status(500).json({
       success: false,
       message: err.message,
     });
   }
 };
+
+
+
 
 // ✅ ASSIGN WORK (MAIN API)
 exports.assignWorkToSubAdmin = async (req, res) => {
