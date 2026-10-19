@@ -54,7 +54,7 @@ router.post(
   }
 );
 // ================= DELETE SLIDER =================
-router.delete("/slider/:id", async (req, res) =>  {
+router.delete("/slider/:id", async (req, res) => {
   try {
     const settings = await Settings.findOne();
 
@@ -356,7 +356,8 @@ router.put("/forms", async (req, res) => {
 
     let settings = await Settings.findOne();
     if (!settings) settings = new Settings();
-
+    settings.weeklyClosingTitle = req.body.weeklyClosingTitle || "";
+    settings.monthlyClosingTitle = req.body.monthlyClosingTitle || "";
     settings.weeklyClosingForm =
       req.body.weeklyClosingForm;
 
@@ -416,9 +417,9 @@ router.post(
         message: req.body.message,
         image: req.file
           ? {
-              url: req.file.path,
-              public_id: req.file.filename,
-            }
+            url: req.file.path,
+            public_id: req.file.filename,
+          }
           : null,
       });
 

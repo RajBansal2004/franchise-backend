@@ -192,6 +192,14 @@ const SettingsSchema = new mongoose.Schema({
     type: String,
     default: "LAST", // LAST or 1-31
   },
+  weeklyClosingTitle: {
+  type: String,
+  default: "",
+},
+monthlyClosingTitle: {
+  type: String,
+  default: "",
+},
 
   monthlyClosingTime: {
     type: String,
